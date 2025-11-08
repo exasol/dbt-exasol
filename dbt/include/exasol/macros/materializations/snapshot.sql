@@ -170,12 +170,14 @@
             {#/*
                 If a column has been added to the source it won't yet exist in the
                 snapshotted table so we insert a null value as a placeholder for the column.
+                For Exasol, we must explicitly cast NULL to the column's data type to avoid
+                "datatypes are not compatible for Union" errors in the final UNION ALL.
              */#}
             {%- for col in source_sql_cols -%}
             {%- if col.name in snapshotted_cols -%}
             snapshotted_data.{{ adapter.quote(col.column) }},
             {%- else -%}
-            NULL as {{ adapter.quote(col.column) }},
+            CAST(NULL AS {{ col.dtype }}) as {{ adapter.quote(col.column) }},
             {%- endif -%}
             {% endfor -%}
             {%- if strategy.unique_key | is_list -%}
