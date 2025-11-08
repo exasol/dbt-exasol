@@ -5,6 +5,7 @@ DBT adapter connection implementation for Exasol.
 """
 import decimal
 import os
+import ssl
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, List, Optional
@@ -85,6 +86,7 @@ class ExasolCredentials(Credentials):
     query_timeout: int = pyexasol.constant.DEFAULT_QUERY_TIMEOUT
     compression: bool = False
     encryption: bool = True
+    validate_server_certificate: bool = True
     ## Because of potential interference with dbt,
     # the following statements are not (yet) implemented
     # fetch_dict: bool
@@ -120,6 +122,7 @@ class ExasolCredentials(Credentials):
             "query_timeout",
             "compression",
             "encryption",
+            "validate_server_certificate",
             "protocol_version",
             "row_separator",
             "timestamp_format",
@@ -203,6 +206,17 @@ class ExasolConnectionManager(SQLConnectionManager):
             )
 
         def _connect():
+            # Build SSL options based on validate_server_certificate setting
+            # Only applies when encryption is enabled
+            websocket_sslopt = None
+            if credentials.encryption:
+                if credentials.validate_server_certificate:
+                    # Explicitly set CERT_REQUIRED to suppress PyExasol warnings
+                    websocket_sslopt = {"cert_reqs": ssl.CERT_REQUIRED}
+                else:
+                    # Allow connections without certificate validation
+                    websocket_sslopt = {"cert_reqs": ssl.CERT_NONE}
+
             conn = connect(
                 dsn=credentials.dsn,
                 user=credentials.user,
@@ -215,6 +229,7 @@ class ExasolConnectionManager(SQLConnectionManager):
                 query_timeout=credentials.query_timeout,
                 compression=credentials.compression,
                 encryption=credentials.encryption,
+                websocket_sslopt=websocket_sslopt,
                 protocol_version=protocol_version,
             )
             # exasol adapter specific attributes that are unknown to pyexasol
