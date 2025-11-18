@@ -34,6 +34,7 @@ OpenID login through access_token or refresh_token instead of user+password
   <li><strong>query_timeout</strong>: defaults to pyexasol default</li>
   <li><strong>compression</strong>: default: False</li>
   <li><strong>encryption</strong>: default: True</li>
+  <li><strong>validate_server_certificate</strong>: default: True (requires valid SSL certificate when encryption=True)</li>
   <li><strong>protocol_version</strong>: default: v3</li>
   <li><strong>row_separator</strong>: default: CRLF for windows - LF otherwise</li>
   <li><strong>timestamp_format</strong>: default: YYYY-MM-DDTHH:MI:SS.FF6</li>
@@ -82,6 +83,41 @@ Due to a breaking change in setuptools and a infected dependency from dbt-core, 
 ## Using encryption in Exasol 7 vs. 8
 
 Starting from Exasol 8, encryption is enforced by default. If you are still using Exasol 7 and have trouble connecting, you can disable encryption in profiles.yaml (see optional parameters).
+
+## SSL/TLS Certificate Validation
+
+By default, dbt-exasol validates SSL/TLS certificates when `encryption=True` (which is the default). This provides secure connections and suppresses PyExasol warnings about certificate validation behavior.
+
+**Default behavior (recommended for production):**
+```yaml
+outputs:
+  prod:
+    type: exasol
+    encryption: true  # default
+    validate_server_certificate: true  # default
+    # ... other settings
+```
+
+**For development/testing with self-signed certificates:**
+```yaml
+outputs:
+  dev:
+    type: exasol
+    encryption: true
+    validate_server_certificate: false  # Skip cert validation (not recommended for production)
+    # ... other settings
+```
+
+**Alternative for self-signed certificates:** Use the `nocertcheck` fingerprint in the DSN:
+```yaml
+outputs:
+  dev:
+    type: exasol
+    dsn: myhost/nocertcheck:8563
+    # ... other settings
+```
+
+For more information about SSL configuration, see the [PyExasol security documentation](https://exasol.github.io/pyexasol/master/user_guide/configuration/security.html).
 
 ## Materialized View & Clone operations
 
