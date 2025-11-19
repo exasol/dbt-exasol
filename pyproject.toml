@@ -16,7 +16,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9.2, <3.13"
 pyexasol = "^1.0.0"
-sqlfluff = "^2.3"
+sqlfluff = ">=2.3,<4.0"
 pyyaml = "6.0.1"
 hologram = "^0.0.16"
 pytest-xdist = "^3.3.1"
