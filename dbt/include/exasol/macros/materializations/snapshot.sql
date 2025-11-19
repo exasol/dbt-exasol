@@ -1,9 +1,9 @@
 {% macro get_dbt_valid_to_current(strategy, columns) -%}
   {%- set dbt_valid_to_current = config.get('dbt_valid_to_current') -%}
   {%- if dbt_valid_to_current -%}
-    coalesce(nullif({{ strategy.updated_at }}, {{ strategy.updated_at }}), {{ snapshot_string_as_time(dbt_valid_to_current) }}) as {{ columns.dbt_valid_to }}
+    {{ snapshot_string_as_time(dbt_valid_to_current) }} as {{ columns.dbt_valid_to }}
   {%- else -%}
-    coalesce(nullif({{ strategy.updated_at }}, {{ strategy.updated_at }}), null) as {{ columns.dbt_valid_to }}
+    CAST(null AS TIMESTAMP) as {{ columns.dbt_valid_to }}
   {%- endif -%}
 {%- endmacro %}
 
@@ -161,6 +161,7 @@
 
     {%- if strategy.hard_deletes == 'new_record' %}
         {% set snapshotted_cols = get_list_of_column_names(get_columns_in_relation(target_relation)) %}
+        {% set snapshotted_cols_normalized = snapshotted_cols | map('upper') | list %}
         {% set source_sql_cols = get_column_schema_from_query(source_sql) %}
     ,
     deletion_records as (
@@ -174,7 +175,7 @@
                 "datatypes are not compatible for Union" errors in the final UNION ALL.
              */#}
             {%- for col in source_sql_cols -%}
-            {%- if col.name in snapshotted_cols -%}
+            {%- if col.name | upper in snapshotted_cols_normalized -%}
             snapshotted_data.{{ adapter.quote(col.column) }},
             {%- else -%}
             CAST(NULL AS {{ col.data_type }}) as {{ adapter.quote(col.column) }},
