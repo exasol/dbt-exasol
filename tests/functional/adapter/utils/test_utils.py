@@ -10,13 +10,13 @@ from dbt.tests.adapter.utils.test_array_construct import BaseArrayConstruct
 from dbt.tests.adapter.utils.test_bool_or import BaseBoolOr
 from dbt.tests.adapter.utils.test_cast_bool_to_text import BaseCastBoolToText
 from dbt.tests.adapter.utils.test_concat import BaseConcat
-from dbt.tests.adapter.utils.test_current_timestamp import \
-    BaseCurrentTimestampNaive
+from dbt.tests.adapter.utils.test_current_timestamp import BaseCurrentTimestampNaive
 from dbt.tests.adapter.utils.test_date_trunc import BaseDateTrunc
 from dbt.tests.adapter.utils.test_dateadd import BaseDateAdd
 from dbt.tests.adapter.utils.test_datediff import BaseDateDiff
-from dbt.tests.adapter.utils.test_escape_single_quotes import \
-    BaseEscapeSingleQuotesBackslash
+from dbt.tests.adapter.utils.test_escape_single_quotes import (
+    BaseEscapeSingleQuotesBackslash,
+)
 from dbt.tests.adapter.utils.test_except import BaseExcept
 from dbt.tests.adapter.utils.test_hash import BaseHash
 from dbt.tests.adapter.utils.test_intersect import BaseIntersect
@@ -43,6 +43,7 @@ class TestAnyValueExasol(BaseAnyValue):
             ),
         }
 
+
 @pytest.mark.xfail
 class TestArrayAppendExasol(BaseArrayAppend):
     pass
@@ -56,7 +57,6 @@ class TestArrayConcatExasol(BaseArrayConcat):
 @pytest.mark.xfail
 class TestArrayConstructExasol(BaseArrayConstruct):
     pass
-
 
 
 class TestBoolOrExasol(BaseBoolOr):
@@ -153,6 +153,7 @@ class TestDateDiffExasol(BaseDateDiff):
             "pass": os.getenv("DBT_PASS", "exasol"),
             "dbname": "DB",
             "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6",
+            "validate_server_certificate": False,
         }
 
     @pytest.fixture(scope="class")

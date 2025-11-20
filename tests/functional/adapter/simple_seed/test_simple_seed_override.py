@@ -1,5 +1,7 @@
 import pytest, os
-from dbt.tests.adapter.simple_seed.test_seed_type_override import BaseSimpleSeedColumnOverride
+from dbt.tests.adapter.simple_seed.test_seed_type_override import (
+    BaseSimpleSeedColumnOverride,
+)
 from dbt.tests.adapter.utils.base_utils import run_dbt
 
 _SCHEMA_YML = """
@@ -64,7 +66,9 @@ class TestSimpleSeedColumnOverride(BaseSimpleSeedColumnOverride):
             "pass": os.getenv("DBT_PASS", "exasol"),
             "dbname": "DB",
             "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6",
+            "validate_server_certificate": False,
         }
+
     @pytest.fixture(scope="class")
     def schema(self):
         return "simple_seed"

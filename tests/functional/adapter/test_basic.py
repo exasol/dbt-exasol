@@ -5,7 +5,10 @@ from dbt.tests.adapter.basic.test_base import BaseSimpleMaterializations
 from dbt.tests.adapter.basic.test_empty import BaseEmpty
 from dbt.tests.adapter.basic.test_ephemeral import BaseEphemeral
 from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
-from dbt.tests.adapter.basic.test_incremental import BaseIncremental, BaseIncrementalNotSchemaChange
+from dbt.tests.adapter.basic.test_incremental import (
+    BaseIncremental,
+    BaseIncrementalNotSchemaChange,
+)
 from dbt.tests.adapter.basic.test_singular_tests import BaseSingularTests
 from dbt.tests.adapter.basic.test_singular_tests_ephemeral import (
     BaseSingularTestsEphemeral,
@@ -13,12 +16,13 @@ from dbt.tests.adapter.basic.test_singular_tests_ephemeral import (
 from dbt.tests.adapter.basic.test_snapshot_check_cols import BaseSnapshotCheckCols
 from dbt.tests.adapter.basic.test_snapshot_timestamp import BaseSnapshotTimestamp
 from dbt.tests.adapter.basic.test_validate_connection import BaseValidateConnection
-from test_docs_generate import (BaseDocsGenerate, BaseDocsGenReferences)
+from test_docs_generate import BaseDocsGenerate, BaseDocsGenReferences
 from expected_catalog import (
     base_expected_catalog,
     no_stats,
     expected_references_catalog,
 )
+
 
 class TestSimpleMaterializationsExasol(BaseSimpleMaterializations):
     pass
@@ -67,33 +71,36 @@ class TestBaseCachingExasol(BaseAdapterMethod):
 class TestValidateConnectionExasol(BaseValidateConnection):
     pass
 
+
 class TestDocsGenerateExasol(BaseDocsGenerate):
     @pytest.fixture(scope="class")
     def dbt_profile_target(self):
         return {
-           "type": "exasol",
-           "threads": 1,
-           "dsn": os.getenv('DBT_DSN',"localhost:8563"),
-           "user": os.getenv('DBT_USER',"sys"),
-           "pass": os.getenv('DBT_PASS',"exasol"),
-           "dbname": "DB",
-           "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6"
+            "type": "exasol",
+            "threads": 1,
+            "dsn": os.getenv("DBT_DSN", "localhost:8563"),
+            "user": os.getenv("DBT_USER", "sys"),
+            "pass": os.getenv("DBT_PASS", "exasol"),
+            "dbname": "DB",
+            "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6",
+            "validate_server_certificate": False,
         }
-    
+
 
 class TestDocsGenReferencesExasol(BaseDocsGenReferences):
     @pytest.fixture(scope="class")
     def dbt_profile_target(self):
         return {
-           "type": "exasol",
-           "threads": 1,
-           "dsn": os.getenv('DBT_DSN',"localhost:8563"),
-           "user": os.getenv('DBT_USER',"sys"),
-           "pass": os.getenv('DBT_PASS',"exasol"),
-           "dbname": "DB",
-           "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6"
+            "type": "exasol",
+            "threads": 1,
+            "dsn": os.getenv("DBT_DSN", "localhost:8563"),
+            "user": os.getenv("DBT_USER", "sys"),
+            "pass": os.getenv("DBT_PASS", "exasol"),
+            "dbname": "DB",
+            "timestamp_format": "YYYY-MM-DD HH:MI:SS.FF6",
+            "validate_server_certificate": False,
         }
-    
+
 
 class TestBaseIncrementalNotSchemaChangeExasol(BaseIncrementalNotSchemaChange):
     pass
