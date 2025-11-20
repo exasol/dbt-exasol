@@ -1,41 +1,53 @@
-[tool.poetry]
+[project]
 name = "dbt-exasol"
 version = "1.8.2"
 description = "Adapter to dbt-core for warehouse Exasol"
-authors = ["Torsten Glunde <torsten.glunde@alligator-company.com>", "Ilija Kutle <ilija.kutle@alligator-company.com>"]
-homepage = "https://alligatorcompany.gitlab.io/dbt-exasol"
-repository = "https://github.com/tglunde/dbt-exasol"
-packages = [
-  { include = "dbt" },
-  { include = "dbt/**/*.py" },
-  { include = "tests/**/*.py"}
+authors = [
+    {name = "Torsten Glunde", email = "torsten.glunde@alligator-company.com"},
+    {name = "Ilija Kutle", email = "ilija.kutle@alligator-company.com"}
 ]
-license = "GPL3"
+license = {text = "GPL-3.0-or-later"}
 readme = "README.md"
+requires-python = ">=3.9.2,<3.13"
+dependencies = [
+    "pyexasol>=1.0.0",
+    "sqlfluff>=2.3,<4.0",
+    "pyyaml==6.0.1",
+    "hologram>=0.0.16",
+    "pytest-xdist>=3.3.1",
+    "protobuf>=5.0,<7.0",
+    "dbt-adapters>=1.10.0",
+    "dbt-core>=1.10.0",
+    "dbt-tests-adapter>=1.10.0",
+    "python-dotenv>=1.2.1",
+    "tox>=4.30.3",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9.2, <3.13"
-pyexasol = "^1.0.0"
-sqlfluff = ">=2.3,<4.0"
-pyyaml = "6.0.1"
-hologram = "^0.0.16"
-pytest-xdist = "^3.3.1"
-protobuf = ">=5.0,<7.0"
-dbt-adapters = "^1.10.0"
-dbt-core = "^1.10.0"
-dbt-tests-adapter = "^1.10.0"
+[project.urls]
+Homepage = "https://alligatorcompany.gitlab.io/dbt-exasol"
+Repository = "https://github.com/tglunde/dbt-exasol"
 
-[tool.poetry.group.dev.dependencies]
-pylint = "^2.15.8"
-exceptiongroup = "^1.1.1"
-black = ">=22.8,<25.0"
-pytest = "^7.2.0"
-pytest-dotenv = "^0.5.2"
-tox = "^3.26.0"
-pytest-parallel = "^0.1.1"
-ipykernel = "^6.25.0"
-pytest-xdist = "^3.3.1"
+[project.optional-dependencies]
+dev = [
+    "pylint>=2.15.8",
+    "exceptiongroup>=1.1.1",
+    "black>=22.8,<25.0",
+    "pytest>=7.2.0",
+    "pytest-dotenv>=0.5.2",
+    "tox>=3.26.0",
+    "pytest-parallel>=0.1.1",
+    "ipykernel>=6.25.0",
+    "pytest-xdist>=3.3.1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dbt"]
+
+[dependency-groups]
+dev = [
+    "tox-uv>=1.28.1",
+]

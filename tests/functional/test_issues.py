@@ -10,11 +10,12 @@ def dbt_profile_target():
     return {
         "type": "exasol",
         "threads": 1,
-        "dsn": os.getenv("DBT_DSN"),
-        "user": os.getenv("DBT_USER"),
-        "pass": os.getenv("DBT_PASS"),
+        "dsn": os.getenv("DBT_DSN", "localhost:8563"),
+        "user": os.getenv("DBT_USER", "sys"),
+        "pass": os.getenv("DBT_PASS", "exasol"),
         "dbname": "DB",
         "timestamp_format": "YYYY-MM-DD HH:MI:SS",
+        "validate_server_certificate": False,
     }
 
 
@@ -52,7 +53,6 @@ class TestCustomTimestampFormat:
         return {"ts_space.csv": seeds_tsspace_csv}
 
     def test_custom_ts_format(self, project):
-
         results = run_dbt(["seed"])
         assert len(results) == 1
         assert results[0].status == "success"
