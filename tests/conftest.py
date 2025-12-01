@@ -1,5 +1,5 @@
-"""pytest conftest to load base dbt project fixtures
-"""
+"""pytest conftest to load base dbt project fixtures"""
+
 import os
 
 import pytest

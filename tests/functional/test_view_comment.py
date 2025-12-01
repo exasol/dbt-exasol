@@ -8,6 +8,7 @@ from dbt.tests.adapter.basic.files import (
     generic_test_table_yml,
 )
 
+
 class TestExasolViewComment(BaseGenericTests):
     @pytest.fixture(scope="class")
     def models(self):
@@ -23,5 +24,4 @@ class TestExasolViewComment(BaseGenericTests):
             "schema.yml": schema_base_yml,
             "schema_view.yml": generic_test_view_yml,
             "schema_table.yml": generic_test_table_yml,
-        }   
-
+        }

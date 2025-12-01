@@ -1,4 +1,5 @@
 """dbt-exasol adapter relation module"""
+
 from dataclasses import dataclass, field
 from typing import Optional, Type, TypeVar
 
@@ -62,7 +63,7 @@ class ExasolRelation(BaseRelation):
     @staticmethod
     def add_ephemeral_prefix(name: str):
         return f"dbt__CTE__{name}"
-    
+
     def _render_limited_alias(self) -> str:
         """Some databases require an alias for subqueries (postgres, mysql) for all others we want to avoid adding
         an alias as it has the potential to introduce issues with the query if the user also defines an alias.

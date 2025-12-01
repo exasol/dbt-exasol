@@ -1,7 +1,6 @@
 """
 testing sample
 """
-import os
 
 import pytest
 from dbt.tests.util import run_dbt
@@ -62,4 +61,4 @@ class TestExample:
     def test_build(self, project):
         """Expect a failing test"""
         # do it all
-        results = run_dbt(["build"])
+        run_dbt(["build"])

@@ -1,5 +1,7 @@
 import pytest
-from dbt.tests.adapter.incremental.test_incremental_predicates import BaseIncrementalPredicates
+from dbt.tests.adapter.incremental.test_incremental_predicates import (
+    BaseIncrementalPredicates,
+)
 
 
 class TestIncrementalPredicatesDeleteInsertExasol(BaseIncrementalPredicates):
@@ -9,7 +11,12 @@ class TestIncrementalPredicatesDeleteInsertExasol(BaseIncrementalPredicates):
 class TestPredicatesDeleteInsertExasol(BaseIncrementalPredicates):
     @pytest.fixture(scope="class")
     def project_config_update(self):
-        return {"models": {"+predicates": ["id != 2"], "+incremental_strategy": "delete+insert"}}
+        return {
+            "models": {
+                "+predicates": ["id != 2"],
+                "+incremental_strategy": "delete+insert",
+            }
+        }
 
 
 class TestIncrementalPredicatesMergeExasol(BaseIncrementalPredicates):

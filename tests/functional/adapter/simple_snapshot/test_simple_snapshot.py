@@ -1,9 +1,11 @@
-from dbt.tests.adapter.simple_snapshot.test_snapshot import BaseSnapshotCheck, BaseSimpleSnapshot
+from dbt.tests.adapter.simple_snapshot.test_snapshot import (
+    BaseSnapshotCheck,
+    BaseSimpleSnapshot,
+)
 from dbt.tests.util import run_dbt
 
 
 class TestSnapshot(BaseSimpleSnapshot):
-    
     def test_updates_are_captured_by_snapshot(self, project):
         """
         Update the last 5 records. Show that all ids are current, but the last 5 reflect updates.
@@ -36,7 +38,6 @@ class TestSnapshot(BaseSimpleSnapshot):
             ids_with_current_snapshot_records=range(1, 21),
             ids_with_closed_out_snapshot_records=range(11, 21),
         )
-
 
 
 class TestSnapshotCheck(BaseSnapshotCheck):
