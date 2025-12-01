@@ -1,0 +1,35 @@
+name: dbt-exasol-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read 
+  pull-reuqest: write
+  checks: write
+  security-events: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      exasol:
+        image: exasol/docker-db
+        ports:
+          - 8563:8563
+        options:
+          - priviledged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+        with:
+          enable-cache: true
+
+      - name: install dependencies
+        run: devbox run install
