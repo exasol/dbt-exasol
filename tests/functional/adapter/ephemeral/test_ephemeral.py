@@ -1,23 +1,28 @@
 import pytest
 from dbt.tests.adapter.ephemeral.test_ephemeral import (
-    BaseEphemeralMulti, 
-    BaseEphemeral, 
+    BaseEphemeralMulti,
+    BaseEphemeral,
     ephemeral_errors__dependent_sql,
     ephemeral_errors__base__base_sql,
-    ephemeral_errors__base__base_copy_sql
+    ephemeral_errors__base__base_copy_sql,
 )
 from dbt.tests.util import run_dbt, check_relations_equal
 
-class TestEphemeralMultiExasol(BaseEphemeralMulti):
 
+class TestEphemeralMultiExasol(BaseEphemeralMulti):
     def test_ephemeral_multi(self, project):
         run_dbt(["seed"])
         results = run_dbt(["run"])
         assert len(results) == 3
-        check_relations_equal(project.adapter, ["SEED", "DEPENDENT", "DOUBLE_DEPENDENT", "SUPER_DEPENDENT"])
+        check_relations_equal(
+            project.adapter,
+            ["SEED", "DEPENDENT", "DOUBLE_DEPENDENT", "SUPER_DEPENDENT"],
+        )
+
 
 class TestEphemeralNestedExasol(BaseEphemeral):
     pass
+
 
 class TestEphemeralErrorHandling(BaseEphemeral):
     @pytest.fixture(scope="class")

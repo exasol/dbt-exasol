@@ -2,6 +2,60 @@ import os
 
 import pytest
 from dbt_common.exceptions import CompilationError
+from utils_fixtures import (
+    exasol__models__test_any_value_sql,
+    exasol__models__test_any_value_yml,
+    exasol__models__test_bool_or_sql,
+    exasol__models__test_bool_or_yml,
+    exasol__models__test_cast_bool_to_text_sql,
+    exasol__models__test_cast_bool_to_text_yml,
+    exasol__models__test_concat_sql,
+    exasol__models__test_concat_yml,
+    exasol__models__test_date_trunc_sql,
+    exasol__models__test_date_trunc_yml,
+    exasol__models__test_dateadd_sql,
+    exasol__models__test_dateadd_yml,
+    exasol__models__test_datediff_sql,
+    exasol__models__test_datediff_yml,
+    exasol__models__test_escape_single_quotes_backslash_sql,
+    exasol__models__test_escape_single_quotes_quote_sql,
+    exasol__models__test_escape_single_quotes_yml,
+    exasol__models__test_hash_sql,
+    exasol__models__test_hash_yml,
+    exasol__models__test_last_day_sql,
+    exasol__models__test_last_day_yml,
+    exasol__models__test_length_sql,
+    exasol__models__test_length_yml,
+    exasol__models__test_listagg_sql,
+    exasol__models__test_listagg_yml,
+    exasol__models__test_position_sql,
+    exasol__models__test_position_yml,
+    exasol__models__test_replace_sql,
+    exasol__models__test_replace_yml,
+    exasol__models__test_right_sql,
+    exasol__models__test_right_yml,
+    exasol__models__test_safe_cast_sql,
+    exasol__models__test_safe_cast_yml,
+    exasol__models__test_split_part_sql,
+    exasol__models__test_split_part_yml,
+    exasol__seeds__data_bool_or_csv,
+    exasol__seeds__data_bool_or_expected_csv,
+    exasol__seeds__data_concat_csv,
+    exasol__seeds__data_date_trunc_csv,
+    exasol__seeds__data_dateadd_csv,
+    exasol__seeds__data_datediff_csv,
+    exasol__seeds__data_hash_csv,
+    exasol__seeds__data_last_day_csv,
+    exasol__seeds__data_length_csv,
+    exasol__seeds__data_listagg_csv,
+    exasol__seeds__data_listagg_output_csv,
+    exasol__seeds__data_position_csv,
+    exasol__seeds__data_replace_csv,
+    exasol__seeds__data_right_csv,
+    exasol__seeds__data_safe_cast_csv,
+    exasol__seeds__data_split_part_csv,
+)
+
 from dbt.tests.adapter.utils.base_utils import BaseUtils
 from dbt.tests.adapter.utils.test_any_value import BaseAnyValue
 from dbt.tests.adapter.utils.test_array_append import BaseArrayAppend
@@ -30,7 +84,6 @@ from dbt.tests.adapter.utils.test_safe_cast import BaseSafeCast
 from dbt.tests.adapter.utils.test_split_part import BaseSplitPart
 from dbt.tests.adapter.utils.test_string_literal import BaseStringLiteral
 from dbt.tests.util import run_dbt
-from utils_fixtures import *
 
 
 class TestAnyValueExasol(BaseAnyValue):

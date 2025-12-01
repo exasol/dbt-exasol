@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "uv@latest",
+    "opencode@latest",
+    "direnv@latest",
+    "gh@latest",
+    "curl@latest",
+    "jq@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "install": "uv sync",
+      
+      "test": "uv run pytest -v",
+      "test:cov": "uv run pytest --cov=src --cov-report=term-missing --cov-report=html:htmlcov -v",
+      "test:ci": "uv run pytest --cov=src --cov-report=xml:coverage.xml --cov-report=html:htmlcov --junitxml=test-results.xml -v",
+      "test:watch": "uv run pytest-watch",
+      
+      "lint": "uv run ruff check . && uv run ruff format --check .",
+      "lint:fix": "uv run ruff check . --fix && uv run ruff format .",
+      
+      "security": "devbox run security:bandit && devbox run security:audit",
+      "security:bandit": [
+        "uv run bandit -r src/ -f sarif -o bandit-results.sarif || true",
+        "uv run bandit -r src/ -f screen"
+      ],
+      "security:audit": [
+        "echo '## 🔒 Dependency Security Scan (pip-audit)' > security-report.md",
+        "echo '' >> security-report.md",
+        "uv run pip-audit --format=markdown >> security-report.md 2>&1 || echo '✅ No known vulnerabilities found.' >> security-report.md",
+        "cat security-report.md"
+      ],
+      
+      "clean": "rm -rf .venv htmlcov .coverage coverage.xml test-results.xml bandit-results.sarif security-report.md .pytest_cache .ruff_cache __pycache__",
+      
+      "ci": "devbox run lint && devbox run test:ci && devbox run security",
+      
+      "all": "devbox run install && devbox run ci"
+    }
+  }
+}

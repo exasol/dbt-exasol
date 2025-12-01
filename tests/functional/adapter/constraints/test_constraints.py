@@ -23,11 +23,7 @@ from dbt.tests.adapter.constraints.test_constraints import (
 
 from dbt.tests.util import (
     run_dbt,
-    get_manifest,
-    run_dbt_and_capture,
     write_file,
-    read_file,
-    relation_from_name,
 )
 
 from tests.functional.adapter.constraints.fixtures import (
@@ -39,7 +35,7 @@ from tests.functional.adapter.constraints.fixtures import (
     exasol_expected_sql,
     exasol_model_contract_sql_header_sql,
     exasol_model_incremental_contract_sql_header,
-    exasol_model_contract_header_schema_yml
+    exasol_model_contract_header_schema_yml,
 )
 
 
@@ -281,6 +277,7 @@ class TestExasolConstraintQuotedColumn(BaseConstraintQuotedColumn):
             ) as model_subq
         """
 
+
 class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
     def models(self):
@@ -289,18 +286,19 @@ class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
             "constraints_schema.yml": exasol_model_contract_header_schema_yml,
         }
 
+
 class BaseExasolIncrementalContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-          "my_model_contract_sql_header.sql": exasol_model_incremental_contract_sql_header,
-          "constraints_schema.yml": exasol_model_contract_header_schema_yml,
-            
+            "my_model_contract_sql_header.sql": exasol_model_incremental_contract_sql_header,
+            "constraints_schema.yml": exasol_model_contract_header_schema_yml,
         }
+
 
 class TestExasolTableContractSqlHeader(BaseExasolTableContractSqlHeader):
     pass
 
+
 class TestExasolIncrementalContractSqlHeader(BaseExasolIncrementalContractSqlHeader):
     pass
-

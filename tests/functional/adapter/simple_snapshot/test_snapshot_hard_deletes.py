@@ -5,6 +5,7 @@ Tests the two hard_deletes modes:
 - 'invalidate': Sets dbt_valid_to timestamp when source record is deleted
 - 'new_record': Creates new record with dbt_is_deleted='True' when source record is deleted
 """
+
 import pytest
 from dbt.tests.util import run_dbt
 
@@ -74,7 +75,7 @@ class TestSnapshotHardDeletesInvalidate:
         # Verify initial snapshot - all 5 records should be current (dbt_valid_to is NULL)
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_invalidate WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -87,21 +88,22 @@ class TestSnapshotHardDeletesInvalidate:
         # Verify: record id=1 should now have dbt_valid_to set (invalidated)
         results = project.run_sql(
             "SELECT dbt_valid_to FROM {schema}.snapshot_invalidate WHERE id = 1",
-            fetch="one"
+            fetch="one",
         )
-        assert results[0] is not None, "Expected dbt_valid_to to be set for deleted record"
+        assert results[0] is not None, (
+            "Expected dbt_valid_to to be set for deleted record"
+        )
 
         # Verify: other 4 records should still be current
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_invalidate WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 4, f"Expected 4 current records, got {results[0]}"
 
         # Verify: total records should still be 5 (no new records created)
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_invalidate",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_invalidate", fetch="one"
         )
         assert results[0] == 5, f"Expected 5 total records, got {results[0]}"
 
@@ -129,16 +131,20 @@ class TestSnapshotHardDeletesNewRecord:
         # Verify initial snapshot - all 5 records should have dbt_is_deleted='False'
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record WHERE dbt_is_deleted = 'False'",
-            fetch="one"
+            fetch="one",
         )
-        assert results[0] == 5, f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
+        assert results[0] == 5, (
+            f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
+        )
 
         # Verify dbt_is_deleted column exists
         results = project.run_sql(
             "SELECT dbt_is_deleted FROM {schema}.snapshot_new_record WHERE id = 1",
-            fetch="one"
+            fetch="one",
         )
-        assert results[0] == 'False', f"Expected dbt_is_deleted='False', got {results[0]}"
+        assert results[0] == "False", (
+            f"Expected dbt_is_deleted='False', got {results[0]}"
+        )
 
         # Delete record with id=1 from source
         project.run_sql("DELETE FROM {schema}.seed WHERE id = 1")
@@ -149,14 +155,14 @@ class TestSnapshotHardDeletesNewRecord:
         # Verify: a new record for id=1 should exist with dbt_is_deleted='True'
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record WHERE id = 1 AND dbt_is_deleted = 'True'",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected 1 deletion record for id=1, got {results[0]}"
 
         # Verify: total records for id=1 should be 2 (original + deletion record)
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record WHERE id = 1",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for id=1, got {results[0]}"
 
@@ -164,14 +170,15 @@ class TestSnapshotHardDeletesNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record
                WHERE id = 1 AND dbt_is_deleted = 'False' AND dbt_valid_to IS NOT NULL""",
-            fetch="one"
+            fetch="one",
         )
-        assert results[0] == 1, f"Expected original record to be closed out, got {results[0]}"
+        assert results[0] == 1, (
+            f"Expected original record to be closed out, got {results[0]}"
+        )
 
         # Verify: total records should be 6 (5 original + 1 deletion record)
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record", fetch="one"
         )
         assert results[0] == 6, f"Expected 6 total records, got {results[0]}"
 
@@ -197,7 +204,7 @@ class TestSnapshotHardDeletesNewRecord:
         # Verify: id=2 should have 3 records (original, deletion, resurrection)
         results = project.run_sql(
             "SELECT COUNT(*) as cnt FROM {schema}.snapshot_new_record WHERE id = 2",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 3, f"Expected 3 records for id=2, got {results[0]}"
 
@@ -206,6 +213,8 @@ class TestSnapshotHardDeletesNewRecord:
             """SELECT dbt_is_deleted FROM {schema}.snapshot_new_record
                WHERE id = 2 AND dbt_valid_to IS NULL
                ORDER BY dbt_valid_from DESC""",
-            fetch="one"
+            fetch="one",
         )
-        assert results[0] == 'False', f"Expected resurrected record to have dbt_is_deleted='False', got {results[0]}"
+        assert results[0] == "False", (
+            f"Expected resurrected record to have dbt_is_deleted='False', got {results[0]}"
+        )

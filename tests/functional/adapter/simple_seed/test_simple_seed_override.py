@@ -1,4 +1,6 @@
-import pytest, os
+import os
+
+import pytest
 from dbt.tests.adapter.simple_seed.test_seed_type_override import (
     BaseSimpleSeedColumnOverride,
 )
