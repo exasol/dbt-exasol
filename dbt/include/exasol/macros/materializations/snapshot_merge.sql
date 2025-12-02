@@ -21,8 +21,8 @@
             and DBT_INTERNAL_SOURCE.dbt_change_type in ('update', 'delete')
 
     when not matched
-        then insert ({{ insert_cols_csv | upper }})
-        values ({{ insert_cols_csv | upper}})
+        then insert ({{ insert_cols_csv }})
+        values ({{ insert_cols_csv }})
         where DBT_INTERNAL_SOURCE.dbt_change_type = 'insert'
     ;
 {% endmacro %}

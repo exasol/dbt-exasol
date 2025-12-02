@@ -7,6 +7,22 @@
   {%- endif -%}
 {%- endmacro %}
 
+{#
+    Exasol-specific unique_key_fields to properly quote column names.
+    This handles reserved keywords like TIME that must be quoted.
+    Uses exasol__quote_column from strategies.sql for consistent quoting.
+#}
+{% macro exasol__unique_key_fields(unique_key) %}
+    {% if unique_key | is_list %}
+        {% for key in unique_key %}
+            {{ exasol__quote_column(key) }} as dbt_unique_key_{{ loop.index }}
+            {%- if not loop.last %} , {%- endif %}
+        {% endfor %}
+    {% else %}
+        {{ exasol__quote_column(unique_key) }} as dbt_unique_key
+    {% endif %}
+{% endmacro %}
+
 {% macro exasol__build_snapshot_table(strategy, sql) %}
     {% set columns = config.get('snapshot_table_column_names') or get_snapshot_table_column_names() %}
 
@@ -39,7 +55,7 @@
 
         select
             sd.*,
-            {{ unique_key_fields(strategy.unique_key) }}
+            {{ exasol__unique_key_fields(strategy.unique_key) }}
         from {{ target_relation | upper }} sd
         where
             {% if config.get('dbt_valid_to_current') %}
@@ -54,7 +70,7 @@
 
         select
             sq.*,
-            {{ unique_key_fields(strategy.unique_key) }},
+            {{ exasol__unique_key_fields(strategy.unique_key) }},
             {{ strategy.updated_at }} as {{ columns.dbt_updated_at }},
             {{ strategy.updated_at }} as {{ columns.dbt_valid_from }},
             {{ get_dbt_valid_to_current(strategy, columns) }},
@@ -67,7 +83,7 @@
 
         select
             sq.*,
-            {{ unique_key_fields(strategy.unique_key) }},
+            {{ exasol__unique_key_fields(strategy.unique_key) }},
             {{ strategy.updated_at }} as {{ columns.dbt_updated_at }},
             {{ strategy.updated_at }} as {{ columns.dbt_valid_from }},
             {{ strategy.updated_at }} as {{ columns.dbt_valid_to }}
@@ -81,7 +97,7 @@
 
         select
             sq.*,
-            {{ unique_key_fields(strategy.unique_key) }}
+            {{ exasol__unique_key_fields(strategy.unique_key) }}
         from snapshot_query sq
     ),
     {% endif %}
@@ -183,7 +199,7 @@
             {% endfor -%}
             {%- if strategy.unique_key | is_list -%}
                 {%- for key in strategy.unique_key -%}
-            snapshotted_data.{{ key }} as dbt_unique_key_{{ loop.index }},
+            snapshotted_data.{{ exasol__quote_column(key) }} as dbt_unique_key_{{ loop.index }},
                 {% endfor -%}
             {%- else -%}
             snapshotted_data.dbt_unique_key as dbt_unique_key,
