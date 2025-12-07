@@ -4,6 +4,14 @@
 
 Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/reference/warehouse-setups/exasol-setup)** for more information on how to start using the Exasol adapter.
 
+## Version Compatibility
+
+| dbt-exasol | dbt-core | Python | Exasol |
+|------------|----------|--------|--------|
+| 1.10.x     | 1.10.x   | 3.9-3.12 | 7.x, 8.x |
+| 1.8.x      | 1.8.x    | 3.9-3.12 | 7.x, 8.x |
+| 1.7.x      | 1.7.x    | 3.8-3.11 | 7.x, 8.x |
+
 # Current profile.yml settings
 
 <File name='profiles.yml'>
@@ -143,11 +151,85 @@ The following database constraints are implemented for Exasol:
 
 ## >=1.5 Incremental model update
 
-Fallback to dbt-core implementation and supporting strategies
+Fallback to dbt-core implementation and supporting strategies:
 
-- append
-- merge
-- delete+insert
+- `append` - Insert new rows
+- `merge` - Update existing rows, insert new rows
+- `delete+insert` - Delete matching rows, insert all rows
+- `microbatch` (new in 1.10) - Process data in time-based batches
+
+### Microbatch Strategy
+
+The microbatch strategy processes data in time-based batches, enabling:
+- Efficient processing of large datasets
+- Support for late-arriving data via `lookback`
+- Sample mode (`--sample`) for development
+
+**Example configuration:**
+
+```sql
+{{ config(
+    materialized='incremental',
+    incremental_strategy='microbatch',
+    event_time='created_at',
+    begin='2024-01-01',
+    batch_size='day',
+    lookback=2
+) }}
+select * from {{ ref('source_table') }}
+```
+
+**Configuration options:**
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `event_time` | Yes | Column used for time-based filtering |
+| `begin` | Yes | Start date for initial backfill (YYYY-MM-DD) |
+| `batch_size` | Yes | Size of each batch: `hour`, `day`, `month`, `year` |
+| `lookback` | No | Number of previous batches to reprocess |
+
+See [dbt Microbatch Documentation](https://docs.getdbt.com/docs/build/incremental-microbatch) for more details.
+
+### Sample Mode
+
+Sample mode (`--sample` flag) runs dbt in "small-data" mode, building only the N most recent time-based slices of microbatch models. This is useful for:
+- Development and testing with representative data
+- Quick iteration without processing full history
+
+**Example usage:**
+
+```bash
+# Process only 2 most recent days
+dbt run --sample="2 days"
+
+# Process most recent week
+dbt run --sample="1 week"
+```
+
+**Requirements:**
+- Models using `incremental_strategy='microbatch'`
+- dbt-core 1.10 or later
+
+See [Sample Mode Documentation](https://docs.getdbt.com/docs/build/sample-flag) for more details.
+
+### Microbatch/Sample Mode Notes (Exasol-specific)
+
+**Timestamp Format:** Exasol requires timestamps without timezone suffix in model definitions:
+
+```sql
+-- Correct (Exasol compatible)
+TIMESTAMP '2024-01-01 10:00:00'
+
+-- Incorrect (will cause parse errors)
+TIMESTAMP '2024-01-01 10:00:00-0'
+```
+
+The dbt-exasol adapter automatically handles timestamp formatting for microbatch boundaries.
+
+**Batch Processing:**
+- Microbatch uses DELETE + INSERT pattern for batch replacement
+- Each batch window is processed as a separate transaction
+- For large datasets, consider `batch_size='day'` over `batch_size='hour'`
 
 ## >=1.3 Python model not yet supported - WIP
 

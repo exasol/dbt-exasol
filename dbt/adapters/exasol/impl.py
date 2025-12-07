@@ -122,7 +122,7 @@ class ExasolAdapter(SQLAdapter):
         """The set of standard builtin strategies which this adapter supports out-of-the-box.
         Not used to validate custom strategies defined by end users.
         """
-        return ["append", "merge", "delete+insert"]
+        return ["append", "merge", "delete+insert", "microbatch"]
 
     @staticmethod
     def is_valid_identifier(identifier) -> bool:

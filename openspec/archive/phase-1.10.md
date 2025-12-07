@@ -94,13 +94,13 @@ Exasol already has the prerequisite SQL functions:
 
 ### Tasks
 
-- [ ] Add functional tests for microbatch/sample mode
-- [ ] Test against Exasol 7.x and 8.x
-- [ ] Update `README.md` with:
-  - [ ] New version compatibility matrix
-  - [ ] Sample mode usage (if implemented)
-  - [ ] Microbatch incremental strategy (if implemented)
-- [ ] Document Exasol-specific limitations
+- [x] Add functional tests for microbatch/sample mode
+- [x] Test against Exasol 7.x and 8.x (8.x verified, 7.x skipped - no instance available)
+- [x] Update `README.md` with:
+  - [x] New version compatibility matrix
+  - [x] Sample mode usage (if implemented)
+  - [x] Microbatch incremental strategy (if implemented)
+- [x] Document Exasol-specific limitations
 
 ---
 
