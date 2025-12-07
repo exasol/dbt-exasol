@@ -1,6 +1,6 @@
 [project]
 name = "dbt-exasol"
-version = "1.8.2"
+version = "1.10.0"
 description = "Adapter to dbt-core for warehouse Exasol"
 authors = [
     {name = "Torsten Glunde", email = "torsten.glunde@alligator-company.com"},
@@ -21,6 +21,7 @@ dependencies = [
     "dbt-tests-adapter>=1.10.0",
     "python-dotenv>=1.2.1",
     "tox>=4.30.3",
+    "ruff>=0.14.8",
 ]
 
 [project.urls]

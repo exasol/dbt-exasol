@@ -17,7 +17,7 @@ This document details the TDD-based implementation steps for Phase 1 of the dbt-
 
 | Step | Type | Action | Command |
 |------|------|--------|---------|
-| 1 | **TEST** | Run baseline tests (expect PASS) | `pytest tests/ -v` |
+| 1 | **TEST** | Run baseline tests (expect PASS) | `uv run pytest tests/ -n48` |
 
 **Purpose**: Establish a green baseline before making any changes.
 
@@ -29,7 +29,7 @@ This document details the TDD-based implementation steps for Phase 1 of the dbt-
 |------|------|--------|---------|
 | 2 | **GREEN** | Update `__version__.py` | `"1.8.2"` → `"1.10.0"` |
 | 3 | **GREEN** | Update `pyproject.toml` | `"1.8.2"` → `"1.10.0"` |
-| 4 | **TEST** | Run tests | `pytest tests/ -v` |
+| 4 | **TEST** | Run tests | `uv run pytest tests/ -n48` |
 
 **Files**:
 - `dbt/adapters/exasol/__version__.py`
@@ -44,7 +44,7 @@ This document details the TDD-based implementation steps for Phase 1 of the dbt-
 | 5 | **GREEN** | Replace import in `connections.py:21` | See shim code below |
 | 6 | **GREEN** | Remove from `pyproject.toml:16` | Delete `"hologram>=0.0.16",` |
 | 7 | **SYNC** | Update environment | `uv sync` |
-| 8 | **TEST** | Run tests | `pytest tests/ -v` |
+| 8 | **TEST** | Run tests | `uv run pytest tests/ -n48` |
 
 **StrEnum Shim Code** (for `connections.py`):
 
@@ -75,7 +75,7 @@ except ImportError:
 | Step | Type | Action | Details |
 |------|------|--------|---------|
 | 9 | **REFACTOR** | Clean `impl.py` imports | Remove unused, deduplicate |
-| 10 | **TEST** | Run tests | `pytest tests/ -v` |
+| 10 | **TEST** | Run tests | `uv run pytest tests/ -n48` |
 
 **impl.py Changes**:
 
@@ -121,7 +121,7 @@ from dbt_common.contracts.constraints import ConstraintType
 
 | Step | Type | Action | Command |
 |------|------|--------|---------|
-| 11 | **TEST** | Run with deprecation warnings as errors | `pytest tests/ -v -W error::DeprecationWarning` |
+| 11 | **TEST** | Run with deprecation warnings as errors | `uv run pytest tests/ -n48 -W error::DeprecationWarning` |
 | 12 | **FIX** | Address any failures | TBD based on output |
 | 13 | **REFACTOR** | Update `pytest.ini` if needed | TBD based on output |
 
@@ -140,7 +140,7 @@ from dbt_common.contracts.constraints import ConstraintType
 
 | Step | Type | Action | Command |
 |------|------|--------|---------|
-| 14 | **TEST** | Final full test run | `pytest tests/ -v` |
+| 14 | **TEST** | Final full test run | `uv run pytest tests/ -n48` |
 
 ---
 
@@ -159,8 +159,8 @@ from dbt_common.contracts.constraints import ConstraintType
 
 ## Checklist
 
-- [ ] Cycle 1: Baseline tests pass
-- [ ] Cycle 2: Version updated, tests pass
+- [x] Cycle 1: Baseline tests pass
+- [x] Cycle 2: Version updated, tests pass
 - [ ] Cycle 3: hologram removed, StrEnum shim works, tests pass
 - [ ] Cycle 4: impl.py imports cleaned, tests pass
 - [ ] Cycle 5: No deprecation warnings (or documented/addressed)
