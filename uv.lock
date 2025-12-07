@@ -556,7 +556,6 @@ dependencies = [
     { name = "dbt-core" },
     { name = "dbt-tests-adapter", version = "1.19.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "dbt-tests-adapter", version = "1.19.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "hologram" },
     { name = "protobuf" },
     { name = "pyexasol" },
     { name = "pytest-xdist" },
@@ -598,7 +597,6 @@ requires-dist = [
     { name = "dbt-core", specifier = ">=1.10.0" },
     { name = "dbt-tests-adapter", specifier = ">=1.10.0" },
     { name = "exceptiongroup", marker = "extra == 'dev'", specifier = ">=1.1.1" },
-    { name = "hologram", specifier = ">=0.0.16" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.25.0" },
     { name = "protobuf", specifier = ">=5.0,<7.0" },
     { name = "pyexasol", specifier = ">=1.0.0" },
@@ -860,19 +858,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/95/dd/23e2f4e357f8fd3bdff613c1fe4466d21bfb00a6177f238079b17f7b1c84/freezegun-1.5.5.tar.gz", hash = "sha256:ac7742a6cc6c25a2c35e9292dfd554b897b517d2dec26891a2e8debf205cb94a", size = 35914, upload-time = "2025-08-09T10:39:08.338Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/2e/b41d8a1a917d6581fc27a35d05561037b048e47df50f27f8ac9c7e27a710/freezegun-1.5.5-py3-none-any.whl", hash = "sha256:cd557f4a75cf074e84bc374249b9dd491eaeacd61376b9eb3c423282211619d2", size = 19266, upload-time = "2025-08-09T10:39:06.636Z" },
-]
-
-[[package]]
-name = "hologram"
-version = "0.0.16"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jsonschema" },
-    { name = "python-dateutil" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/0c/273e0dfadb033789faac3393cb52fb8dbf367b7f687443d0266f82923e60/hologram-0.0.16.tar.gz", hash = "sha256:1c2c921b4e575361623ea0e0d0aa5aee377b1a333cc6c6a879e213ed34583e55", size = 18956, upload-time = "2023-03-24T18:27:28.038Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/1a/10c3937e47cc3d86a4deec51770ef5c454b732893e58655056d755ef921d/hologram-0.0.16-py3-none-any.whl", hash = "sha256:4e56bd525336bb64a18916f871977a4125b64be8aaa750233583003333cda361", size = 11403, upload-time = "2023-03-24T18:27:25.666Z" },
 ]
 
 [[package]]

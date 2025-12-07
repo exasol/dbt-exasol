@@ -161,10 +161,10 @@ from dbt_common.contracts.constraints import ConstraintType
 
 - [x] Cycle 1: Baseline tests pass
 - [x] Cycle 2: Version updated, tests pass
-- [ ] Cycle 3: hologram removed, StrEnum shim works, tests pass
-- [ ] Cycle 4: impl.py imports cleaned, tests pass
-- [ ] Cycle 5: No deprecation warnings (or documented/addressed)
-- [ ] Cycle 6: Final verification complete
+- [x] Cycle 3: hologram removed, StrEnum shim works, tests pass
+- [x] Cycle 4: impl.py imports cleaned, tests pass
+- [x] Cycle 5: No deprecation warnings (or documented/addressed)
+- [x] Cycle 6: Final verification complete
 
 ---
 
