@@ -3,6 +3,7 @@
 """
 DBT adapter connection implementation for Exasol.
 """
+
 import decimal
 import os
 import ssl
@@ -14,11 +15,22 @@ import agate
 import dbt_common.exceptions
 import pyexasol
 from dateutil import parser
-#from dbt.adapters.base import Credentials  # type: ignore
+
+# from dbt.adapters.base import Credentials  # type: ignore
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
 from dbt.adapters.contracts.connection import AdapterResponse, Credentials
 from dbt.adapters.events.logging import AdapterLogger
-from hologram.helpers import StrEnum
+
+# Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        pass
+
+
 from pyexasol import ExaConnection
 
 ROW_SEPARATOR_DEFAULT = "LF" if os.linesep == "\n" else "CRLF"
@@ -167,13 +179,15 @@ class ExasolConnectionManager(SQLConnectionManager):
                 if len(rows) > 0 and isinstance(rows[0][idx], str):
                     if col[1] in ["DECIMAL", "BIGINT"]:
                         for rownum, row in enumerate(rows):
-                            if row[idx] is None: continue
+                            if row[idx] is None:
+                                continue
                             tmp = list(row)
                             tmp[idx] = decimal.Decimal(row[idx])
                             rows[rownum] = tmp
                     elif col[1].startswith("TIMESTAMP"):
                         for rownum, row in enumerate(rows):
-                            if row[idx] is None: continue
+                            if row[idx] is None:
+                                continue
                             tmp = list(row)
                             tmp[idx] = parser.parse(row[idx])
                             rows[rownum] = tmp

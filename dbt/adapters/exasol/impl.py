@@ -1,24 +1,27 @@
 """dbt-exasol Adapter implementation extending SQLAdapter"""
+
 from __future__ import absolute_import
 
 from typing import Dict, Optional, List, Set, Iterable, FrozenSet, Tuple, Union
 
-from itertools import chain
 import agate
-from dbt.adapters.base.relation import BaseRelation, InformationSchema
+from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.contracts.relation import RelationConfig
-from dbt.adapters.base.impl import GET_CATALOG_MACRO_NAME, ConstraintSupport, GET_CATALOG_RELATIONS_MACRO_NAME, _expect_row_value
-from dbt.adapters.capability import CapabilityDict, CapabilitySupport, Support, Capability
+from dbt.adapters.base.impl import _expect_row_value, ConstraintSupport, AdapterConfig
+from dbt.adapters.capability import (
+    CapabilityDict,
+    CapabilitySupport,
+    Support,
+    Capability,
+)
 from dbt.adapters.sql import SQLAdapter
 from dbt_common.exceptions import CompilationError
 from dbt_common.utils import filter_null_values
 from dbt.adapters.base.meta import available
-from dbt.adapters.base.impl import ConstraintSupport, AdapterConfig
 from dbt_common.contracts.constraints import ConstraintType
 
 
-from dbt.adapters.exasol import (ExasolColumn, ExasolConnectionManager,
-                                 ExasolRelation)
+from dbt.adapters.exasol import ExasolColumn, ExasolConnectionManager, ExasolRelation
 
 
 class ExasolConfig(AdapterConfig):
@@ -44,8 +47,12 @@ class ExasolAdapter(SQLAdapter):
 
     _capabilities = CapabilityDict(
         {
-            Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
-            Capability.TableLastModifiedMetadata: CapabilitySupport(support=Support.Full),
+            Capability.SchemaMetadataByRelations: CapabilitySupport(
+                support=Support.Full
+            ),
+            Capability.TableLastModifiedMetadata: CapabilitySupport(
+                support=Support.Full
+            ),
         }
     )
 
@@ -115,8 +122,8 @@ class ExasolAdapter(SQLAdapter):
         """The set of standard builtin strategies which this adapter supports out-of-the-box.
         Not used to validate custom strategies defined by end users.
         """
-        return ["append", "merge", "delete+insert"]
-    
+        return ["append", "merge", "delete+insert", "microbatch"]
+
     @staticmethod
     def is_valid_identifier(identifier) -> bool:
         # The first character should be alphabetic
@@ -126,33 +133,30 @@ class ExasolAdapter(SQLAdapter):
         idx = 1
         while idx < len(identifier):
             identifier_chr = identifier[idx]
-            if not identifier_chr.isalnum() and identifier_chr not in ('#', '$', '_'):
+            if not identifier_chr.isalnum() and identifier_chr not in ("#", "$", "_"):
                 return False
             idx += 1
         return True
-    
+
     @available
-    def should_identifier_be_quoted(self,
-                                    identifier,
-                                    models_column_dict=None) -> bool:
-        
-        #Check if the naming is valid
+    def should_identifier_be_quoted(self, identifier, models_column_dict=None) -> bool:
+        # Check if the naming is valid
         if not self.is_valid_identifier(identifier):
             return True
-        #check if the column is set to be quoted in the model config
+        # check if the column is set to be quoted in the model config
         elif models_column_dict and identifier in models_column_dict:
-            return models_column_dict[identifier].get('quote', False)
+            return models_column_dict[identifier].get("quote", False)
         elif models_column_dict and self.quote(identifier) in models_column_dict:
-            return models_column_dict[self.quote(identifier)].get('quote', False)
+            return models_column_dict[self.quote(identifier)].get("quote", False)
         return False
-    
+
     @available
     def check_and_quote_identifier(self, identifier, models_column_dict=None) -> str:
         if self.should_identifier_be_quoted(identifier, models_column_dict):
             return self.quote(identifier)
         else:
             return identifier
-        
+
     def get_filtered_catalog(
         self,
         relation_configs: Iterable[RelationConfig],
@@ -170,7 +174,9 @@ class ExasolAdapter(SQLAdapter):
         else:
             # Do it the new way. We try to save time by selecting information
             # only for the exact set of relations we are interested in.
-            catalogs, exceptions = self.get_catalog_by_relations(used_schemas, relations)
+            catalogs, exceptions = self.get_catalog_by_relations(
+                used_schemas, relations
+            )
 
         if relations and catalogs:
             relation_map = {
