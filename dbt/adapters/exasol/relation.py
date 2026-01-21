@@ -28,26 +28,25 @@ class ExasolRelation(BaseRelation):
     @classmethod
     # pylint: disable=too-many-arguments
     # pylint: disable=redefined-builtin
-    # pylint: disable=unused-argument
     def create(
         cls: Type[Self],
         database: Optional[str] = None,
         schema: Optional[str] = None,
         identifier: Optional[str] = None,
         type: Optional[RelationType] = None,
-        quote_policy: Type[ExasolQuotePolicy] = quote_policy,
         **kwargs,
     ) -> Self:
-        """updating kwargs to set schema and identifier
+        """Create an ExasolRelation instance.
+
         Args:
-            cls (Type[Self]): _description_
-            database (Optional[str], optional): _description_. Defaults to None.
-            schema (Optional[str], optional): _description_. Defaults to None.
-            identifier (Optional[str], optional): _description_. Defaults to None.
-            type (Optional[RelationType], optional): _description_. Defaults to None.
+            database: Database name (not used in Exasol, kept for compatibility)
+            schema: Schema name
+            identifier: Table/view identifier
+            type: Relation type (table, view, etc.)
+            **kwargs: Additional arguments including quote_policy
 
         Returns:
-            Self: _description_
+            ExasolRelation instance
         """
         kwargs.update(
             {
