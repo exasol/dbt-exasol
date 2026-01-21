@@ -23,6 +23,7 @@ from dbt_common.contracts.constraints import ConstraintType
 
 from dbt.adapters.exasol import ExasolColumn, ExasolConnectionManager, ExasolRelation
 
+LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 
 class ExasolConfig(AdapterConfig):
     partition_by_config: Optional[Union[str, List[str]]] = None
@@ -197,3 +198,28 @@ class ExasolAdapter(SQLAdapter):
             catalogs = catalogs.where(in_map)
 
         return catalogs, exceptions
+    
+    def list_relations_without_caching(
+        self,
+        schema_relation: BaseRelation,
+    ) -> List[BaseRelation]:
+        kwargs = {"schema_relation": schema_relation}
+        results = self.execute_macro(LIST_RELATIONS_MACRO_NAME, kwargs=kwargs)
+
+        relations = []
+        quote_policy = self.config.quoting
+        for _database, name, _schema, _type in results:
+            try:
+                _type = self.Relation.get_relation_type(_type)
+            except ValueError:
+                _type = self.Relation.External
+            relations.append(
+                self.Relation.create(
+                    database=_database,
+                    schema=_schema,
+                    identifier=name,
+                    quote_policy=quote_policy,
+                    type=_type,
+                )
+            )
+        return relations
