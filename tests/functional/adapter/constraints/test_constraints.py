@@ -23,11 +23,7 @@ from dbt.tests.adapter.constraints.test_constraints import (
 
 from dbt.tests.util import (
     run_dbt,
-    get_manifest,
-    run_dbt_and_capture,
     write_file,
-    read_file,
-    relation_from_name,
 )
 
 from tests.functional.adapter.constraints.fixtures import (

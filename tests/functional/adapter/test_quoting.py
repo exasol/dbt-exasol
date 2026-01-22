@@ -2,7 +2,7 @@
 
 import pytest
 import os
-from dbt.tests.util import run_dbt, get_manifest
+from dbt.tests.util import run_dbt
 
 
 # Source configuration with quoting enabled

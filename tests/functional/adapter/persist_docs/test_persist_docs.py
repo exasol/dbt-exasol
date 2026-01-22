@@ -1,5 +1,4 @@
 import json
-import os
 
 from dbt.tests.util import run_dbt
 

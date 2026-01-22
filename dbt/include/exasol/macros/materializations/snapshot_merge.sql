@@ -11,12 +11,12 @@
         set dbt_valid_to = DBT_INTERNAL_SOURCE.dbt_valid_to
         where
             (
-            {%- if dbt_valid_to_current %}
+{%- if dbt_valid_to_current %}
                 DBT_INTERNAL_DEST.dbt_valid_to = {{ snapshot_string_as_time(dbt_valid_to_current) }}
                 or DBT_INTERNAL_DEST.dbt_valid_to is null
             {%- else %}
                 DBT_INTERNAL_DEST.dbt_valid_to is null
-            {%- endif %}
+{%- endif %}
             )
             and DBT_INTERNAL_SOURCE.dbt_change_type in ('update', 'delete')
 

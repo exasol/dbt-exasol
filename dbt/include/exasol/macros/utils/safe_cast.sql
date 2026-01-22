@@ -8,7 +8,7 @@
     {%- elif type.lower().startswith("decimal") or type.lower().startswith("double") or type in ["int", "float"] -%}
     CASE WHEN is_number({{ field }}) THEN cast({{ field }} as {{ type }}) ELSE null END
     {%- else -%}
-    {#- try to cast it anyway...e.g. strings -#}
-    cast({{ field }} as {{ type }})
+        {#- try to cast it anyway...e.g. strings -#}
+        cast({{ field }} as {{ type }})
     {%- endif -%}
 {% endmacro %}

@@ -97,6 +97,7 @@ Starting from Exasol 8, encryption is enforced by default. If you are still usin
 By default, dbt-exasol validates SSL/TLS certificates when `encryption=True` (which is the default). This provides secure connections and suppresses PyExasol warnings about certificate validation behavior.
 
 **Default behavior (recommended for production):**
+
 ```yaml
 outputs:
   prod:
@@ -107,6 +108,7 @@ outputs:
 ```
 
 **For development/testing with self-signed certificates:**
+
 ```yaml
 outputs:
   dev:
@@ -117,6 +119,7 @@ outputs:
 ```
 
 **Alternative for self-signed certificates:** Use the `nocertcheck` fingerprint in the DSN:
+
 ```yaml
 outputs:
   dev:
@@ -161,6 +164,7 @@ Fallback to dbt-core implementation and supporting strategies:
 ### Microbatch Strategy
 
 The microbatch strategy processes data in time-based batches, enabling:
+
 - Efficient processing of large datasets
 - Support for late-arriving data via `lookback`
 - Sample mode (`--sample`) for development
@@ -193,6 +197,7 @@ See [dbt Microbatch Documentation](https://docs.getdbt.com/docs/build/incrementa
 ### Sample Mode
 
 Sample mode (`--sample` flag) runs dbt in "small-data" mode, building only the N most recent time-based slices of microbatch models. This is useful for:
+
 - Development and testing with representative data
 - Quick iteration without processing full history
 
@@ -207,6 +212,7 @@ dbt run --sample="1 week"
 ```
 
 **Requirements:**
+
 - Models using `incremental_strategy='microbatch'`
 - dbt-core 1.10 or later
 
@@ -227,6 +233,7 @@ TIMESTAMP '2024-01-01 10:00:00-0'
 The dbt-exasol adapter automatically handles timestamp formatting for microbatch boundaries.
 
 **Batch Processing:**
+
 - Microbatch uses DELETE + INSERT pattern for batch replacement
 - Each batch window is processed as a separate transaction
 - For large datasets, consider `batch_size='day'` over `batch_size='hour'`
@@ -251,7 +258,7 @@ The SQL function listagg in Exasol does not support the num_part parameter.
 
 ## Utilities shim package
 
-In order to support packages like dbt-utils and dbt-audit-helper, we needed to create the [shim package exasol-utils](https://github.com/tglunde/exasol-utils). In this shim package we need to adapt to parts of the SQL functionality that is not compatible with Exasol - e.g. when 'final' is being used which is a keyword in Exasol. Please visit [Adaopter dispatch documentation](https://docs.getdbt.com/guides/advanced/adapter-development/3-building-a-new-adapter#adapter-dispatch) of dbt-labs for more information.
+In order to support packages like dbt-utils and dbt-audit-helper, we needed to create the [shim package exasol-utils](https://github.com/exasol/dbt-exasol-utils).
 
 # Reporting bugs and contributing code
 

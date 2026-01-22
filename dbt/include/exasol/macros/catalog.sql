@@ -1,6 +1,7 @@
 {% macro exasol__get_catalog(information_schema, schemas) -%}
 
     {% set query %}
+        
         with tables as (
             {{ exasol__get_catalog_tables_sql(information_schema) }}
         ),
@@ -23,6 +24,7 @@
 {% macro exasol__get_catalog_relations(information_schema, relations) -%}
 
     {% set query %}
+        
         with tables as (
             {{ exasol__get_catalog_tables_sql(information_schema) }}
         ),
@@ -89,7 +91,7 @@
 
 
 {% macro exasol__get_catalog_schemas_where_clause_sql(schemas, schema_name) -%}
-   where ({%- for schema in schemas -%}
+    where ({%- for schema in schemas -%}
         upper(tables.table_owner) = upper('{{ schema }}'){%- if not loop.last %} or {% endif -%}
     {%- endfor -%})
 {%- endmacro %}
