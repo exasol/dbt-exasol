@@ -214,10 +214,10 @@ class ExasolConnectionManager(SQLConnectionManager):
                 protocol_version = pyexasol.PROTOCOL_V2
             else:
                 protocol_version = pyexasol.PROTOCOL_V3
-        except:
+        except (ValueError, KeyError, AttributeError) as exc:
             raise dbt_common.exceptions.DbtRuntimeError(
                 f"{credentials.protocol_version} is not a valid protocol version."
-            )
+            ) from exc
 
         def _connect():
             # Build SSL options based on validate_server_certificate setting

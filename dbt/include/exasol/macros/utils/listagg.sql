@@ -9,6 +9,6 @@
         )
         {% if order_by_clause -%}
         within group ({{ order_by_clause }})
-        {%- endif %}
+    {%- endif %}
 
 {%- endmacro %}

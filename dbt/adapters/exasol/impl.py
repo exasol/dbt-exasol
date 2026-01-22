@@ -25,6 +25,7 @@ from dbt.adapters.exasol import ExasolColumn, ExasolConnectionManager, ExasolRel
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 
+
 class ExasolConfig(AdapterConfig):
     partition_by_config: Optional[Union[str, List[str]]] = None
     distribute_by_config: Optional[Union[str, List[str]]] = None
@@ -127,6 +128,9 @@ class ExasolAdapter(SQLAdapter):
 
     @staticmethod
     def is_valid_identifier(identifier) -> bool:
+        # Empty string is not a valid identifier
+        if not identifier:
+            return False
         # The first character should be alphabetic
         if not identifier[0].isalpha():
             return False
@@ -198,7 +202,7 @@ class ExasolAdapter(SQLAdapter):
             catalogs = catalogs.where(in_map)
 
         return catalogs, exceptions
-    
+
     def list_relations_without_caching(
         self,
         schema_relation: BaseRelation,

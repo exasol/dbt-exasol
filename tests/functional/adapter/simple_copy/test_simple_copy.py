@@ -1,11 +1,9 @@
 import pytest
 
-from pathlib import Path
 
-from dbt.tests.util import run_dbt, rm_file, write_file, check_relations_equal
+from dbt.tests.util import run_dbt
 
 from dbt.tests.adapter.simple_copy.test_simple_copy import (
-    SimpleCopySetup,
     SimpleCopyBase,
     EmptyModelsArentRunBase,
 )
