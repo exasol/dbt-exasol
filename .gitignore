@@ -127,3 +127,6 @@ dmypy.json
 
 **/logs
 report.xml
+.lint*
+.security*
+.build_output

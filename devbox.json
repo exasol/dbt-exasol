@@ -4,8 +4,12 @@
     "uv@latest",
     "direnv@latest",
     "gh@latest",
-    "bun@latest"
+    "bun@latest",
+    "docker-client@latest"
   ],
+  "env": {
+    "PATH": "$PWD/.devbox/bin:$HOME/.local/bin:$PATH"
+  },
   "shell": {
     "init_hook": [
       "echo 'Welcome to devbox!' > /dev/null"

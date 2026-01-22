@@ -8,12 +8,11 @@ authors = [
 ]
 license = { text = "GPL-3.0-or-later" }
 readme = "README.md"
-requires-python = ">3.9,<3.14"
+requires-python = ">=3.9.2,<4"
 dependencies = [
   "pyexasol>=1.0.0",
   "sqlfluff>=2.3,<4.0",
   "pyyaml==6.0.1",
-
   "pytest-xdist>=3.3.1",
   "protobuf>=5.0,<7.0",
   "dbt-adapters>=1.10.0",
@@ -22,6 +21,8 @@ dependencies = [
   "python-dotenv>=1.2.1",
   "tox>=4.30.3",
   "ruff>=0.14.8",
+  "exasol-toolbox>=1.13.0",
+  "exasol-integration-test-docker-environment>=4.3.0",
 ]
 
 [project.urls]
@@ -50,3 +51,47 @@ packages = ["dbt"]
 
 [dependency-groups]
 dev = ["tox-uv>=1.28.1"]
+
+[tool.coverage.run]
+relative_files = true
+source = ["exasol"]
+
+[tool.coverage.report]
+# Switch to 15 after code has been added
+fail_under = 50
+
+[tool.black]
+line-length = 120
+verbose = false
+include = "\\.pyi?$"
+
+[tool.isort]
+profile = "black"
+force_grid_wrap = 2
+
+[tool.pylint.master]
+fail-under = 5.0
+ignore = []
+
+[tool.pylint.format]
+max-line-length = 88
+max-module-lines = 800
+
+[tool.ruff.lint]
+extend-ignore = [
+  "E",  # Syntax errors
+  "F",  # Pyflakes rules (excluding F401)
+  "UP", # pyupgrade rules
+  "D",  # Docstring rules
+]
+extend-select = ["F401"]
+unfixable = []
+
+[[tool.mypy.overrides]]
+module = ["test.*"]
+ignore_errors = true
+
+[tool.sonar]
+projectKey = "com.exasol:dbt-exasol"
+host.url = "https://sonarcloud.io"
+organization = "exasol"
