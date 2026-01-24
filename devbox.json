@@ -12,7 +12,8 @@
   },
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      "echo 'Welcome to devbox!' > /dev/null",
+      "unset DEVELOPER_DIR"
     ],
     "scripts": {
       "test": [

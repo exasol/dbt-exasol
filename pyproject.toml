@@ -87,9 +87,27 @@ extend-ignore = [
 extend-select = ["F401"]
 unfixable = []
 
+[tool.mypy]
+warn_unused_ignores = false
+warn_return_any = false
+no_implicit_optional = true
+check_untyped_defs = false
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+ignore_errors = false
+
 [[tool.mypy.overrides]]
-module = ["test.*"]
+module = ["test.*", "tests.*"]
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["agate", "agate.*", "dateutil", "dateutil.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["dbt.adapters.exasol.*"]
+warn_return_any = false
+ignore_errors = false
 
 [tool.sonar]
 projectKey = "com.exasol:dbt-exasol"
