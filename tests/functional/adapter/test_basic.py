@@ -1,6 +1,6 @@
-import pytest
 import os
 
+import pytest
 from dbt.tests.adapter.basic.test_adapter_methods import BaseAdapterMethod
 from dbt.tests.adapter.basic.test_base import BaseSimpleMaterializations
 from dbt.tests.adapter.basic.test_empty import BaseEmpty
@@ -17,7 +17,10 @@ from dbt.tests.adapter.basic.test_singular_tests_ephemeral import (
 from dbt.tests.adapter.basic.test_snapshot_check_cols import BaseSnapshotCheckCols
 from dbt.tests.adapter.basic.test_snapshot_timestamp import BaseSnapshotTimestamp
 from dbt.tests.adapter.basic.test_validate_connection import BaseValidateConnection
-from test_docs_generate import BaseDocsGenerate, BaseDocsGenReferences
+from test_docs_generate import (
+    BaseDocsGenerate,
+    BaseDocsGenReferences,
+)
 
 
 class TestSimpleMaterializationsExasol(BaseSimpleMaterializations):

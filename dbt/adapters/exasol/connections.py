@@ -9,17 +9,20 @@ import os
 import ssl
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any
 
 import agate
 import dbt_common.exceptions
 import pyexasol
 from dateutil import parser
+from dbt.adapters.contracts.connection import (
+    AdapterResponse,
+    Credentials,
+)
+from dbt.adapters.events.logging import AdapterLogger
 
 # from dbt.adapters.base import Credentials  # type: ignore
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
-from dbt.adapters.contracts.connection import AdapterResponse, Credentials
-from dbt.adapters.events.logging import AdapterLogger
 
 # Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
 try:
@@ -75,7 +78,7 @@ class ExasolAdapterResponse(AdapterResponse):
     Override AdapterResponse
     """
 
-    execution_time: Optional[float] = None
+    execution_time: float | None = None
 
 
 # pylint: disable=too-many-instance-attributes
@@ -164,9 +167,9 @@ class ExasolConnectionManager(SQLConnectionManager):
             raise dbt_common.exceptions.DbtRuntimeError(yielded_exception)
 
     @classmethod
-    def get_result_from_cursor(cls, cursor: Any, limit: Optional[int]) -> agate.Table:
-        data: List[Any] = []
-        column_names: List[str] = []
+    def get_result_from_cursor(cls, cursor: Any, limit: int | None) -> agate.Table:
+        data: list[Any] = []
+        column_names: list[str] = []
 
         if cursor.description is not None:
             # column_names = [col[0] for col in cursor.description]
@@ -250,9 +253,7 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(
-                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
-            )
+            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
 
             return conn
 
@@ -303,11 +304,11 @@ class ExasolCursor:
         )
         return self
 
-    def execute(self, query, bindings: Optional[Any] = None):
+    def execute(self, query, bindings: Any | None = None):
         """executing query"""
         if query.startswith("0CSV|"):
             self.import_from_file(bindings, query.split("|", 1)[1])  # type: ignore
-        elif query.__contains__("|SEPARATEMEPLEASE|"):
+        elif "|SEPARATEMEPLEASE|" in query:
             sqls = query.split("|SEPARATEMEPLEASE|")
             for sql in sqls:
                 self.stmt = self.connection.execute(sql)
@@ -315,9 +316,7 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError(
-                    "Exasol Query Error: " + e.message
-                )
+                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
         return self
 
     def fetchone(self):

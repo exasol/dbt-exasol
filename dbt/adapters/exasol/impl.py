@@ -1,35 +1,38 @@
 """dbt-exasol Adapter implementation extending SQLAdapter"""
 
-from __future__ import absolute_import
-
-from typing import Dict, Optional, List, Set, Iterable, FrozenSet, Tuple, Union
+from collections.abc import Iterable
 
 import agate
+from dbt.adapters.base.impl import (
+    AdapterConfig,
+    ConstraintSupport,
+    _expect_row_value,
+)
+from dbt.adapters.base.meta import available
 from dbt.adapters.base.relation import BaseRelation
-from dbt.adapters.contracts.relation import RelationConfig
-from dbt.adapters.base.impl import _expect_row_value, ConstraintSupport, AdapterConfig
 from dbt.adapters.capability import (
+    Capability,
     CapabilityDict,
     CapabilitySupport,
     Support,
-    Capability,
 )
+from dbt.adapters.contracts.relation import RelationConfig
 from dbt.adapters.sql import SQLAdapter
+from dbt_common.contracts.constraints import ConstraintType
 from dbt_common.exceptions import CompilationError
 from dbt_common.utils import filter_null_values
-from dbt.adapters.base.meta import available
-from dbt_common.contracts.constraints import ConstraintType
 
-
-from dbt.adapters.exasol import ExasolColumn, ExasolConnectionManager, ExasolRelation
+from dbt.adapters.exasol.column import ExasolColumn
+from dbt.adapters.exasol.connections import ExasolConnectionManager
+from dbt.adapters.exasol.relation import ExasolRelation
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 
 
 class ExasolConfig(AdapterConfig):
-    partition_by_config: Optional[Union[str, List[str]]] = None
-    distribute_by_config: Optional[Union[str, List[str]]] = None
-    primary_key_config: Optional[Union[str, List[str]]] = None
+    partition_by_config: str | list[str] | None = None
+    distribute_by_config: str | list[str] | None = None
+    primary_key_config: str | list[str] | None = None
 
 
 class ExasolAdapter(SQLAdapter):
@@ -49,12 +52,8 @@ class ExasolAdapter(SQLAdapter):
 
     _capabilities = CapabilityDict(
         {
-            Capability.SchemaMetadataByRelations: CapabilitySupport(
-                support=Support.Full
-            ),
-            Capability.TableLastModifiedMetadata: CapabilitySupport(
-                support=Support.Full
-            ),
+            Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
+            Capability.TableLastModifiedMetadata: CapabilitySupport(support=Support.Full),
         }
     )
 
@@ -70,9 +69,7 @@ class ExasolAdapter(SQLAdapter):
     def convert_text_type(cls, agate_table, col_idx):
         return f"varchar({2000000})"
 
-    def _make_match_kwargs(
-        self, database: str, schema: str, identifier: str
-    ) -> Dict[str, str]:
+    def _make_match_kwargs(self, database: str, schema: str, identifier: str) -> dict[str, str]:
         quoting = self.config.quoting
         if identifier is not None and quoting["identifier"] is False:
             identifier = identifier.lower()
@@ -95,16 +92,14 @@ class ExasolAdapter(SQLAdapter):
         decimals = agate_table.aggregate(agate.MaxPrecision(col_idx))
         return "float" if decimals else "integer"
 
-    def timestamp_add_sql(
-        self, add_to: str, number: int = 1, interval: str = "hour"
-    ) -> str:
+    def timestamp_add_sql(self, add_to: str, number: int = 1, interval: str = "hour") -> str:
         """
         Overriding BaseAdapter default method because Exasol's syntax expects
         the number in quotes without the interval
         """
         return f"{add_to} + interval '{number}' {interval}"
 
-    def quote_seed_column(self, column: str, quote_config: Optional[bool]) -> str:  # type: ignore
+    def quote_seed_column(self, column: str, quote_config: bool | None) -> str:  # type: ignore
         quote_columns: bool = False
         if isinstance(quote_config, bool):
             quote_columns = quote_config
@@ -112,8 +107,7 @@ class ExasolAdapter(SQLAdapter):
             pass
         else:
             raise CompilationError(
-                f'The seed configuration value of "quote_columns" has an '
-                f"invalid type {type(quote_config)}"
+                f'The seed configuration value of "quote_columns" has an ' f"invalid type {type(quote_config)}"
             )
 
         if quote_columns:
@@ -149,9 +143,9 @@ class ExasolAdapter(SQLAdapter):
         if not self.is_valid_identifier(identifier):
             return True
         # check if the column is set to be quoted in the model config
-        elif models_column_dict and identifier in models_column_dict:
+        if models_column_dict and identifier in models_column_dict:
             return models_column_dict[identifier].get("quote", False)
-        elif models_column_dict and self.quote(identifier) in models_column_dict:
+        if models_column_dict and self.quote(identifier) in models_column_dict:
             return models_column_dict[self.quote(identifier)].get("quote", False)
         return False
 
@@ -159,29 +153,22 @@ class ExasolAdapter(SQLAdapter):
     def check_and_quote_identifier(self, identifier, models_column_dict=None) -> str:
         if self.should_identifier_be_quoted(identifier, models_column_dict):
             return self.quote(identifier)
-        else:
-            return identifier
+        return identifier
 
     def get_filtered_catalog(
         self,
         relation_configs: Iterable[RelationConfig],
-        used_schemas: FrozenSet[Tuple[str, str]],
-        relations: Optional[Set[BaseRelation]] = None,
+        used_schemas: frozenset[tuple[str, str]],
+        relations: set[BaseRelation] | None = None,
     ):
         catalogs: agate.Table
-        if (
-            relations is None
-            or len(relations) > 100
-            or not self.supports(Capability.SchemaMetadataByRelations)
-        ):
+        if relations is None or len(relations) > 100 or not self.supports(Capability.SchemaMetadataByRelations):
             # Do it the traditional way. We get the full catalog.
             catalogs, exceptions = self.get_catalog(relation_configs, used_schemas)
         else:
             # Do it the new way. We try to save time by selecting information
             # only for the exact set of relations we are interested in.
-            catalogs, exceptions = self.get_catalog_by_relations(
-                used_schemas, relations
-            )
+            catalogs, exceptions = self.get_catalog_by_relations(used_schemas, relations)
 
         if relations and catalogs:
             relation_map = {
@@ -206,7 +193,7 @@ class ExasolAdapter(SQLAdapter):
     def list_relations_without_caching(
         self,
         schema_relation: BaseRelation,
-    ) -> List[BaseRelation]:
+    ) -> list[BaseRelation]:
         kwargs = {"schema_relation": schema_relation}
         results = self.execute_macro(LIST_RELATIONS_MACRO_NAME, kwargs=kwargs)
 

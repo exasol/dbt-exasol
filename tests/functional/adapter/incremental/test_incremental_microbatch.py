@@ -4,7 +4,6 @@ import pytest
 from dbt.tests.adapter.incremental.test_incremental_microbatch import BaseMicrobatch
 from dbt.tests.util import run_dbt
 
-
 # Exasol-compatible input model (no timezone suffix in timestamps)
 _input_model_sql = """
 {{ config(materialized='table', event_time='event_time') }}
@@ -27,9 +26,7 @@ class TestMicrobatchExasol(BaseMicrobatch):
     @pytest.fixture(scope="class")
     def insert_two_rows_sql(self, project) -> str:
         """Override insert SQL with Exasol-compatible timestamp format."""
-        test_schema_relation = project.adapter.Relation.create(
-            database=project.database, schema=project.test_schema
-        )
+        test_schema_relation = project.adapter.Relation.create(database=project.database, schema=project.test_schema)
         return f"insert into {test_schema_relation}.input_model (id, event_time) values (4, TIMESTAMP '2020-01-04 00:00:00'), (5, TIMESTAMP '2020-01-05 00:00:00')"
 
 
@@ -107,10 +104,12 @@ class TestMicrobatchLookback:
         )
 
         # Insert new data for day 3
-        project.run_sql("""
+        project.run_sql(
+            """
             insert into {schema}.input_model (id, event_time)
             values (99, TIMESTAMP '2020-01-03 12:00:00')
-        """)
+        """
+        )
 
         # Second run - only select microbatch model to avoid rebuilding input
         run_dbt(

@@ -1,12 +1,11 @@
 import json
 
-from dbt.tests.util import run_dbt
-
 from dbt.tests.adapter.persist_docs.test_persist_docs import (
     BasePersistDocs,
     BasePersistDocsColumnMissing,
     BasePersistDocsCommentOnQuotedColumn,
 )
+from dbt.tests.util import run_dbt
 
 
 class TestPersistDocsExasol(BasePersistDocs):
@@ -23,9 +22,7 @@ class TestPersistDocsExasol(BasePersistDocs):
 
         self._assert_common_comments(table_comment, table_id_comment, table_name_comment)
 
-    def _assert_has_view_comments(
-        self, view_node, has_node_comments=True, has_column_comments=True
-    ):
+    def _assert_has_view_comments(self, view_node, has_node_comments=True, has_column_comments=True):
         view_comment = view_node["metadata"]["comment"]
         if has_node_comments:
             assert view_comment.startswith("View model description")

@@ -4,7 +4,11 @@ testing sample
 
 import pytest
 from dbt.tests.util import run_dbt
-from fixtures import my_model_sql, my_model_yml, my_seed_csv
+from fixtures import (
+    my_model_sql,
+    my_model_yml,
+    my_seed_csv,
+)
 
 
 # class must begin with 'Test'
