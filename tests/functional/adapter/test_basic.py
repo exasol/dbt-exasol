@@ -17,7 +17,7 @@ from dbt.tests.adapter.basic.test_singular_tests_ephemeral import (
 from dbt.tests.adapter.basic.test_snapshot_check_cols import BaseSnapshotCheckCols
 from dbt.tests.adapter.basic.test_snapshot_timestamp import BaseSnapshotTimestamp
 from dbt.tests.adapter.basic.test_validate_connection import BaseValidateConnection
-from test_docs_generate import (
+from test_docs_generate import (  # type: ignore[import-not-found]
     BaseDocsGenerate,
     BaseDocsGenReferences,
 )

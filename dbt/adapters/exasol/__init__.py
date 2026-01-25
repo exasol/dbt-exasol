@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 Plugin = AdapterPlugin(
-    adapter=ExasolAdapter,
+    adapter=ExasolAdapter,  # type: ignore[arg-type]
     credentials=ExasolCredentials,
     include_path=exasol.PACKAGE_PATH,
 )

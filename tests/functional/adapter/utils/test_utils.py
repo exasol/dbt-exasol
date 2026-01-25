@@ -30,7 +30,7 @@ from dbt.tests.adapter.utils.test_split_part import BaseSplitPart
 from dbt.tests.adapter.utils.test_string_literal import BaseStringLiteral
 from dbt.tests.util import run_dbt
 from dbt_common.exceptions import CompilationError
-from utils_fixtures import *
+from utils_fixtures import *  # type: ignore[import-not-found] # noqa: F403
 
 
 class TestAnyValueExasol(BaseAnyValue):
@@ -38,7 +38,9 @@ class TestAnyValueExasol(BaseAnyValue):
     def models(self):
         return {
             "test_any_value.yml": exasol__models__test_any_value_yml,
-            "test_any_value.sql": self.interpolate_macro_namespace(exasol__models__test_any_value_sql, "any_value"),
+            "test_any_value.sql": self.interpolate_macro_namespace(
+                exasol__models__test_any_value_sql, "any_value"
+            ),
         }
 
 
@@ -69,7 +71,9 @@ class TestBoolOrExasol(BaseBoolOr):
     def models(self):
         return {
             "test_bool_or.yml": exasol__models__test_bool_or_yml,
-            "test_bool_or.sql": self.interpolate_macro_namespace(exasol__models__test_bool_or_sql, "bool_or"),
+            "test_bool_or.sql": self.interpolate_macro_namespace(
+                exasol__models__test_bool_or_sql, "bool_or"
+            ),
         }
 
 
@@ -93,7 +97,9 @@ class TestConcatExasol(BaseConcat):
     def models(self):
         return {
             "test_concat.yml": exasol__models__test_concat_yml,
-            "test_concat.sql": self.interpolate_macro_namespace(exasol__models__test_concat_sql, "concat"),
+            "test_concat.sql": self.interpolate_macro_namespace(
+                exasol__models__test_concat_sql, "concat"
+            ),
         }
 
 
@@ -130,7 +136,9 @@ class TestDateAddExasol(BaseDateAdd):
     def models(self):
         return {
             "test_dateadd.yml": exasol__models__test_dateadd_yml,
-            "test_dateadd.sql": self.interpolate_macro_namespace(exasol__models__test_dateadd_sql, "dateadd"),
+            "test_dateadd.sql": self.interpolate_macro_namespace(
+                exasol__models__test_dateadd_sql, "dateadd"
+            ),
         }
 
 
@@ -156,7 +164,9 @@ class TestDateDiffExasol(BaseDateDiff):
     def models(self):
         return {
             "test_datediff.yml": exasol__models__test_datediff_yml,
-            "test_datediff.sql": self.interpolate_macro_namespace(exasol__models__test_datediff_sql, "datediff"),
+            "test_datediff.sql": self.interpolate_macro_namespace(
+                exasol__models__test_datediff_sql, "datediff"
+            ),
         }
 
 
@@ -169,7 +179,9 @@ class TestDateTruncExasol(BaseDateTrunc):
     def models(self):
         return {
             "test_date_trunc.yml": exasol__models__test_date_trunc_yml,
-            "test_date_trunc.sql": self.interpolate_macro_namespace(exasol__models__test_date_trunc_sql, "date_trunc"),
+            "test_date_trunc.sql": self.interpolate_macro_namespace(
+                exasol__models__test_date_trunc_sql, "date_trunc"
+            ),
         }
 
 
@@ -210,7 +222,9 @@ class TestHashExasol(BaseHash):
     def models(self):
         return {
             "test_hash.yml": exasol__models__test_hash_yml,
-            "test_hash.sql": self.interpolate_macro_namespace(exasol__models__test_hash_sql, "hash"),
+            "test_hash.sql": self.interpolate_macro_namespace(
+                exasol__models__test_hash_sql, "hash"
+            ),
         }
 
 
@@ -227,7 +241,9 @@ class TestLastDayExasol(BaseLastDay):
     def models(self):
         return {
             "test_last_day.yml": exasol__models__test_last_day_yml,
-            "test_last_day.sql": self.interpolate_macro_namespace(exasol__models__test_last_day_sql, "last_day"),
+            "test_last_day.sql": self.interpolate_macro_namespace(
+                exasol__models__test_last_day_sql, "last_day"
+            ),
         }
 
 
@@ -240,7 +256,9 @@ class TestLengthExasol(BaseLength):
     def models(self):
         return {
             "test_length.yml": exasol__models__test_length_yml,
-            "test_length.sql": self.interpolate_macro_namespace(exasol__models__test_length_sql, "length"),
+            "test_length.sql": self.interpolate_macro_namespace(
+                exasol__models__test_length_sql, "length"
+            ),
         }
 
 
@@ -256,7 +274,9 @@ class TestListaggExasol(BaseListagg):
     def models(self):
         return {
             "test_listagg.yml": exasol__models__test_listagg_yml,
-            "test_listagg.sql": self.interpolate_macro_namespace(exasol__models__test_listagg_sql, "listagg"),
+            "test_listagg.sql": self.interpolate_macro_namespace(
+                exasol__models__test_listagg_sql, "listagg"
+            ),
         }
 
     def test_build_assert_equal(self, project):
@@ -274,7 +294,9 @@ class TestPositionExasol(BasePosition):
     def models(self):
         return {
             "test_position.yml": exasol__models__test_position_yml,
-            "test_position.sql": self.interpolate_macro_namespace(exasol__models__test_position_sql, "position"),
+            "test_position.sql": self.interpolate_macro_namespace(
+                exasol__models__test_position_sql, "position"
+            ),
         }
 
 
@@ -287,7 +309,9 @@ class TestReplaceExasol(BaseReplace):
     def models(self):
         return {
             "test_replace.yml": exasol__models__test_replace_yml,
-            "test_replace.sql": self.interpolate_macro_namespace(exasol__models__test_replace_sql, "replace"),
+            "test_replace.sql": self.interpolate_macro_namespace(
+                exasol__models__test_replace_sql, "replace"
+            ),
         }
 
 
@@ -300,7 +324,9 @@ class TestRightExasol(BaseRight):
     def models(self):
         return {
             "test_right.yml": exasol__models__test_right_yml,
-            "test_right.sql": self.interpolate_macro_namespace(exasol__models__test_right_sql, "right"),
+            "test_right.sql": self.interpolate_macro_namespace(
+                exasol__models__test_right_sql, "right"
+            ),
         }
 
 
@@ -314,7 +340,9 @@ class TestSafeCastExasol(BaseSafeCast):
         return {
             "test_safe_cast.yml": exasol__models__test_safe_cast_yml,
             "test_safe_cast.sql": self.interpolate_macro_namespace(
-                self.interpolate_macro_namespace(exasol__models__test_safe_cast_sql, "safe_cast"),
+                self.interpolate_macro_namespace(
+                    exasol__models__test_safe_cast_sql, "safe_cast"
+                ),
                 "type_string",
             ),
         }
@@ -329,7 +357,9 @@ class TestSplitPartExasol(BaseSplitPart):
     def models(self):
         return {
             "test_split_part.yml": exasol__models__test_split_part_yml,
-            "test_split_part.sql": self.interpolate_macro_namespace(exasol__models__test_split_part_sql, "split_part"),
+            "test_split_part.sql": self.interpolate_macro_namespace(
+                exasol__models__test_split_part_sql, "split_part"
+            ),
         }
 
     def test_build_assert_equal(self, project):

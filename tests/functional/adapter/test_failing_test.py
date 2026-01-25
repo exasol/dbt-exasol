@@ -4,7 +4,7 @@ testing sample
 
 import pytest
 from dbt.tests.util import run_dbt
-from fixtures import (
+from fixtures import (  # type: ignore[import-not-found]
     my_model_sql,
     my_model_yml,
     my_seed_csv,

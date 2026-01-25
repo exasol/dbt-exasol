@@ -11,10 +11,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-import agate
+import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
 import pyexasol
-from dateutil import parser
+from dateutil import parser  # type: ignore[import-untyped]
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
     Credentials,
@@ -30,7 +30,7 @@ try:
 except ImportError:
     from enum import Enum
 
-    class StrEnum(str, Enum):
+    class StrEnum(str, Enum):  # type: ignore[no-redef]
         pass
 
 
@@ -42,13 +42,13 @@ TIMESTAMP_FORMAT_DEFAULT = "YYYY-MM-DDTHH:MI:SS.FF6"
 LOGGER = AdapterLogger("exasol")
 
 
-def connect(**kwargs: bool):
+def connect(**kwargs: Any):
     """
     Global connect method initializing ExasolConnection
     """
     if "autocommit" not in kwargs:
         kwargs["autocommit"] = False
-    return ExasolConnection(**kwargs)
+    return ExasolConnection(**kwargs)  # type: ignore[arg-type]
 
 
 class ProtocolVersionType(StrEnum):
@@ -194,7 +194,7 @@ class ExasolConnectionManager(SQLConnectionManager):
                             tmp = list(row)
                             tmp[idx] = parser.parse(row[idx])
                             rows[rownum] = tmp
-            data = cls.process_results(column_names, rows)
+            data = list(cls.process_results(column_names, rows))
 
         return dbt_common.clients.agate_helper.table_from_data_flat(data, column_names)  # type: ignore
 
@@ -253,7 +253,9 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
+            conn.execute(
+                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
+            )
 
             return conn
 
@@ -316,7 +318,9 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
+                raise dbt_common.exceptions.DbtDatabaseError(
+                    "Exasol Query Error: " + e.message
+                )
         return self
 
     def fetchone(self):

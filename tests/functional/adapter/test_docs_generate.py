@@ -12,7 +12,7 @@ from dbt.tests.util import (
     rm_file,
     run_dbt,
 )
-from expected_catalog import (
+from expected_catalog import (  # type: ignore[import-not-found]
     base_expected_catalog,
     expected_references_catalog,
     no_stats,
@@ -345,9 +345,9 @@ def verify_catalog(project, expected_catalog, start_time):
             found_node = catalog[key][unique_id]
             for node_key in expected_node:
                 assert node_key in found_node
-                assert (
-                    found_node[node_key] == expected_node[node_key]
-                ), f"Key '{node_key}' in '{unique_id}' did not match"
+                assert found_node[node_key] == expected_node[node_key], (
+                    f"Key '{node_key}' in '{unique_id}' did not match"
+                )
 
 
 def verify_metadata(metadata, dbt_schema_version, start_time):
@@ -452,7 +452,9 @@ class BaseDocsGenerate(BaseGenerateProject):
     # Test "--no-compile" flag works and produces no manifest.json
     def test_run_and_generate_no_compile(self, project, expected_catalog):
         start_time = run_and_generate(project, ["--no-compile"])
-        assert not os.path.exists(os.path.join(project.project_root, "target", "manifest.json"))
+        assert not os.path.exists(
+            os.path.join(project.project_root, "target", "manifest.json")
+        )
         verify_catalog(project, expected_catalog, start_time)
 
     # Test generic "docs generate" command
