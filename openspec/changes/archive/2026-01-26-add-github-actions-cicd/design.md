@@ -9,17 +9,16 @@ The project uses:
 - `itde` (exasol-integration-test-docker-environment) for DB testing
 - `devbox` for development environment management
 
-pyexasol has a comprehensive but complex CI/CD setup with 8+ workflow files, reusable workflows, and Poetry. A simpler approach is preferred for dbt-exasol.
+`pyexasol` uses a strict `nox`-based workflow with SonarCloud integration. `dbt-exasol` will adopt this pattern.
 
 ## Goals
 
-- Automated linting and unit tests on every PR
-- **PR comments documenting lint/test/coverage results**
-- **Coverage enforcement at 80% threshold**
-- **Local CI testing with `act`**
-- Tag-triggered releases to PyPI with GitHub Release creation
-- Minimal workflow files (2 files total)
-- Leverage existing nox sessions
+- Automated checks on every PR (Format, Lint, Security, Type, Unit Tests)
+- **SonarCloud Integration** for quality gates and coverage
+- **Strict Nox Usage**: All steps via `nox` sessions
+- **Follow pyexasol pattern**: Checks Job -> Artifacts -> Report Job
+- Tag-triggered releases to PyPI
+- Local CI testing with `act`
 
 ## Non-Goals
 
@@ -29,6 +28,38 @@ pyexasol has a comprehensive but complex CI/CD setup with 8+ workflow files, reu
 - Pre-release/RC tags (e.g., `v1.10.2-rc1`) - only final releases are published to PyPI
 
 ## Decisions
+
+### Decision: Follow pyexasol Architecture
+
+We will structure `ci.yml` to mirror the `pyexasol` flow, but adapted for `uv` and a single file (for now):
+
+**1. Checks Job (Matrix)**
+Runs on Python 3.9, 3.10, 3.11, 3.12.
+Executes:
+- `nox -s format:check`
+- `nox -s lint:code`
+- `nox -s lint:security`
+- `nox -s lint:typing`
+- `nox -s test:unit -- --coverage`
+
+Artifacts are uploaded for each matrix entry:
+- `.coverage` (renamed to avoid collision)
+- `.lint.json` (if produced)
+- `.security.json` (if produced)
+
+**2. Report Job**
+Runs once after Checks.
+Executes:
+- Download artifacts
+- `nox -s artifacts:copy` (Consolidates artifacts)
+- `nox -s sonar:check` (Uploads to SonarCloud)
+- `nox -s project:report` (Generates summary)
+
+### Decision: SonarCloud
+
+SonarCloud will handle the "PR comments" and coverage enforcement.
+- Requires `SONAR_TOKEN` secret.
+- Requires `[tool.sonar]` in `pyproject.toml`.
 
 ### Decision: Use `uv` instead of Poetry
 
@@ -182,14 +213,13 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  checks:
+    name: Checks (Python-${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-    permissions:
-      contents: read
-      pull-requests: write  # Required for PR comments
     steps:
       - uses: actions/checkout@v5
       
@@ -201,83 +231,58 @@ jobs:
       - name: Install dependencies
         run: uv sync
       
-      - name: Format check
-        id: format
+      - name: Format Check
         run: uv run nox -s format:check
-        continue-on-error: true
       
-      - name: Lint
-        id: lint
+      - name: Lint Code
         run: uv run nox -s lint:code
-        continue-on-error: true
+
+      - name: Lint Security
+        run: uv run nox -s lint:security
+        
+      - name: Type Check
+        run: uv run nox -s lint:typing
+
+      - name: Unit Tests
+        run: uv run nox -s test:unit -- --coverage
       
-      - name: Unit tests with coverage
-        id: test
-        run: |
-          uv run nox -s test:unit -- --coverage
-          uv run coverage report -m
-          uv run coverage json
-        continue-on-error: true
-      
-      - name: Upload coverage artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-python-${{ matrix.python-version }}
-          path: coverage.json
-          retention-days: 30
+          name: artifacts-python-${{ matrix.python-version }}
+          path: |
+            .coverage
+            .lint.txt
+            .lint.json
+            .security.json
+          include-hidden-files: true
+
+  report:
+    name: Report
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
       
-      - name: Post PR comment
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      
+      - name: Install dependencies
+        run: uv sync
+        
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            
-            // Read coverage data
-            let coverage = 'N/A';
-            try {
-              const covData = JSON.parse(fs.readFileSync('coverage.json', 'utf8'));
-              coverage = covData.totals.percent_covered.toFixed(1) + '%';
-            } catch (e) {}
-            
-            const format = '${{ steps.format.outcome }}' === 'success' ? ':white_check_mark:' : ':x:';
-            const lint = '${{ steps.lint.outcome }}' === 'success' ? ':white_check_mark:' : ':x:';
-            const test = '${{ steps.test.outcome }}' === 'success' ? ':white_check_mark:' : ':x:';
-            
-            const failures = [];
-            if ('${{ steps.format.outcome }}' !== 'success') failures.push('Format check failed');
-            if ('${{ steps.lint.outcome }}' !== 'success') failures.push('Linting failed');
-            if ('${{ steps.test.outcome }}' !== 'success') failures.push('Tests failed');
-            
-            const body = `## CI Results
-            
-            | Check | Status |
-            |-------|--------|
-            | Format | ${format} |
-            | Lint | ${lint} |
-            | Tests | ${test} |
-            | Coverage | ${coverage} |
-            
-            ${failures.length > 0 ? `**Failures:**\n${failures.map(f => `- ${f}`).join('\n')}\n` : ''}
-            
-            <details>
-            <summary>Coverage threshold: 80%</summary>
-            
-            Run \`devbox run coverage\` locally for detailed report.
-            </details>`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-      
-      - name: Check results
-        run: |
-          if [ "${{ steps.format.outcome }}" != "success" ]; then exit 1; fi
-          if [ "${{ steps.lint.outcome }}" != "success" ]; then exit 1; fi
-          if [ "${{ steps.test.outcome }}" != "success" ]; then exit 1; fi
+          path: artifacts
+          
+      - name: Copy Artifacts
+        run: uv run nox -s artifacts:copy -- artifacts
+        
+      - name: Sonar Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run nox -s sonar:check
 ```
 
 ### release.yml

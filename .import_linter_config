@@ -1,0 +1,8 @@
+[importlinter]
+# Import linting for dbt-exasol
+# Note: Uses 'dbt' as root package since import-linter/grimp requires top-level modules
+# and cannot handle nested namespace packages like 'dbt.adapters.exasol' directly.
+#
+# To enable meaningful import linting, specific contracts should be added here.
+# See: https://import-linter.readthedocs.io/
+root_package = dbt

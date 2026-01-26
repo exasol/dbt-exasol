@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import warnings
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import Any
 
+# Suppress FutureWarning about duplicate nox session registration
+# We intentionally override toolbox sessions to customize test paths
+warnings.filterwarnings("ignore", message=".*session.*already been registered.*", category=FutureWarning)
+
 import nox
-from nox import Session
-from exasol.toolbox.nox.tasks import *  # pylint: disable=wildcard-import disable=unused-wildcard-import
 from exasol.toolbox.nox._shared import _context
 from exasol.toolbox.nox.plugin import NoxTasks
+from exasol.toolbox.nox.tasks import *  # pylint: disable=wildcard-import disable=unused-wildcard-import
+from nox import Session
+
 from noxconfig import (
     DEFAULT_DB_VERSION,
     PROJECT_CONFIG,
@@ -20,14 +26,9 @@ from noxconfig import (
 # default actions to be run if nothing is explicitly specified with the -s option
 nox.options.sessions = ["format:fix"]
 
-# Note: unit_tests, integration_tests, and coverage are overridden below to use
-# tests/unit and tests/functional instead of the default test/unit and
-# test/integration paths expected by exasol-toolbox
-__all__ = [
-    "unit_tests",
-    "integration_tests",
-    "coverage",
-]
+# Note: unit_tests, integration_tests, and coverage sessions are intentionally
+# overridden below to use tests/unit and tests/functional instead of the default
+# test/unit and test/integration paths expected by exasol-toolbox
 
 
 def _create_start_db_parser() -> argparse.ArgumentParser:
@@ -36,9 +37,7 @@ def _create_start_db_parser() -> argparse.ArgumentParser:
         usage="nox -s start:db -- [-h] [-t | --port {int} --db-version {str} --with-certificate]",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--port", default=8563, type=int, help="forward port for the Exasol DB"
-    )
+    parser.add_argument("--port", default=8563, type=int, help="forward port for the Exasol DB")
     parser.add_argument(
         "--db-version",
         default=DEFAULT_DB_VERSION,
@@ -74,9 +73,20 @@ def stop_db(session: Session) -> None:
 
 
 def _test_command(
-    path: Path, config: Any, context: MutableMapping[str, Any]
+    path: Path,
+    config: Any,
+    context: MutableMapping[str, Any],
+    parallel_workers: int | None = None,
 ) -> list[str]:
-    """Build the pytest command with optional coverage."""
+    """Build the pytest command with optional coverage.
+
+    Args:
+        path: Path to test directory
+        config: Project configuration
+        context: Nox context with additional settings
+        parallel_workers: Number of parallel workers for pytest-xdist.
+                         None means use pytest.ini default. 0 means disable parallelism.
+    """
     coverage_command = (
         [
             "coverage",
@@ -89,35 +99,47 @@ def _test_command(
         else []
     )
     pytest_command = ["pytest", "-v", f"{path}"]
+
+    # Add parallel workers setting if specified
+    if parallel_workers is not None:
+        if parallel_workers == 0:
+            # Disable parallelism explicitly
+            pytest_command.extend(["-n", "0"])
+        else:
+            # Set specific number of workers
+            pytest_command.extend(["-n", str(parallel_workers)])
+
     return coverage_command + pytest_command + context.get("fwd-args", [])
 
 
-def _unit_tests(
-    session: Session, config: Any, context: MutableMapping[str, Any]
-) -> None:
-    """Internal helper to run unit tests from tests/unit directory."""
-    command = _test_command(config.root_path / "tests" / "unit", config, context)
+def _unit_tests(session: Session, config: Any, context: MutableMapping[str, Any]) -> None:
+    """Internal helper to run unit tests from tests/unit directory.
+
+    Unit tests run with 1 worker (sequential) for simpler debugging.
+    """
+    command = _test_command(config.root_path / "tests" / "unit", config, context, parallel_workers=1)
     session.run(*command)
 
 
-def _integration_tests(
-    session: Session, config: Any, context: MutableMapping[str, Any]
-) -> None:
-    """Internal helper to run integration tests from tests/functional directory."""
+def _integration_tests(session: Session, config: Any, context: MutableMapping[str, Any]) -> None:
+    """Internal helper to run integration tests from tests/functional directory.
+
+    Functional tests run with 32 parallel workers for maximum throughput.
+    """
     pm = NoxTasks.plugin_manager(config)
 
     # Run pre-integration test hook (starts test database)
     pm.hook.pre_integration_tests_hook(session=session, config=config, context=context)
 
     # Run integration tests from tests/functional directory
-    command = _test_command(config.root_path / "tests" / "functional", config, context)
+    command = _test_command(config.root_path / "tests" / "functional", config, context, parallel_workers=32)
     session.run(*command)
 
     # Run post-integration test hook (stops test database)
     pm.hook.post_integration_tests_hook(session=session, config=config, context=context)
 
 
-@nox.session(name="test:unit", python=False)
+@nox.session(name="test:unit", python=False)  # type: ignore[no-redef]
 def unit_tests(session: Session) -> None:
     """
     Runs all unit tests from tests/unit directory.
@@ -133,7 +155,7 @@ def unit_tests(session: Session) -> None:
     _unit_tests(session, PROJECT_CONFIG, context)
 
 
-@nox.session(name="test:integration", python=False)
+@nox.session(name="test:integration", python=False)  # type: ignore[no-redef]
 def integration_tests(session: Session) -> None:
     """
     Runs all integration tests from tests/functional directory.
@@ -150,7 +172,7 @@ def integration_tests(session: Session) -> None:
     _integration_tests(session, PROJECT_CONFIG, context)
 
 
-@nox.session(name="test:coverage", python=False)
+@nox.session(name="test:coverage", python=False)  # type: ignore[no-redef]
 def coverage(session: Session) -> None:
     """
     Runs all tests (unit + integration) and reports the code coverage.

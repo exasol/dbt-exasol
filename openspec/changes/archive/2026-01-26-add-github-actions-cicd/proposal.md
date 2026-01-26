@@ -6,26 +6,50 @@ The dbt-exasol project currently lacks automated CI/CD workflows. Adding GitHub 
 
 ## What Changes
 
-- Add `.github/workflows/ci.yml` for PR testing (lint, format, unit tests with coverage)
+- Add `.github/workflows/ci.yml` for PR testing (lint, format, unit tests, security, type checks)
 - Add `.github/workflows/release.yml` for tag-triggered releases to PyPI
-- **PR result documentation**: Post lint/test/coverage results as PR comments
-- **Coverage enforcement**: Fail CI if coverage drops below 80%
+- **SonarCloud Integration**: Code quality and coverage analysis
+- **Strict Nox Usage**: All workflow steps SHALL use `nox` sessions
+- **Artifacts Handover**: Use `pyexasol` pattern of uploading artifacts in checks and processing them in a report job
+- **Coverage enforcement**: Fail CI if coverage drops below 80% (via Sonar or check)
 - **Local CI testing**: Add `act` tool to devbox for testing workflows locally
-- **Devbox scripts**: Add convenience commands (`format`, `lint`, `unit-test`, `coverage`, `ci`, `act`)
-- Leverage existing nox sessions (`format:check`, `lint:code`, `test:unit`) for consistency
-- Use `uv` for dependency management (not Poetry as in pyexasol)
-- Document branch protection requirements for PR-based workflow
+- **Devbox scripts**: Add convenience commands
+- Leverage existing nox sessions (`format:check`, `lint:code`, `lint:typing`, `lint:security`, `test:unit`, `sonar:check`)
+- Use `uv` for dependency management
 
 ## Design Decisions
+
+### Follow pyexasol Patterns
+
+We SHALL follow the patterns established in `pyexasol` where applicable, adapted for `uv`:
+- **Workflow Structure**: Separate `checks` (matrix) and `report` jobs.
+- **Artifacts**: `checks` job produces artifacts (`.coverage`, `.lint.txt`, etc.), `report` job consumes them.
+- **SonarCloud**: The `report` job executes `nox -s sonar:check` to analyze gathered artifacts.
+- **Strict Nox**: Direct shell commands for tools (like `coverage report`) are replaced by `nox` sessions.
 
 ### PR-Based Workflow
 
 All changes to main SHALL go through pull requests:
 - CI runs on every PR
-- Results (lint, test, coverage) posted as PR comment
-- Branch protection (documented, manual setup required)
+- Results (lint, test, coverage) posted as PR comment (via SonarCloud or script)
+- Branch protection
 
-### Local CI Testing with `act`
+### Workflow Structure
+
+**`ci.yml`**:
+1. **Checks Job** (Matrix: Python 3.9-3.12):
+   - Format check (`nox -s format:check`)
+   - Lint code (`nox -s lint:code`)
+   - Lint security (`nox -s lint:security`)
+   - Type check (`nox -s lint:typing`)
+   - Unit tests (`nox -s test:unit`)
+   - Upload artifacts
+2. **Report Job** (Single):
+   - Depends on Checks
+   - Download artifacts
+   - Copy artifacts (`nox -s artifacts:copy`)
+   - Sonar Scan (`nox -s sonar:check`)
+
 
 Add `act` to devbox packages to run GitHub Actions locally:
 - Test workflows before pushing
@@ -65,5 +89,7 @@ Tag-based releases:
   - `devbox.json` (add `act` package, add CI scripts)
   - `pyproject.toml` (update coverage threshold to 80%)
   - `README.md` (add CI badge, document branch protection)
-- **Secrets required**: `PYPI_TOKEN` must be configured in repository settings
+- **Secrets required**: 
+  - `PYPI_TOKEN` for releases
+  - `SONAR_TOKEN` for SonarCloud analysis
 - **Manual setup**: Branch protection rules on main branch

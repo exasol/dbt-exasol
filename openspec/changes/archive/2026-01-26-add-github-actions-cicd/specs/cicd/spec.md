@@ -7,14 +7,18 @@ The CI workflow SHALL run automated checks on every pull request to the main bra
 The workflow SHALL execute the following checks in order:
 1. Code format validation using `nox -s format:check`
 2. Code linting using `nox -s lint:code`
-3. Unit tests with coverage using `nox -s test:unit -- --coverage`
+3. Security linting using `nox -s lint:security`
+4. Type checking using `nox -s lint:typing`
+5. Unit tests with coverage using `nox -s test:unit -- --coverage`
 
-The workflow SHALL fail if any check fails or coverage drops below 80%.
+The workflow SHALL fail if any check fails.
+
+The workflow SHALL test across Python versions 3.10, 3.11, and 3.12 using a matrix strategy.
 
 #### Scenario: PR triggers CI checks
 
 - **WHEN** a pull request is opened against the main branch
-- **THEN** the CI workflow runs format, lint, and unit test checks
+- **THEN** the CI workflow runs format, lint, security, typing, and unit test checks
 - **AND** the PR status reflects pass/fail of all checks
 
 #### Scenario: Push to main triggers CI
@@ -22,27 +26,21 @@ The workflow SHALL fail if any check fails or coverage drops below 80%.
 - **WHEN** a commit is pushed directly to the main branch
 - **THEN** the CI workflow runs all checks to validate the branch state
 
-### Requirement: PR Result Documentation
+### Requirement: SonarCloud Integration
 
-The CI workflow SHALL post a comment on each pull request with check results.
+The CI workflow SHALL integrate with SonarCloud for quality gates and coverage reporting.
 
-The comment SHALL include:
-- Format check status (pass/fail)
-- Lint check status (pass/fail)
-- Test status (pass/fail)
-- Coverage percentage
+The workflow SHALL:
+1. Upload test coverage and linting artifacts from the checks job.
+2. Run a report job that consumes these artifacts.
+3. Execute `nox -s sonar:check` to push analysis to SonarCloud.
 
-#### Scenario: CI posts results comment on PR
+#### Scenario: SonarCloud Analysis
 
-- **WHEN** the CI workflow completes on a pull request
-- **THEN** a comment is posted to the PR with format/lint/test/coverage results
-- **AND** each result shows pass or fail status
-
-#### Scenario: CI results visible without leaving PR
-
-- **WHEN** a reviewer views a pull request
-- **THEN** the CI results are visible in the PR comments
-- **AND** the reviewer can assess quality without navigating to the Actions tab
+- **WHEN** the checks job completes successfully
+- **THEN** the report job runs
+- **AND** coverage and quality metrics are sent to SonarCloud
+- **AND** the PR is decorated with SonarCloud results
 
 ### Requirement: Coverage Enforcement
 
@@ -50,13 +48,17 @@ The CI workflow SHALL enforce a minimum code coverage threshold.
 
 The threshold SHALL be 80%.
 
-The workflow SHALL fail if the coverage percentage is below the configured threshold.
+This enforcement SHALL be handled by SonarCloud Quality Gates OR by the check itself.
 
-#### Scenario: Coverage above threshold passes
+### Requirement: Artifact Handover
 
-- **WHEN** unit tests complete with 85% coverage
-- **THEN** the coverage check passes
-- **AND** the PR comment shows "85%" coverage
+The CI workflow SHALL use the artifact handover pattern.
+
+#### Scenario: Artifacts passed to report
+- **WHEN** the checks job runs on multiple Python versions
+- **THEN** it uploads artifacts (coverage, lint results)
+- **AND** the report job downloads all artifacts
+- **AND** `nox -s artifacts:copy` consolidates them for the Sonar scan "85%" coverage
 
 #### Scenario: Coverage below threshold fails
 
@@ -153,6 +155,11 @@ Devbox SHALL provide convenience scripts for running CI steps:
 - `coverage` - Run unit tests with coverage report
 - `ci` - Run complete CI pipeline
 - `act` - Run GitHub Actions workflow locally using `act`
+- `act:checks` - Run only the checks job locally
+- `act:report` - Run only the report job locally
+- `act:release` - Test release workflow locally
+- `act:list` - List available workflow jobs
+- `restart` - Reload devbox environment
 
 #### Scenario: Developer runs CI locally
 
@@ -171,3 +178,9 @@ Devbox SHALL provide convenience scripts for running CI steps:
 - **WHEN** a developer runs `devbox run lint`
 - **THEN** only the linting step executes
 - **AND** the developer gets fast feedback on a specific check
+
+#### Scenario: Developer tests specific workflow job
+
+- **WHEN** a developer runs `devbox run act:checks`
+- **THEN** only the checks job of the CI workflow executes locally
+- **AND** the developer can iterate on specific jobs without running the full workflow
