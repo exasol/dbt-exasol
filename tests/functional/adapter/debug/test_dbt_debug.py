@@ -24,15 +24,11 @@ class TestDebugInvliadProjectExasol(BaseDebug):
         _, out = run_dbt_and_capture(["debug", "--connection"])
         assert "Skipping steps before connection verification" in out
 
-        _, out = run_dbt_and_capture(
-            ["debug", "--connection", "--target", "NONE"], expect_pass=False
-        )
+        _, out = run_dbt_and_capture(["debug", "--connection", "--target", "NONE"], expect_pass=False)
         assert "1 check failed" in out
         assert "The profile 'test' does not have a target named 'NONE'." in out
 
-        _, out = run_dbt_and_capture(
-            ["debug", "--connection", "--profiles-dir", "NONE"], expect_pass=False
-        )
+        _, out = run_dbt_and_capture(["debug", "--connection", "--profiles-dir", "NONE"], expect_pass=False)
         assert "Using profiles dir at NONE"
         assert "1 check failed" in out
         assert "dbt looked for a profiles.yml file in NONE" in out
@@ -88,8 +84,6 @@ class TestDebugInvalidProjectPostgres(BaseDebug):
         self.check_project(splitout)
 
     def test_profile_not_found(self, project):
-        _, out = run_dbt_and_capture(
-            ["debug", "--connection", "--profile", "NONE"], expect_pass=False
-        )
+        _, out = run_dbt_and_capture(["debug", "--connection", "--profile", "NONE"], expect_pass=False)
         assert "Profile loading failed for the following reason" in out
         assert "Could not find profile named 'NONE'" in out

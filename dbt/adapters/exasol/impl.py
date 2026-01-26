@@ -52,12 +52,8 @@ class ExasolAdapter(SQLAdapter):
 
     _capabilities = CapabilityDict(
         {
-            Capability.SchemaMetadataByRelations: CapabilitySupport(
-                support=Support.Full
-            ),
-            Capability.TableLastModifiedMetadata: CapabilitySupport(
-                support=Support.Full
-            ),
+            Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
+            Capability.TableLastModifiedMetadata: CapabilitySupport(support=Support.Full),
         }
     )
 
@@ -73,9 +69,7 @@ class ExasolAdapter(SQLAdapter):
     def convert_text_type(cls, agate_table, col_idx):
         return f"varchar({2000000})"
 
-    def _make_match_kwargs(
-        self, database: str, schema: str, identifier: str
-    ) -> dict[str, str]:
+    def _make_match_kwargs(self, database: str, schema: str, identifier: str) -> dict[str, str]:
         quoting = self.config.quoting
         if identifier is not None and quoting["identifier"] is False:
             identifier = identifier.lower()
@@ -98,9 +92,7 @@ class ExasolAdapter(SQLAdapter):
         decimals = agate_table.aggregate(agate.MaxPrecision(col_idx))
         return "float" if decimals else "integer"
 
-    def timestamp_add_sql(
-        self, add_to: str, number: int = 1, interval: str = "hour"
-    ) -> str:
+    def timestamp_add_sql(self, add_to: str, number: int = 1, interval: str = "hour") -> str:
         """
         Overriding BaseAdapter default method because Exasol's syntax expects
         the number in quotes without the interval
@@ -115,8 +107,7 @@ class ExasolAdapter(SQLAdapter):
             pass
         else:
             raise CompilationError(
-                f'The seed configuration value of "quote_columns" has an '
-                f"invalid type {type(quote_config)}"
+                f'The seed configuration value of "quote_columns" has an ' f"invalid type {type(quote_config)}"
             )
 
         if quote_columns:
@@ -171,19 +162,13 @@ class ExasolAdapter(SQLAdapter):
         relations: set[BaseRelation] | None = None,
     ):
         catalogs: agate.Table
-        if (
-            relations is None
-            or len(relations) > 100
-            or not self.supports(Capability.SchemaMetadataByRelations)
-        ):
+        if relations is None or len(relations) > 100 or not self.supports(Capability.SchemaMetadataByRelations):
             # Do it the traditional way. We get the full catalog.
             catalogs, exceptions = self.get_catalog(relation_configs, used_schemas)
         else:
             # Do it the new way. We try to save time by selecting information
             # only for the exact set of relations we are interested in.
-            catalogs, exceptions = self.get_catalog_by_relations(
-                used_schemas, relations
-            )
+            catalogs, exceptions = self.get_catalog_by_relations(used_schemas, relations)
 
         if relations and catalogs:
             relation_map = {

@@ -7,6 +7,9 @@ DBT adapter connection implementation for Exasol.
 import decimal
 import os
 import ssl
+
+# Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
@@ -24,13 +27,12 @@ from dbt.adapters.events.logging import AdapterLogger
 # from dbt.adapters.base import Credentials  # type: ignore
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
 
-# Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
-try:
+if sys.version_info >= (3, 11):
     from enum import StrEnum
-except ImportError:
+else:
     from enum import Enum
 
-    class StrEnum(str, Enum):  # type: ignore[no-redef]
+    class StrEnum(str, Enum):
         pass
 
 
@@ -253,9 +255,7 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(
-                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
-            )
+            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
 
             return conn
 
@@ -318,9 +318,7 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError(
-                    "Exasol Query Error: " + e.message
-                )
+                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
         return self
 
     def fetchone(self):
