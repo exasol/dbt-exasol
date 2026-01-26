@@ -118,7 +118,7 @@ class ExasolCredentials(Credentials):
     row_separator: str = ROW_SEPARATOR_DEFAULT
     timestamp_format: str = TIMESTAMP_FORMAT_DEFAULT
 
-    _ALIASES = {"dbname": "database", "pass": "password"}
+    _ALIASES = {"dbname": "database", "pass": "password"}  # noqa: S105 # Sonar: field name alias, not actual password
 
     @property
     def type(self):
@@ -169,33 +169,63 @@ class ExasolConnectionManager(SQLConnectionManager):
             raise dbt_common.exceptions.DbtRuntimeError(yielded_exception)
 
     @classmethod
+    def _fetch_rows(cls, cursor: Any, limit: int | None) -> list[Any]:
+        """Fetch rows from cursor based on limit."""
+        if limit:
+            return cursor.fetchmany(limit)
+        return cursor.fetchall()
+
+    @classmethod
+    def _needs_type_conversion(cls, rows: list[Any], col_idx: int) -> bool:
+        """Check if column needs type conversion from string."""
+        return len(rows) > 0 and isinstance(rows[0][col_idx], str)
+
+    @classmethod
+    def _convert_column_to_decimal(cls, rows: list[Any], col_idx: int) -> list[Any]:
+        """Convert string column values to Decimal."""
+        for rownum, row in enumerate(rows):
+            if row[col_idx] is not None:
+                tmp = list(row)
+                tmp[col_idx] = decimal.Decimal(row[col_idx])
+                rows[rownum] = tmp
+        return rows
+
+    @classmethod
+    def _convert_column_to_timestamp(cls, rows: list[Any], col_idx: int) -> list[Any]:
+        """Convert string column values to datetime."""
+        for rownum, row in enumerate(rows):
+            if row[col_idx] is not None:
+                tmp = list(row)
+                tmp[col_idx] = parser.parse(row[col_idx])
+                rows[rownum] = tmp
+        return rows
+
+    @classmethod
+    def _apply_type_conversions(
+        cls, rows: list[Any], col_idx: int, col_type: str
+    ) -> list[Any]:
+        """Apply appropriate type conversion based on column type."""
+        if not cls._needs_type_conversion(rows, col_idx):
+            return rows
+
+        if col_type in ["DECIMAL", "BIGINT"]:
+            return cls._convert_column_to_decimal(rows, col_idx)
+        elif col_type.startswith("TIMESTAMP"):
+            return cls._convert_column_to_timestamp(rows, col_idx)
+        return rows
+
+    @classmethod
     def get_result_from_cursor(cls, cursor: Any, limit: int | None) -> agate.Table:
         data: list[Any] = []
         column_names: list[str] = []
 
         if cursor.description is not None:
-            # column_names = [col[0] for col in cursor.description]
-            if limit:
-                rows = cursor.fetchmany(limit)
-            else:
-                rows = cursor.fetchall()
+            rows = cls._fetch_rows(cursor, limit)
+
             for idx, col in enumerate(cursor.description):
                 column_names.append(col[0])
-                if len(rows) > 0 and isinstance(rows[0][idx], str):
-                    if col[1] in ["DECIMAL", "BIGINT"]:
-                        for rownum, row in enumerate(rows):
-                            if row[idx] is None:
-                                continue
-                            tmp = list(row)
-                            tmp[idx] = decimal.Decimal(row[idx])
-                            rows[rownum] = tmp
-                    elif col[1].startswith("TIMESTAMP"):
-                        for rownum, row in enumerate(rows):
-                            if row[idx] is None:
-                                continue
-                            tmp = list(row)
-                            tmp[idx] = parser.parse(row[idx])
-                            rows[rownum] = tmp
+                rows = cls._apply_type_conversions(rows, idx, col[1])
+
             data = list(cls.process_results(column_names, rows))
 
         return dbt_common.clients.agate_helper.table_from_data_flat(data, column_names)  # type: ignore
@@ -255,7 +285,9 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
+            conn.execute(
+                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
+            )
 
             return conn
 
@@ -318,7 +350,9 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
+                raise dbt_common.exceptions.DbtDatabaseError(
+                    "Exasol Query Error: " + e.message
+                )
         return self
 
     def fetchone(self):

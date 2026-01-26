@@ -83,7 +83,7 @@ class ExasolColumn(Column):
                     char_size = int(size)
                 except ValueError:
                     raise DbtRuntimeError(
-                        f'Could not interpret data_type "{raw_data_type}": ' f'could not convert "{size}" to an integer'
+                        f'Could not interpret data_type "{raw_data_type}": could not convert "{parts[0]}" to an integer'
                     )
             elif len(parts) == 2:
                 try:
