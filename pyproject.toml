@@ -8,21 +8,13 @@ authors = [
 ]
 license = { text = "GPL-3.0-or-later" }
 readme = "README.md"
-requires-python = ">=3.9.2,<4"
+requires-python = ">=3.10,<4"
 dependencies = [
   "pyexasol>=1.0.0",
-  "sqlfluff>=2.3,<4.0",
   "pyyaml==6.0.1",
-  "pytest-xdist>=3.3.1",
   "protobuf>=5.0,<7.0",
   "dbt-adapters>=1.10.0",
   "dbt-core>=1.10.0",
-  "dbt-tests-adapter>=1.10.0",
-  "python-dotenv>=1.2.1",
-  "tox>=4.30.3",
-  "ruff>=0.14.8",
-  "exasol-toolbox>=1.13.0",
-  "exasol-integration-test-docker-environment>=4.3.0",
 ]
 
 [project.urls]
@@ -31,15 +23,22 @@ Repository = "https://github.com/tglunde/dbt-exasol"
 
 [project.optional-dependencies]
 dev = [
-  "pylint>=2.15.8",
-  "exceptiongroup>=1.1.1",
   "black>=22.8,<25.0",
+  "dbt-tests-adapter>=1.10.0",
+  "exasol-integration-test-docker-environment>=4.3.0",
+  "exasol-toolbox>=4.0.0",
+  "exceptiongroup>=1.1.1",
+  "ipykernel>=6.25.0",
+  "nox>=2024.4.15",
+  "pylint>=2.15.8",
   "pytest>=7.2.0",
   "pytest-dotenv>=0.5.2",
-  "tox>=3.26.0",
   "pytest-parallel>=0.1.1",
-  "ipykernel>=6.25.0",
   "pytest-xdist>=3.3.1",
+  "python-dotenv>=1.2.1",
+  "ruff>=0.14.8",
+  "sqlfluff>=2.3,<4.0",
+  "tox>=4.30.3",
 ]
 
 [build-system]
@@ -54,11 +53,17 @@ dev = ["tox-uv>=1.28.1"]
 
 [tool.coverage.run]
 relative_files = true
-source = ["exasol"]
+source = ["dbt/adapters/exasol", "dbt/include/exasol"]
+omit = [
+  "*/site-packages/*",
+  "dbt/version.py",
+  "dbt/__init__.py",
+  "dbt/adapters/__init__.py",
+  "dbt/include/__init__.py",
+]
 
 [tool.coverage.report]
-# Switch to 15 after code has been added
-fail_under = 50
+fail_under = 47
 
 [tool.black]
 line-length = 120

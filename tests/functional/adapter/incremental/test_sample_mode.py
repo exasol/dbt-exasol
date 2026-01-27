@@ -13,7 +13,6 @@ import pytest
 from dbt.tests.adapter.sample_mode.test_sample_mode import BaseSampleModeTest
 from dbt.tests.util import run_dbt
 
-
 # Exasol-compatible input model (no timezone suffix in timestamps)
 _input_model_sql = """
 {{ config(materialized='table', event_time='event_time') }}
@@ -93,9 +92,7 @@ class TestSampleModeOneDay:
             fetch="one",
         )
         # Should only have data from most recent day (Jan 19)
-        assert result[0] == 1, (
-            f"--sample 1 day should limit to 1 batch, got {result[0]}"
-        )
+        assert result[0] == 1, f"--sample 1 day should limit to 1 batch, got {result[0]}"
 
 
 # Exasol-compatible fixtures for base sample mode test

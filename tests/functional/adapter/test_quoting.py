@@ -1,9 +1,9 @@
 """Test quoting configuration for sources and models (Issue #72)."""
 
-import pytest
 import os
-from dbt.tests.util import run_dbt
 
+import pytest
+from dbt.tests.util import run_dbt
 
 # Source configuration with quoting enabled
 sources__schema_yml = """
@@ -129,15 +129,14 @@ class TestQuotingSourceConfiguration:
             "model_from_source.sql",
         )
 
-        with open(compiled_path, "r") as f:
+        with open(compiled_path) as f:
             compiled_sql = f.read()
 
         # According to the spec, when quoting is enabled for schema and identifier,
         # the generated SQL should contain quoted identifiers like "TEST"."seed_order"
         # The schema should be quoted
         assert '"' in compiled_sql, (
-            f"Expected quoted identifiers in compiled SQL but found none. "
-            f"Compiled SQL: {compiled_sql}"
+            f"Expected quoted identifiers in compiled SQL but found none. " f"Compiled SQL: {compiled_sql}"
         )
 
         # Check that the identifier is quoted (should be "seed_order" not seed_order)
@@ -162,7 +161,7 @@ class TestQuotingSourceConfiguration:
             "model_from_source_overwrite.sql",
         )
 
-        with open(compiled_path, "r") as f:
+        with open(compiled_path) as f:
             compiled_sql = f.read()
 
         # Schema should be quoted (inherited from source config: true)
@@ -170,15 +169,13 @@ class TestQuotingSourceConfiguration:
 
         # Identifier should NOT be quoted (overwritten in table config: false)
         # We expect seed_order to appear unquoted.
-        assert "seed_order" in compiled_sql, (
-            f"Expected identifier 'seed_order' in compiled SQL: {compiled_sql}"
-        )
-        assert '"seed_order"' not in compiled_sql, (
-            f"Did not expect quoted '\"seed_order\"' in compiled SQL: {compiled_sql}"
-        )
-        assert '"SEED_ORDER"' not in compiled_sql, (
-            f"Did not expect quoted '\"SEED_ORDER\"' in compiled SQL: {compiled_sql}"
-        )
+        assert "seed_order" in compiled_sql, f"Expected identifier 'seed_order' in compiled SQL: {compiled_sql}"
+        assert (
+            '"seed_order"' not in compiled_sql
+        ), f"Did not expect quoted '\"seed_order\"' in compiled SQL: {compiled_sql}"
+        assert (
+            '"SEED_ORDER"' not in compiled_sql
+        ), f"Did not expect quoted '\"SEED_ORDER\"' in compiled SQL: {compiled_sql}"
 
     def test_model_quoting_configuration(self, project):
         """Test that model quoting configuration is respected."""
@@ -198,11 +195,10 @@ class TestQuotingSourceConfiguration:
             "quoted_model.sql",
         )
 
-        with open(compiled_path, "r") as f:
+        with open(compiled_path) as f:
             compiled_sql = f.read()
 
         # The source reference should be quoted based on source configuration
         assert '"seed_order"' in compiled_sql or '"SEED_ORDER"' in compiled_sql, (
-            f"Expected quoted source identifier in compiled SQL. "
-            f"Compiled SQL: {compiled_sql}"
+            f"Expected quoted source identifier in compiled SQL. " f"Compiled SQL: {compiled_sql}"
         )

@@ -4,9 +4,9 @@ Test suite for dbt-exasol snapshot dbt_valid_to_current functionality.
 Tests that current snapshot records use a configured future timestamp
 instead of NULL for dbt_valid_to.
 """
+
 import pytest
 from dbt.tests.util import run_dbt
-
 
 # Seeds
 seeds__seed_csv = """id,name,some_date
@@ -92,14 +92,13 @@ class TestSnapshotValidToCurrent:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current
                WHERE dbt_valid_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 records with future timestamp, got {results[0]}"
 
         # Verify: no records should have NULL dbt_valid_to
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current WHERE dbt_valid_to IS NULL", fetch="one"
         )
         assert results[0] == 0, f"Expected 0 records with NULL dbt_valid_to, got {results[0]}"
 
@@ -122,8 +121,7 @@ class TestSnapshotValidToCurrent:
 
         # Verify: id=1 should have 2 records
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current WHERE id = 1",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current WHERE id = 1", fetch="one"
         )
         assert results[0] == 2, f"Expected 2 records for id=1, got {results[0]}"
 
@@ -132,7 +130,7 @@ class TestSnapshotValidToCurrent:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current
                WHERE id = 1 AND name = 'Easton'
                AND dbt_valid_to != TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected old record to be closed out, got {results[0]}"
 
@@ -141,7 +139,7 @@ class TestSnapshotValidToCurrent:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current
                WHERE id = 1 AND name = 'Easton Updated'
                AND dbt_valid_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected new record to have future timestamp, got {results[0]}"
 
@@ -170,7 +168,7 @@ class TestSnapshotValidToCurrentWithInvalidate:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_invalidate
                WHERE dbt_valid_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -184,7 +182,7 @@ class TestSnapshotValidToCurrentWithInvalidate:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_invalidate
                WHERE id = 1 AND dbt_valid_to != TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected deleted record to be invalidated, got {results[0]}"
 
@@ -192,7 +190,7 @@ class TestSnapshotValidToCurrentWithInvalidate:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_invalidate
                WHERE dbt_valid_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 4, f"Expected 4 current records, got {results[0]}"
 
@@ -222,7 +220,7 @@ class TestSnapshotValidToCurrentWithNewRecord:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_new_record
                WHERE dbt_valid_to = TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')
                AND dbt_is_deleted = 'False'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -236,7 +234,7 @@ class TestSnapshotValidToCurrentWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_new_record
                WHERE id = 1 AND dbt_is_deleted = 'True'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected 1 deletion record, got {results[0]}"
 
@@ -244,7 +242,7 @@ class TestSnapshotValidToCurrentWithNewRecord:
         results = project.run_sql(
             """SELECT dbt_valid_to FROM {schema}.snapshot_valid_to_current_new_record
                WHERE id = 1 AND dbt_is_deleted = 'True'""",
-            fetch="one"
+            fetch="one",
         )
         # Note: The deletion record's dbt_valid_to is inherited from the closed record
         # This behavior may vary - adjust assertion based on actual implementation
@@ -255,6 +253,6 @@ class TestSnapshotValidToCurrentWithNewRecord:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_valid_to_current_new_record
                WHERE id = 1 AND dbt_is_deleted = 'False'
                AND dbt_valid_to != TO_TIMESTAMP('9999-12-31 23:59:59', 'YYYY-MM-DD HH24:MI:SS')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected original record to be closed out, got {results[0]}"

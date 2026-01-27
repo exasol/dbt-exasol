@@ -1,10 +1,19 @@
 """dbt-exasol adapter relation module"""
 
-from dataclasses import dataclass, field
-from typing import Optional, Type, TypeVar
+from dataclasses import (
+    dataclass,
+    field,
+)
+from typing import TypeVar
 
-from dbt.adapters.base.relation import BaseRelation, EventTimeFilter
-from dbt.adapters.contracts.relation import Policy, RelationType
+from dbt.adapters.base.relation import (
+    BaseRelation,
+    EventTimeFilter,
+)
+from dbt.adapters.contracts.relation import (
+    Policy,
+    RelationType,
+)
 
 
 @dataclass
@@ -23,17 +32,17 @@ Self = TypeVar("Self", bound="BaseRelation")
 class ExasolRelation(BaseRelation):
     """Relation implementation for exasol"""
 
-    quote_policy: ExasolQuotePolicy = field(default_factory=lambda: ExasolQuotePolicy())
+    quote_policy: ExasolQuotePolicy = field(default_factory=ExasolQuotePolicy)
 
     @classmethod
     # pylint: disable=too-many-arguments
     # pylint: disable=redefined-builtin
     def create(
-        cls: Type[Self],
-        database: Optional[str] = None,
-        schema: Optional[str] = None,
-        identifier: Optional[str] = None,
-        type: Optional[RelationType] = None,
+        cls: type[Self],
+        database: str | None = None,
+        schema: str | None = None,
+        identifier: str | None = None,
+        type: RelationType | None = None,
         **kwargs,
     ) -> Self:
         """Create an ExasolRelation instance.
@@ -90,12 +99,11 @@ class ExasolRelation(BaseRelation):
 
         if start_str and end_str:
             return f"{event_time_filter.field_name} >= TIMESTAMP '{start_str}' and {event_time_filter.field_name} < TIMESTAMP '{end_str}'"
-        elif start_str:
+        if start_str:
             return f"{event_time_filter.field_name} >= TIMESTAMP '{start_str}'"
-        elif end_str:
+        if end_str:
             return f"{event_time_filter.field_name} < TIMESTAMP '{end_str}'"
-        else:
-            return ""
+        return ""
 
     def _render_subquery_alias(self, namespace: str) -> str:
         """Render subquery alias for Exasol.

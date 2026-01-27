@@ -7,7 +7,7 @@ from dbt.tests.adapter.utils.data_types.test_type_int import BaseTypeInt
 from dbt.tests.adapter.utils.data_types.test_type_numeric import BaseTypeNumeric
 from dbt.tests.adapter.utils.data_types.test_type_string import BaseTypeString
 from dbt.tests.adapter.utils.data_types.test_type_timestamp import BaseTypeTimestamp
-from test_type_bigint import BaseTypeBigInt
+from test_type_bigint import BaseTypeBigInt  # type: ignore[import-not-found]
 
 
 class TestTypeBigIntExasol(BaseTypeBigInt):

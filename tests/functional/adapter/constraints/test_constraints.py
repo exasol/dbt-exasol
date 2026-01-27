@@ -4,11 +4,12 @@ from dbt.tests.adapter.constraints.fixtures import (
     my_model_incremental_wrong_name_sql,
     my_model_incremental_wrong_order_sql,
     my_model_sql,
+    my_model_with_quoted_column_name_sql,
     my_model_wrong_name_sql,
     my_model_wrong_order_sql,
-    my_model_with_quoted_column_name_sql,
 )
 from dbt.tests.adapter.constraints.test_constraints import (
+    BaseConstraintQuotedColumn,
     BaseConstraintsRollback,
     BaseConstraintsRuntimeDdlEnforcement,
     BaseContractSqlHeader,
@@ -18,9 +19,7 @@ from dbt.tests.adapter.constraints.test_constraints import (
     BaseModelConstraintsRuntimeEnforcement,
     BaseTableConstraintsColumnsEqual,
     BaseViewConstraintsColumnsEqual,
-    BaseConstraintQuotedColumn,
 )
-
 from dbt.tests.util import (
     run_dbt,
     write_file,
@@ -28,14 +27,14 @@ from dbt.tests.util import (
 
 from tests.functional.adapter.constraints.fixtures import (
     exasol_constrained_model_schema_yml,
-    exasol_model_schema_yml,
-    exasol_quoted_column_schema_yml,
-    my_model_view_wrong_order_sql,
-    my_model_view_wrong_name_sql,
     exasol_expected_sql,
+    exasol_model_contract_header_schema_yml,
     exasol_model_contract_sql_header_sql,
     exasol_model_incremental_contract_sql_header,
-    exasol_model_contract_header_schema_yml
+    exasol_model_schema_yml,
+    exasol_quoted_column_schema_yml,
+    my_model_view_wrong_name_sql,
+    my_model_view_wrong_order_sql,
 )
 
 
@@ -65,9 +64,7 @@ class ExasolColumnEqualSetup:
         ]
 
 
-class TestExasolTableConstraintsColumnsEqual(
-    ExasolColumnEqualSetup, BaseTableConstraintsColumnsEqual
-):
+class TestExasolTableConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseTableConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -88,9 +85,7 @@ class TestExasolTableConstraintsColumnsEqual(
         pass
 
 
-class TestExasolViewConstraintsColumnsEqual(
-    ExasolColumnEqualSetup, BaseViewConstraintsColumnsEqual
-):
+class TestExasolViewConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseViewConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -111,9 +106,7 @@ class TestExasolViewConstraintsColumnsEqual(
         pass
 
 
-class TestExasolIncrementalConstraintsColumnsEqual(
-    ExasolColumnEqualSetup, BaseIncrementalConstraintsColumnsEqual
-):
+class TestExasolIncrementalConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseIncrementalConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -134,9 +127,7 @@ class TestExasolIncrementalConstraintsColumnsEqual(
         pass
 
 
-class TestExasolTableConstraintsRuntimeDdlEnforcement(
-    BaseConstraintsRuntimeDdlEnforcement
-):
+class TestExasolTableConstraintsRuntimeDdlEnforcement(BaseConstraintsRuntimeDdlEnforcement):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -162,9 +153,7 @@ class TestExasolTableConstraintsRollback(BaseConstraintsRollback):
         return ["constraint violation - not null"]
 
     # Exasol constraint failures generate their own error messages which have to be handled differently than in the standard tests
-    def test__constraints_enforcement_rollback(
-        self, project, expected_color, expected_error_messages, null_model_sql
-    ):
+    def test__constraints_enforcement_rollback(self, project, expected_color, expected_error_messages, null_model_sql):
         results = run_dbt(["run", "-s", "my_model"])
         assert len(results) == 1
 
@@ -176,9 +165,7 @@ class TestExasolTableConstraintsRollback(BaseConstraintsRollback):
         assert expected_error_messages[0] in failing_results[0].message
 
 
-class TestExasolIncrementalConstraintsRuntimeDdlEnforcement(
-    BaseIncrementalConstraintsRuntimeDdlEnforcement
-):
+class TestExasolIncrementalConstraintsRuntimeDdlEnforcement(BaseIncrementalConstraintsRuntimeDdlEnforcement):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -204,9 +191,7 @@ class TestExasolIncrementalConstraintsRollback(BaseIncrementalConstraintsRollbac
         return ["constraint violation - not null"]
 
     # Exasol constraint failures generate their own error messages which have to be handled differently than in the standard tests
-    def test__constraints_enforcement_rollback(
-        self, project, expected_color, expected_error_messages, null_model_sql
-    ):
+    def test__constraints_enforcement_rollback(self, project, expected_color, expected_error_messages, null_model_sql):
         results = run_dbt(["run", "-s", "my_model"])
         assert len(results) == 1
 
@@ -218,9 +203,7 @@ class TestExasolIncrementalConstraintsRollback(BaseIncrementalConstraintsRollbac
         assert expected_error_messages[0] in failing_results[0].message
 
 
-class TestExasolModelConstraintsRuntimeEnforcement(
-    BaseModelConstraintsRuntimeEnforcement
-):
+class TestExasolModelConstraintsRuntimeEnforcement(BaseModelConstraintsRuntimeEnforcement):
     @pytest.fixture(scope="class")
     def models(self):
         return {
@@ -277,6 +260,7 @@ class TestExasolConstraintQuotedColumn(BaseConstraintQuotedColumn):
             ) as model_subq
         """
 
+
 class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
     def models(self):
@@ -285,18 +269,19 @@ class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
             "constraints_schema.yml": exasol_model_contract_header_schema_yml,
         }
 
+
 class BaseExasolIncrementalContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-          "my_model_contract_sql_header.sql": exasol_model_incremental_contract_sql_header,
-          "constraints_schema.yml": exasol_model_contract_header_schema_yml,
-            
+            "my_model_contract_sql_header.sql": exasol_model_incremental_contract_sql_header,
+            "constraints_schema.yml": exasol_model_contract_header_schema_yml,
         }
+
 
 class TestExasolTableContractSqlHeader(BaseExasolTableContractSqlHeader):
     pass
 
+
 class TestExasolIncrementalContractSqlHeader(BaseExasolIncrementalContractSqlHeader):
     pass
-

@@ -4,9 +4,9 @@ Test suite for dbt-exasol snapshot handling of reserved keywords in column names
 Tests that snapshots correctly handle reserved SQL keywords as column names,
 such as 'time', 'date', 'user', etc.
 """
+
 import pytest
 from dbt.tests.util import run_dbt
-
 
 # Model that creates a table with reserved keyword column names
 # Using {{ config(materialized='table') }} to allow UPDATE/DELETE in tests
@@ -165,16 +165,12 @@ class TestSnapshotReservedKeywords:
         run_dbt(["snapshot"])
 
         # Verify: all 5 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords", fetch="one")
         assert results[0] == 5, f"Expected 5 records, got {results[0]}"
 
         # Verify: all records should be current (dbt_valid_to is NULL)
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords WHERE dbt_valid_to IS NULL", fetch="one"
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -200,7 +196,7 @@ class TestSnapshotReservedKeywords:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords
                WHERE field_id = 1""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for field_id=1, got {results[0]}"
 
@@ -208,7 +204,7 @@ class TestSnapshotReservedKeywords:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords
                WHERE field_id = 1 AND "user" = 'alice' AND dbt_valid_to IS NOT NULL""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected old record to be closed out, got {results[0]}"
 
@@ -216,7 +212,7 @@ class TestSnapshotReservedKeywords:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_keywords
                WHERE field_id = 1 AND "user" = 'alice_updated' AND dbt_valid_to IS NULL""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected new record to be current, got {results[0]}"
 
@@ -241,10 +237,7 @@ class TestSnapshotReservedKeywordsCheck:
         run_dbt(["snapshot"])
 
         # Verify: all 5 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_check",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_check", fetch="one")
         assert results[0] == 5, f"Expected 5 records, got {results[0]}"
 
     def test_snapshot_reserved_check_update(self, project):
@@ -269,7 +262,7 @@ class TestSnapshotReservedKeywordsCheck:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_check
                WHERE field_id = 1""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for field_id=1, got {results[0]}"
 
@@ -297,7 +290,7 @@ class TestSnapshotReservedKeywordsWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_new_record
                WHERE dbt_is_deleted = 'False'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
 
@@ -314,7 +307,7 @@ class TestSnapshotReservedKeywordsWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_new_record
                WHERE field_id = 1 AND dbt_is_deleted = 'True'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected 1 deletion record, got {results[0]}"
 
@@ -322,7 +315,7 @@ class TestSnapshotReservedKeywordsWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_reserved_new_record
                WHERE field_id = 1""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for field_id=1, got {results[0]}"
 
@@ -350,10 +343,7 @@ class TestSnapshotMixedColumnTypes:
         run_dbt(["snapshot"])
 
         # Verify: all 2 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_mixed_columns",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_mixed_columns", fetch="one")
         assert results[0] == 2, f"Expected 2 records, got {results[0]}"
 
     def test_snapshot_mixed_columns_update(self, project):
@@ -378,7 +368,7 @@ class TestSnapshotMixedColumnTypes:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_mixed_columns
                WHERE ID = 1""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for ID=1, got {results[0]}"
 
@@ -406,10 +396,7 @@ class TestSnapshotUppercaseReservedKeyword:
         run_dbt(["snapshot"])
 
         # Verify: all 2 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_uppercase_reserved",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_uppercase_reserved", fetch="one")
         assert results[0] == 2, f"Expected 2 records, got {results[0]}"
 
 
@@ -436,10 +423,7 @@ class TestSnapshotQuotedUppercaseIdentifier:
         run_dbt(["snapshot"])
 
         # Verify: all 2 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_quoted_uppercase",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_quoted_uppercase", fetch="one")
         assert results[0] == 2, f"Expected 2 records, got {results[0]}"
 
     def test_snapshot_quoted_uppercase_update(self, project):
@@ -464,6 +448,6 @@ class TestSnapshotQuotedUppercaseIdentifier:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_quoted_uppercase
                WHERE ID = 1""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for ID=1, got {results[0]}"

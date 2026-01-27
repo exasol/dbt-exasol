@@ -1,10 +1,12 @@
-from dbt.adapters.exasol.connections import ExasolConnectionManager
-from dbt.adapters.exasol.connections import ExasolCredentials
-from dbt.adapters.exasol.column import ExasolColumn
-from dbt.adapters.exasol.relation import ExasolRelation
-from dbt.adapters.exasol.impl import ExasolAdapter
-
 from dbt.adapters.base import AdapterPlugin
+
+from dbt.adapters.exasol.column import ExasolColumn
+from dbt.adapters.exasol.connections import (
+    ExasolConnectionManager,
+    ExasolCredentials,
+)
+from dbt.adapters.exasol.impl import ExasolAdapter
+from dbt.adapters.exasol.relation import ExasolRelation
 from dbt.include import exasol
 
 __all__ = [
@@ -17,7 +19,7 @@ __all__ = [
 ]
 
 Plugin = AdapterPlugin(
-    adapter=ExasolAdapter,
+    adapter=ExasolAdapter,  # type: ignore[arg-type]
     credentials=ExasolCredentials,
     include_path=exasol.PACKAGE_PATH,
 )

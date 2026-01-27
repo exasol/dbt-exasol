@@ -17,4 +17,3 @@ class BaseTypeBigInt(BaseDataTypeMacro):
             "expected.sql": models__expected_sql,
             "actual.sql": self.interpolate_macro_namespace(models__actual_sql, "type_bigint"),
         }
-
