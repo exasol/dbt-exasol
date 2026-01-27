@@ -87,6 +87,7 @@ def _test_command(
         parallel_workers: Number of parallel workers for pytest-xdist.
                          None means use pytest.ini default. 0 means disable parallelism.
     """
+    is_coverage = context.get("coverage", False)
     coverage_command = (
         [
             "coverage",
@@ -95,13 +96,17 @@ def _test_command(
             f"--rcfile={config.root_path / 'pyproject.toml'}",
             "-m",
         ]
-        if context.get("coverage", False)
+        if is_coverage
         else []
     )
     pytest_command = ["pytest", "-v", f"{path}"]
 
-    # Add parallel workers setting if specified
-    if parallel_workers is not None:
+    # When coverage is enabled, disable pytest-xdist parallelism (-n 0) because
+    # 'coverage run' only measures the main process, not subprocess workers.
+    # pytest-xdist with -n >= 1 spawns workers as subprocesses, causing 0% coverage.
+    if is_coverage:
+        pytest_command.extend(["-n", "0"])
+    elif parallel_workers is not None:
         if parallel_workers == 0:
             # Disable parallelism explicitly
             pytest_command.extend(["-n", "0"])

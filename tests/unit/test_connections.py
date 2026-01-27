@@ -2,15 +2,18 @@
 
 import ssl
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 import pyexasol
 
 from dbt.adapters.exasol.connections import (
-    ExasolConnectionManager,
-    ExasolCursor,
     ExasolConnection,
+    ExasolConnectionManager,
     ExasolCredentials,
+    ExasolCursor,
 )
 
 
@@ -85,9 +88,7 @@ class TestGetResultFromCursor(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     @patch("dbt_common.clients.agate_helper.table_from_data_flat")
-    def test_get_result_from_cursor_with_timestamp_conversion(
-        self, mock_table_from_data
-    ):
+    def test_get_result_from_cursor_with_timestamp_conversion(self, mock_table_from_data):
         """Test get_result_from_cursor converts TIMESTAMP strings to datetime."""
         mock_table = Mock()
         mock_table.__len__ = Mock(return_value=1)
@@ -326,9 +327,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
 
         call_args = mock_connect.call_args
         self.assertEqual(call_args[1]["encryption"], True)
-        self.assertEqual(
-            call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED}
-        )
+        self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED})
 
     @patch("dbt.adapters.exasol.connections.connect")
     def test_open_with_ssl_enabled_without_validation(self, mock_connect):
@@ -413,9 +412,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
 
         # Verify timestamp format was set
         self.assertEqual(mock_conn_obj.timestamp_format, "YYYY-MM-DD HH24:MI:SS")
-        mock_conn_obj.execute.assert_called_once_with(
-            "alter session set NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'"
-        )
+        mock_conn_obj.execute.assert_called_once_with("alter session set NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'")
 
 
 class TestExasolCursorProperties(unittest.TestCase):
@@ -560,9 +557,7 @@ class TestConnectionRetryBehavior(unittest.TestCase):
         from dbt.adapters.exceptions.connection import FailedToConnectError
 
         # All attempts fail with ExaError
-        mock_connect.side_effect = self._create_exa_error(
-            "Persistent connection failure"
-        )
+        mock_connect.side_effect = self._create_exa_error("Persistent connection failure")
 
         connection = self._create_connection_with_credentials(retries=3)
 
@@ -630,9 +625,7 @@ class TestConnectionRetryBehavior(unittest.TestCase):
 
     @patch("dbt.adapters.exasol.connections.connect")
     @patch("dbt.adapters.base.connections.sleep")
-    def test_retry_passes_exa_error_as_retryable_exception(
-        self, mock_sleep, mock_connect
-    ):
+    def test_retry_passes_exa_error_as_retryable_exception(self, mock_sleep, mock_connect):
         """Test that ExaError (base class) triggers retry behavior."""
         mock_conn_obj = Mock(spec=ExasolConnection)
         # Use base ExaError class

@@ -890,6 +890,8 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pytest" },
+    { name = "python-dotenv" },
     { name = "tox-uv" },
 ]
 
@@ -920,7 +922,11 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "tox-uv", specifier = ">=1.28.1" }]
+dev = [
+    { name = "pytest", specifier = ">=9.0.2" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "tox-uv", specifier = ">=1.28.1" },
+]
 
 [[package]]
 name = "dbt-extractor"

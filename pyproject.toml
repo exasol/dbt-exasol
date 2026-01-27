@@ -49,21 +49,30 @@ build-backend = "hatchling.build"
 packages = ["dbt"]
 
 [dependency-groups]
-dev = ["tox-uv>=1.28.1"]
+dev = [
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+    "tox-uv>=1.28.1",
+]
 
 [tool.coverage.run]
 relative_files = true
 source = ["dbt/adapters/exasol", "dbt/include/exasol"]
 omit = [
   "*/site-packages/*",
-  "dbt/version.py",
   "dbt/__init__.py",
   "dbt/adapters/__init__.py",
+  "dbt/adapters/exasol/__version__.py",
+  "dbt/adapters/exasol/version.py",
   "dbt/include/__init__.py",
 ]
 
 [tool.coverage.report]
 fail_under = 47
+omit = [
+  "*/__version__.py",
+  "*/version.py",
+]
 
 [tool.black]
 line-length = 120

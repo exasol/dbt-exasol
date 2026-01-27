@@ -293,6 +293,71 @@
         }
       }
     },
+    "poetry@latest": {
+      "last_modified": "2026-01-20T02:11:35Z",
+      "plugin_version": "0.0.4",
+      "resolved": "github:NixOS/nixpkgs/ed142ab1b3a092c4d149245d0c4126a5d7ea00b0#poetry",
+      "source": "devbox-search",
+      "version": "2.2.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7pdimbpkrhzj02h4j1rfq4k00d7y2wsh-python3.13-poetry-2.2.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/xmzwfaj3gwcrxh9mirlrh7q1baz5l0kl-python3.13-poetry-2.2.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/7pdimbpkrhzj02h4j1rfq4k00d7y2wsh-python3.13-poetry-2.2.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ix5lb1z5mri8wv0cya294b5qz64njmg3-python3.13-poetry-2.2.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/4d90bc9kyicgxfnmcb6a6zp3267dmm7q-python3.13-poetry-2.2.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/ix5lb1z5mri8wv0cya294b5qz64njmg3-python3.13-poetry-2.2.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/kp19qi2g2lp4v62c4gvkfhr324g18ycz-python3.13-poetry-2.2.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/njwm8dvpcbhyr84qvzirxfq6cxfg5nrn-python3.13-poetry-2.2.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/kp19qi2g2lp4v62c4gvkfhr324g18ycz-python3.13-poetry-2.2.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/4rj4ds4j1lnbhshvxq79fm6z8qzzga89-python3.13-poetry-2.2.1",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/r7ka5v9yyqbdvgk0xfjclsvxp5lsz4zn-python3.13-poetry-2.2.1-dist"
+            }
+          ],
+          "store_path": "/nix/store/4rj4ds4j1lnbhshvxq79fm6z8qzzga89-python3.13-poetry-2.2.1"
+        }
+      }
+    },
     "uv@latest": {
       "last_modified": "2025-12-03T03:51:48Z",
       "resolved": "github:NixOS/nixpkgs/cadcc8de247676e4751c9d4a935acb2c0b059113#uv",
