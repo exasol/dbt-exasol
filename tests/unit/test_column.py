@@ -97,9 +97,7 @@ class TestExasolColumnTypeDetection(unittest.TestCase):
 
     def test_is_timestamp_with_timestamp_with_local_time_zone(self):
         """Test is_timestamp returns True for TIMESTAMP WITH LOCAL TIME ZONE."""
-        col = ExasolColumn(
-            "test_col", "TIMESTAMP WITH LOCAL TIME ZONE", None, None, None
-        )
+        col = ExasolColumn("test_col", "TIMESTAMP WITH LOCAL TIME ZONE", None, None, None)
         self.assertTrue(col.is_timestamp())
 
     def test_is_timestamp_with_non_timestamp(self):
@@ -132,9 +130,7 @@ class TestExasolColumnTypeDetection(unittest.TestCase):
         col = ExasolColumn("test_col", "DECIMAL", None, 18, 0)
         with self.assertRaises(DbtRuntimeError) as context:
             col.string_size()
-        self.assertIn(
-            "Called string_size() on non-string field", str(context.exception)
-        )
+        self.assertIn("Called string_size() on non-string field", str(context.exception))
 
 
 class TestExasolColumnParsing(unittest.TestCase):
