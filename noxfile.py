@@ -216,15 +216,15 @@ def check(session: Session) -> None:
         nox -s project:check
     """
     # Import required toolbox components
-    from exasol.toolbox.nox._shared import (
-        Mode,
-        get_filtered_python_files,
-        _version,
-    )
     from exasol.toolbox.nox._format import _code_format
     from exasol.toolbox.nox._lint import (
         _pylint,
         _type_check,
+    )
+    from exasol.toolbox.nox._shared import (
+        Mode,
+        _version,
+        get_filtered_python_files,
     )
 
     context = _context(session, coverage=True)
