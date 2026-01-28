@@ -1,6 +1,6 @@
 [project]
 name = "dbt-exasol"
-version = "1.10.1"
+version = "1.10.2"
 description = "Adapter to dbt-core for warehouse Exasol"
 authors = [
   { name = "Torsten Glunde", email = "torsten.glunde@alligator-company.com" },
