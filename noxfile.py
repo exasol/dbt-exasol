@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import warnings
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -253,20 +254,38 @@ def artifacts_copy(session: Session) -> None:
     """
     Copy artifacts from CI jobs and generate coverage XML for SonarQube.
 
-    Custom override to ensure coverage XML is generated after combining coverage files.
+    Custom override to ensure ALL coverage files from all Python versions are combined.
 
     Usage:
         nox -s artifacts:copy -- <artifacts_dir>
     """
-    # Import the toolbox artifacts copy task
-    # isort: skip_file
-    from exasol.toolbox.nox.tasks import copy_artifacts as toolbox_copy_artifacts  # type: ignore[attr-defined] # noqa: E501
+    # Parse artifacts directory argument
+    artifacts_dir = session.posargs[0] if session.posargs else "artifacts"
+    artifacts_path = PROJECT_CONFIG.root_path / artifacts_dir
 
-    # Run the original copy_artifacts from toolbox
-    toolbox_copy_artifacts(session)  # type: ignore[operator]
+    # Find all coverage files from all Python versions
+    coverage_files = list(artifacts_path.glob("coverage-python*/.coverage"))
+
+    if not coverage_files:
+        session.error(f"No coverage files found in {artifacts_path}")
+
+    session.log(f"Found {len(coverage_files)} coverage file(s): {[str(f) for f in coverage_files]}")
+
+    # Combine all coverage files from all Python versions
+    session.run("coverage", "combine", "--keep", *[str(f) for f in coverage_files])
+
+    # Copy lint and security artifacts from Python 3.10 (they're identical across versions)
+    lint_txt = artifacts_path / "lint-python3.10" / ".lint.txt"
+    lint_json = artifacts_path / "lint-python3.10" / ".lint.json"
+    security_json = artifacts_path / "security-python3.10" / ".security.json"
+
+    for artifact_file in [lint_txt, lint_json, security_json]:
+        if artifact_file.exists():
+            session.log(f"Copying file {artifact_file}")
+            shutil.copy(str(artifact_file), str(PROJECT_CONFIG.root_path))
 
     # Generate XML coverage report for SonarQube
-    # The toolbox session combines .coverage files, now we need to convert to XML
+    # The combined .coverage file now contains data from all Python versions
     session.run(
         "coverage",
         "xml",
