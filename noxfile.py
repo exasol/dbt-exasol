@@ -202,3 +202,30 @@ def coverage(session: Session) -> None:
 
     # Generate coverage report
     session.run("coverage", "report", "-m")
+
+
+@nox.session(name="artifacts:copy", python=False)  # type: ignore[no-redef]
+def artifacts_copy(session: Session) -> None:
+    """
+    Copy artifacts from CI jobs and generate coverage XML for SonarQube.
+
+    Custom override to ensure coverage XML is generated after combining coverage files.
+
+    Usage:
+        nox -s artifacts:copy -- <artifacts_dir>
+    """
+    # Import the toolbox artifacts copy task
+    from exasol.toolbox.nox.tasks import artifacts_copy as toolbox_artifacts_copy
+
+    # Run the original artifacts:copy from toolbox
+    toolbox_artifacts_copy(session)
+
+    # Generate XML coverage report for SonarQube
+    # The toolbox session combines .coverage files, now we need to convert to XML
+    session.run(
+        "coverage",
+        "xml",
+        "-o",
+        "ci-coverage.xml",
+        f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
+    )
