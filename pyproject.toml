@@ -1,6 +1,6 @@
 [project]
 name = "dbt-exasol"
-version = "1.10.1"
+version = "1.10.2"
 description = "Adapter to dbt-core for warehouse Exasol"
 authors = [
   { name = "Torsten Glunde", email = "torsten.glunde@alligator-company.com" },
@@ -50,21 +50,23 @@ packages = ["dbt"]
 
 [dependency-groups]
 dev = [
+    "poetry>=2.3.1",
     "pytest>=9.0.2",
     "python-dotenv>=1.2.1",
     "tox-uv>=1.28.1",
 ]
 
 [tool.coverage.run]
-relative_files = true
 source = ["dbt/adapters/exasol", "dbt/include/exasol"]
 omit = [
   "*/site-packages/*",
   "dbt/__init__.py",
   "dbt/adapters/__init__.py",
+  "dbt/adapters/exasol/__init__.py",
   "dbt/adapters/exasol/__version__.py",
   "dbt/adapters/exasol/version.py",
   "dbt/include/__init__.py",
+  "dbt/include/exasol/__init__.py",
 ]
 
 [tool.coverage.report]
@@ -72,6 +74,17 @@ fail_under = 47
 omit = [
   "*/__version__.py",
   "*/version.py",
+]
+
+[tool.coverage.xml]
+output = "ci-coverage.xml"
+omit = [
+  "*/__version__.py",
+  "*/version.py",
+  "dbt/__init__.py",
+  "dbt/adapters/__init__.py",
+  "dbt/include/__init__.py",
+  "dbt/include/exasol/__init__.py",
 ]
 
 [tool.black]

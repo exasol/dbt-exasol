@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import warnings
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -26,9 +27,9 @@ from noxconfig import (
 # default actions to be run if nothing is explicitly specified with the -s option
 nox.options.sessions = ["format:fix"]
 
-# Note: unit_tests, integration_tests, and coverage sessions are intentionally
-# overridden below to use tests/unit and tests/functional instead of the default
-# test/unit and test/integration paths expected by exasol-toolbox
+# Note: unit_tests, integration_tests, coverage, and project:check sessions are
+# intentionally overridden below to use tests/unit and tests/functional instead
+# of the default test/unit and test/integration paths expected by exasol-toolbox
 
 
 def _create_start_db_parser() -> argparse.ArgumentParser:
@@ -202,3 +203,93 @@ def coverage(session: Session) -> None:
 
     # Generate coverage report
     session.run("coverage", "report", "-m")
+
+
+@nox.session(name="project:check", python=False)  # type: ignore[no-redef]
+def check(session: Session) -> None:
+    """
+    Runs all available checks on the project.
+
+    Custom override to use our local _coverage implementation with correct test paths.
+
+    Usage:
+        nox -s project:check
+    """
+    # Import required toolbox components
+    from exasol.toolbox.nox._format import _code_format
+    from exasol.toolbox.nox._lint import (
+        _pylint,
+        _type_check,
+    )
+    from exasol.toolbox.nox._shared import (
+        Mode,
+        _version,
+        get_filtered_python_files,
+    )
+
+    context = _context(session, coverage=True)
+    py_files = get_filtered_python_files(PROJECT_CONFIG.root_path)
+    _version(session, Mode.Check)
+    _code_format(session, Mode.Check, py_files)
+    _pylint(session, py_files)
+    _type_check(session, py_files)
+
+    # Use our local coverage implementation instead of toolbox's
+    # Remove any existing coverage file
+    coverage_file = PROJECT_CONFIG.root_path / ".coverage"
+    coverage_file.unlink(missing_ok=True)
+
+    # Run unit tests with coverage
+    _unit_tests(session, PROJECT_CONFIG, context)
+
+    # Run integration tests with coverage
+    _integration_tests(session, PROJECT_CONFIG, context)
+
+    # Generate coverage report
+    session.run("coverage", "report", "-m")
+
+
+@nox.session(name="artifacts:copy", python=False)  # type: ignore[no-redef]
+def artifacts_copy(session: Session) -> None:
+    """
+    Copy artifacts from CI jobs and generate coverage XML for SonarQube.
+
+    Custom override to ensure ALL coverage files from all Python versions are combined.
+
+    Usage:
+        nox -s artifacts:copy -- <artifacts_dir>
+    """
+    # Parse artifacts directory argument
+    artifacts_dir = session.posargs[0] if session.posargs else "artifacts"
+    artifacts_path = PROJECT_CONFIG.root_path / artifacts_dir
+
+    # Find all coverage files from all Python versions
+    coverage_files = list(artifacts_path.glob("coverage-python*/.coverage"))
+
+    if not coverage_files:
+        session.error(f"No coverage files found in {artifacts_path}")
+
+    session.log(f"Found {len(coverage_files)} coverage file(s): {[str(f) for f in coverage_files]}")
+
+    # Combine all coverage files from all Python versions
+    session.run("coverage", "combine", "--keep", *[str(f) for f in coverage_files])
+
+    # Copy lint and security artifacts from Python 3.10 (they're identical across versions)
+    lint_txt = artifacts_path / "lint-python3.10" / ".lint.txt"
+    lint_json = artifacts_path / "lint-python3.10" / ".lint.json"
+    security_json = artifacts_path / "security-python3.10" / ".security.json"
+
+    for artifact_file in [lint_txt, lint_json, security_json]:
+        if artifact_file.exists():
+            session.log(f"Copying file {artifact_file}")
+            shutil.copy(str(artifact_file), str(PROJECT_CONFIG.root_path))
+
+    # Generate XML coverage report for SonarQube
+    # The combined .coverage file now contains data from all Python versions
+    session.run(
+        "coverage",
+        "xml",
+        "-o",
+        "ci-coverage.xml",
+        f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
+    )
