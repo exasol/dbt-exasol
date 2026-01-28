@@ -215,7 +215,9 @@ def artifacts_copy(session: Session) -> None:
         nox -s artifacts:copy -- <artifacts_dir>
     """
     # Import the toolbox artifacts copy task
-    from exasol.toolbox.nox.tasks import artifacts_copy as toolbox_artifacts_copy  # type: ignore[attr-defined]
+    from exasol.toolbox.nox.tasks import (
+        artifacts_copy as toolbox_artifacts_copy,  # type: ignore[attr-defined]
+    )
 
     # Run the original artifacts:copy from toolbox
     toolbox_artifacts_copy(session)  # type: ignore[operator]
