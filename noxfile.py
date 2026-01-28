@@ -260,10 +260,10 @@ def artifacts_copy(session: Session) -> None:
     """
     # Import the toolbox artifacts copy task
     # isort: skip_file
-    from exasol.toolbox.nox.tasks import artifacts_copy as toolbox_artifacts_copy  # type: ignore[attr-defined] # noqa: E501
+    from exasol.toolbox.nox.tasks import copy_artifacts as toolbox_copy_artifacts  # type: ignore[attr-defined] # noqa: E501
 
-    # Run the original artifacts:copy from toolbox
-    toolbox_artifacts_copy(session)  # type: ignore[operator]
+    # Run the original copy_artifacts from toolbox
+    toolbox_copy_artifacts(session)  # type: ignore[operator]
 
     # Generate XML coverage report for SonarQube
     # The toolbox session combines .coverage files, now we need to convert to XML
