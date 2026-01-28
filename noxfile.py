@@ -26,9 +26,9 @@ from noxconfig import (
 # default actions to be run if nothing is explicitly specified with the -s option
 nox.options.sessions = ["format:fix"]
 
-# Note: unit_tests, integration_tests, and coverage sessions are intentionally
-# overridden below to use tests/unit and tests/functional instead of the default
-# test/unit and test/integration paths expected by exasol-toolbox
+# Note: unit_tests, integration_tests, coverage, and project:check sessions are
+# intentionally overridden below to use tests/unit and tests/functional instead
+# of the default test/unit and test/integration paths expected by exasol-toolbox
 
 
 def _create_start_db_parser() -> argparse.ArgumentParser:
@@ -204,6 +204,50 @@ def coverage(session: Session) -> None:
     session.run("coverage", "report", "-m")
 
 
+@nox.session(name="project:check", python=False)  # type: ignore[no-redef]
+def check(session: Session) -> None:
+    """
+    Runs all available checks on the project.
+
+    Custom override to use our local _coverage implementation with correct test paths.
+
+    Usage:
+        nox -s project:check
+    """
+    # Import required toolbox components
+    from exasol.toolbox.nox._shared import (
+        Mode,
+        get_filtered_python_files,
+        _version,
+    )
+    from exasol.toolbox.nox._format import _code_format
+    from exasol.toolbox.nox._lint import (
+        _pylint,
+        _type_check,
+    )
+
+    context = _context(session, coverage=True)
+    py_files = get_filtered_python_files(PROJECT_CONFIG.root_path)
+    _version(session, Mode.Check)
+    _code_format(session, Mode.Check, py_files)
+    _pylint(session, py_files)
+    _type_check(session, py_files)
+
+    # Use our local coverage implementation instead of toolbox's
+    # Remove any existing coverage file
+    coverage_file = PROJECT_CONFIG.root_path / ".coverage"
+    coverage_file.unlink(missing_ok=True)
+
+    # Run unit tests with coverage
+    _unit_tests(session, PROJECT_CONFIG, context)
+
+    # Run integration tests with coverage
+    _integration_tests(session, PROJECT_CONFIG, context)
+
+    # Generate coverage report
+    session.run("coverage", "report", "-m")
+
+
 @nox.session(name="artifacts:copy", python=False)  # type: ignore[no-redef]
 def artifacts_copy(session: Session) -> None:
     """
@@ -215,9 +259,8 @@ def artifacts_copy(session: Session) -> None:
         nox -s artifacts:copy -- <artifacts_dir>
     """
     # Import the toolbox artifacts copy task
-    from exasol.toolbox.nox.tasks import (
-        artifacts_copy as toolbox_artifacts_copy,  # type: ignore[attr-defined]
-    )
+    # isort: skip_file
+    from exasol.toolbox.nox.tasks import artifacts_copy as toolbox_artifacts_copy  # type: ignore[attr-defined] # noqa: E501
 
     # Run the original artifacts:copy from toolbox
     toolbox_artifacts_copy(session)  # type: ignore[operator]
