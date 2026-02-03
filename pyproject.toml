@@ -59,6 +59,7 @@ dev = [
 
 [tool.coverage.run]
 source = ["dbt/adapters/exasol", "dbt/include/exasol"]
+relative_files = true
 omit = [
   "*/site-packages/*",
   "dbt/__init__.py",
