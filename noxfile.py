@@ -386,7 +386,6 @@ def sonar_check(session: Session) -> None:
         nox -s sonar:check
     """
     import os
-    from pathlib import Path
 
     sonar_token = os.getenv("SONAR_TOKEN")
     if not sonar_token:
