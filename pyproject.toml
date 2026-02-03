@@ -58,7 +58,9 @@ dev = [
 ]
 
 [tool.coverage.run]
-source = ["dbt/adapters/exasol", "dbt/include/exasol"]
+# Use "dbt" as the source directory so coverage XML generates paths like
+# "adapters/exasol/column.py" which SonarCloud can match when --sonar-sources=dbt
+source = ["dbt"]
 relative_files = true
 omit = [
   "*/site-packages/*",
@@ -140,7 +142,4 @@ module = ["dbt.adapters.exasol.*"]
 warn_return_any = false
 ignore_errors = false
 
-[tool.sonar]
-projectKey = "com.exasol:dbt-exasol"
-host.url = "https://sonarcloud.io"
-organization = "exasol"
+# Sonar configuration is in sonar-project.properties

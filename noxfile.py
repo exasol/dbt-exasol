@@ -394,21 +394,12 @@ def sonar_check(session: Session) -> None:
 
     # Build pysonar command manually to use relative paths
     # This ensures coverage XML paths match what SonarCloud expects
+    # Note: Most settings are in sonar-project.properties file
     command = [
         "pysonar",
         "--sonar-token",
         sonar_token,
-        "--sonar-python-pylint-report-path",
-        ".lint.json",
-        "--sonar-python-bandit-report-paths",
-        ".security.json",
-        "--sonar-python-version",
-        ",".join(PROJECT_CONFIG.python_versions),
-        "--sonar-sources",
-        "dbt",  # Use relative path, not absolute
     ]
-    if Path("ci-coverage.xml").exists():
-        command.extend(["--sonar-python-coverage-report-paths", "ci-coverage.xml"])
 
     session.log(f"Running pysonar with command: {' '.join(str(c) for c in command)}")
     session.run(*command)
