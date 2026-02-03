@@ -366,6 +366,8 @@ def sonar_check(session: Session) -> None:
     from pathlib import Path
 
     sonar_token = os.getenv("SONAR_TOKEN")
+    if not sonar_token:
+        session.error("SONAR_TOKEN environment variable is not set")
 
     # Build pysonar command manually to use relative paths
     # This ensures coverage XML paths match what SonarCloud expects
