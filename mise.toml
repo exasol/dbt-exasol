@@ -1,0 +1,62 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+[tools]
+uv = "latest"
+gh = "latest"
+usage = "latest"
+docker-cli = "latest"
+opencode = "latest"
+
+[env]
+# Load test.env as defaults, then .env for local overrides
+_.file = [".env"]
+
+# Required environment variables (mise will error if missing)
+DBT_DSN = { required = "Database connection string (e.g., 'localhost/nocertcheck:8563')" }
+DBT_USER = { required = "Database username" }
+DBT_PASS = { required = "Database password" }
+DBT_TEST_USER_1 = { required = "Test role 1 name" }
+DBT_TEST_USER_2 = { required = "Test role 2 name" }
+DBT_TEST_USER_3 = { required = "Test role 3 name" }
+EXASOL_RELEASE = { required = "Exasol major version (e.g., '8')" }
+
+# Docker SSH tunnel configuration
+# Uses DOCKER_HOST from .env if set, otherwise constructs from DOCKER_SSH_HOST if available
+DOCKER_HOST = "{% if env.DOCKER_HOST %}{{ env.DOCKER_HOST }}{% elif env.DOCKER_SSH_HOST %}ssh://{{ env.DOCKER_SSH_HOST }}{% endif %}"
+DOCKER_BUILDKIT = "{% if env.DOCKER_BUILDKIT %}{{ env.DOCKER_BUILDKIT }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1{% endif %}"
+DOCKER_API_VERSION = "{% if env.DOCKER_API_VERSION %}{{ env.DOCKER_API_VERSION }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1.41{% endif %}"
+
+[hooks]
+enter = "mise run sync"
+
+[tasks.test]
+description = "Run pytest with parallel execution"
+run = "uv run pytest -n48"
+
+[tasks.sync]
+description = "Sync dependencies using uv"
+run = "uv sync"
+
+[tasks.lint]
+description = "Run ruff and sqlfluff linters"
+run = ["uv run ruff check .", "uv run sqlfluff lint"]
+
+[tasks.nox]
+description = "Run nox test sessions"
+run = "uv run nox"
+
+[tasks.tunnel-start]
+description = "Start SSH tunnel to remote Docker host"
+run = "./scripts/tunnel.sh start"
+
+[tasks.tunnel-stop]
+description = "Stop SSH tunnel"
+run = "./scripts/tunnel.sh stop"
+
+[tasks.tunnel-status]
+description = "Check SSH tunnel status"
+run = "./scripts/tunnel.sh status"
+
+[tasks.tunnel-restart]
+description = "Restart SSH tunnel"
+run = "./scripts/tunnel.sh restart"

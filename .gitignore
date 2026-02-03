@@ -130,3 +130,6 @@ report.xml
 .lint*
 .security*
 .build_output
+
+# Mise local overrides
+mise.local.toml

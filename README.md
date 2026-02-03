@@ -12,6 +12,108 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 | 1.8.x      | 1.8.x    | 3.9-3.12 | 7.x, 8.x |
 | 1.7.x      | 1.7.x    | 3.8-3.11 | 7.x, 8.x |
 
+## Development Setup
+
+This project uses [mise-en-place](https://mise.jdx.dev/) for managing development tools and environment.
+
+### Prerequisites
+
+1. Install mise: [mise.jdx.dev/installing-mise](https://mise.jdx.dev/installing-mise.html)
+2. Add shell activation to your rc file:
+   ```bash
+   # For bash (~/.bashrc)
+   eval "$(mise activate bash)"
+
+   # For zsh (~/.zshrc)
+   eval "$(mise activate zsh)"
+
+   # For fish (~/.config/fish/config.fish)
+   mise activate fish | source
+   ```
+
+### Getting Started
+
+```bash
+# Trust the project configuration (one-time)
+mise trust
+
+# Install development tools (uv, gh, bun, usage)
+mise install
+
+# Sync Python dependencies
+mise run sync
+```
+
+### Available Tasks
+
+| Command | Description |
+|---------|-------------|
+| `mise run test` | Run pytest with parallel execution |
+| `mise run lint` | Run ruff and sqlfluff linters |
+| `mise run nox` | Run nox test sessions |
+| `mise run sync` | Sync dependencies using uv |
+| `mise run tunnel-start` | Start SSH tunnel to remote Docker host |
+| `mise run tunnel-stop` | Stop SSH tunnel |
+| `mise run tunnel-status` | Check SSH tunnel status |
+| `mise run tunnel-restart` | Restart SSH tunnel |
+
+Arguments can be passed to tasks: `mise run nox -- -s tests`
+
+### Environment Configuration
+
+- `test.env` - Default environment variables (committed)
+- `.env` - Local overrides (gitignored)
+- `mise.local.toml` - Developer-specific mise overrides (gitignored)
+
+Required environment variables (`DBT_DSN`, `DBT_USER`, `DBT_PASS`, etc.) are defined in `test.env`. To override for local development, create a `.env` file.
+
+### Docker SSH Tunnel
+
+To use a remote Docker host via SSH:
+
+1. **Configure the connection** in `.env`:
+   ```bash
+   DOCKER_HOST=ssh://user@remote-host
+   ```
+
+2. **Manage the SSH tunnel** using mise tasks:
+   ```bash
+   # Start the SSH tunnel
+   mise run tunnel-start
+
+   # Check tunnel status
+   mise run tunnel-status
+
+   # Stop the tunnel
+   mise run tunnel-stop
+
+   # Restart the tunnel
+   mise run tunnel-restart
+   ```
+
+The tunnel manager creates a persistent SSH connection that Docker can use for remote operations. It handles:
+- Background SSH master connection with control sockets
+- Automatic PID tracking
+- Graceful shutdown and cleanup
+- Connection keepalive (60s intervals)
+
+**Requirements:**
+- SSH access to the remote host with key-based authentication
+- SSH keys available in `~/.ssh/` or SSH agent
+- Docker installed on the remote host
+
+**Troubleshooting:**
+```bash
+# Check detailed status
+mise run tunnel-status
+
+# View tunnel process
+ps aux | grep ssh
+
+# Test Docker connection
+docker -H ssh://user@remote-host ps
+```
+
 # Current profile.yml settings
 
 <File name='profiles.yml'>
