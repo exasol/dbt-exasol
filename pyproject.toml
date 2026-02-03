@@ -78,6 +78,19 @@ omit = ["*/__version__.py", "*/version.py"]
 [tool.coverage.xml]
 output = "ci-coverage.xml"
 
+# Path remapping for combining coverage from different machines (CI runners)
+# The first path in each list is the canonical relative path used in reports
+# Subsequent paths are patterns that may appear in .coverage files from CI
+[tool.coverage.paths]
+source = [
+  "dbt/",
+  # GitHub Actions runner paths
+  "/home/runner/work/dbt-exasol/dbt-exasol/dbt/",
+  "/home/runner/work/*/dbt/",
+  # Generic patterns for other CI environments
+  "*/dbt-exasol/dbt/",
+]
+
 [tool.black]
 line-length = 120
 verbose = false

@@ -289,8 +289,15 @@ def artifacts_copy(session: Session) -> None:
     first_cov = coverage_files[0]
     conn = sqlite3.connect(first_cov)
     cursor = conn.cursor()
-    cursor.execute("SELECT path FROM file LIMIT 5")
-    session.log(f"Paths in {first_cov} (first 5):")
+
+    # Count total files
+    cursor.execute("SELECT COUNT(*) FROM file")
+    total_files = cursor.fetchone()[0]
+    session.log(f"Total files in {first_cov}: {total_files}")
+
+    # Show all paths (not just first 5) to understand what's being measured
+    cursor.execute("SELECT path FROM file")
+    session.log(f"All paths in {first_cov}:")
     for row in cursor.fetchall():
         session.log(f"  {row[0]}")
     conn.close()
@@ -309,8 +316,15 @@ def artifacts_copy(session: Session) -> None:
     combined_cov = PROJECT_CONFIG.root_path / ".coverage"
     conn = sqlite3.connect(combined_cov)
     cursor = conn.cursor()
-    cursor.execute("SELECT path FROM file LIMIT 5")
-    session.log("Paths in combined .coverage (first 5):")
+
+    # Count total files after combining
+    cursor.execute("SELECT COUNT(*) FROM file")
+    total_files = cursor.fetchone()[0]
+    session.log(f"Total files in combined .coverage: {total_files}")
+
+    # Show all paths to see if path remapping worked
+    cursor.execute("SELECT path FROM file")
+    session.log("All paths in combined .coverage:")
     for row in cursor.fetchall():
         session.log(f"  {row[0]}")
     conn.close()
@@ -324,6 +338,15 @@ def artifacts_copy(session: Session) -> None:
         if artifact_file.exists():
             session.log(f"Copying file {artifact_file}")
             shutil.copy(str(artifact_file), str(PROJECT_CONFIG.root_path))
+
+    # Debug: Show coverage report before generating XML
+    session.log("Coverage report (before XML generation):")
+    session.run(
+        "coverage",
+        "report",
+        "-m",
+        f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
+    )
 
     # Generate XML coverage report for SonarQube
     # The combined .coverage file now contains data from all Python versions
