@@ -76,14 +76,6 @@ omit = ["*/__version__.py", "*/version.py"]
 
 [tool.coverage.xml]
 output = "ci-coverage.xml"
-omit = [
-  "*/__version__.py",
-  "*/version.py",
-  "dbt/__init__.py",
-  "dbt/adapters/__init__.py",
-  "dbt/include/__init__.py",
-  "dbt/include/exasol/__init__.py",
-]
 
 [tool.black]
 line-length = 120
