@@ -96,7 +96,7 @@ def base_expected_catalog(
                     "name": case("second_model"),
                     "type": view_type,
                     "comment": None,
-                    "owner": case(role+"_test"),
+                    "owner": case(role + "_test"),
                 },
                 "stats": model_stats,
                 "columns": expected_cols,

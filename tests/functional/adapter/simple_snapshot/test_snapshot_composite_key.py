@@ -3,9 +3,9 @@ Test suite for dbt-exasol snapshot composite (multi-column) unique key functiona
 
 Tests that snapshots correctly handle unique_key as a list of columns.
 """
+
 import pytest
 from dbt.tests.util import run_dbt
-
 
 # Seeds with composite key
 seeds__seed_composite_csv = """region,product_id,sales,some_date
@@ -99,16 +99,12 @@ class TestSnapshotCompositeKey:
         run_dbt(["snapshot"])
 
         # Verify: all 5 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite", fetch="one")
         assert results[0] == 5, f"Expected 5 records, got {results[0]}"
 
         # Verify: all records should be current (dbt_valid_to is NULL)
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite WHERE dbt_valid_to IS NULL", fetch="one"
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -134,7 +130,7 @@ class TestSnapshotCompositeKey:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite
                WHERE region = 'NA' AND product_id = 'PROD001'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for (NA, PROD001), got {results[0]}"
 
@@ -143,7 +139,7 @@ class TestSnapshotCompositeKey:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite
                WHERE region = 'NA' AND product_id = 'PROD001'
                AND sales = 100 AND dbt_valid_to IS NOT NULL""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected old record to be closed out, got {results[0]}"
 
@@ -152,7 +148,7 @@ class TestSnapshotCompositeKey:
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite
                WHERE region = 'NA' AND product_id = 'PROD001'
                AND sales = 110 AND dbt_valid_to IS NULL""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected new record to be current, got {results[0]}"
 
@@ -160,7 +156,7 @@ class TestSnapshotCompositeKey:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite
                WHERE NOT (region = 'NA' AND product_id = 'PROD001')""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 4, f"Expected 4 other records unchanged, got {results[0]}"
 
@@ -188,16 +184,12 @@ class TestSnapshotCompositeKey:
         run_dbt(["snapshot"])
 
         # Verify: total records should be 7 (5 original + 2 updates)
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite", fetch="one")
         assert results[0] == 7, f"Expected 7 total records, got {results[0]}"
 
         # Verify: 5 current records (2 updated + 3 unchanged)
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite WHERE dbt_valid_to IS NULL", fetch="one"
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -234,7 +226,7 @@ class TestSnapshotCompositeKeyWithInvalidate:
         results = project.run_sql(
             """SELECT dbt_valid_to FROM {schema}.snapshot_composite_invalidate
                WHERE region = 'NA' AND product_id = 'PROD001'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] is not None, "Expected deleted record to be invalidated"
 
@@ -242,7 +234,7 @@ class TestSnapshotCompositeKeyWithInvalidate:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite_invalidate
                WHERE dbt_valid_to IS NULL""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 4, f"Expected 4 current records, got {results[0]}"
 
@@ -270,7 +262,7 @@ class TestSnapshotCompositeKeyWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite_new_record
                WHERE dbt_is_deleted = 'False'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 5, f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
 
@@ -287,7 +279,7 @@ class TestSnapshotCompositeKeyWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite_new_record
                WHERE region = 'NA' AND product_id = 'PROD001' AND dbt_is_deleted = 'True'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 1, f"Expected 1 deletion record, got {results[0]}"
 
@@ -295,7 +287,7 @@ class TestSnapshotCompositeKeyWithNewRecord:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_composite_new_record
                WHERE region = 'NA' AND product_id = 'PROD001'""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for (NA, PROD001), got {results[0]}"
 
@@ -320,16 +312,12 @@ class TestSnapshotTripleKey:
         run_dbt(["snapshot"])
 
         # Verify: all 5 records should be created
-        results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_triple_key",
-            fetch="one"
-        )
+        results = project.run_sql("SELECT COUNT(*) as cnt FROM {schema}.snapshot_triple_key", fetch="one")
         assert results[0] == 5, f"Expected 5 records, got {results[0]}"
 
         # Verify: all records are current
         results = project.run_sql(
-            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_triple_key WHERE dbt_valid_to IS NULL",
-            fetch="one"
+            "SELECT COUNT(*) as cnt FROM {schema}.snapshot_triple_key WHERE dbt_valid_to IS NULL", fetch="one"
         )
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
@@ -346,6 +334,6 @@ class TestSnapshotTripleKey:
         results = project.run_sql(
             """SELECT COUNT(*) as cnt FROM {schema}.snapshot_triple_key
                WHERE region = 'NA' AND product_id = 'PROD001' AND sales = 100""",
-            fetch="one"
+            fetch="one",
         )
         assert results[0] == 2, f"Expected 2 records for same key, got {results[0]}"

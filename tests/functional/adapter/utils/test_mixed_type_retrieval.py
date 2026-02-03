@@ -1,4 +1,5 @@
 import decimal
+
 from dbt.tests.util import get_connection
 
 

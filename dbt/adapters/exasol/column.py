@@ -1,9 +1,10 @@
 """
 dbt exasol adapter column module
 """
+
 import re
 from dataclasses import dataclass
-from typing import ClassVar, Dict
+from typing import ClassVar
 
 from dbt.adapters.base.column import Column
 from dbt_common.exceptions import DbtRuntimeError
@@ -15,7 +16,7 @@ class ExasolColumn(Column):
     """Column implementation for exasol"""
 
     # https://docs.exasol.com/db/latest/sql_references/data_types/datatypealiases.htm
-    TYPE_LABELS: ClassVar[Dict[str, str]] = {
+    TYPE_LABELS: ClassVar[dict[str, str]] = {
         "STRING": "VARCHAR(2000000) UTF8",
         "TIMESTAMP": "TIMESTAMP",
         "FLOAT": "DOUBLE PRECISION",
@@ -82,8 +83,7 @@ class ExasolColumn(Column):
                     char_size = int(size)
                 except ValueError:
                     raise DbtRuntimeError(
-                        f'Could not interpret data_type "{raw_data_type}": '
-                        f'could not convert "{size}" to an integer'
+                        f'Could not interpret data_type "{raw_data_type}": could not convert "{parts[0]}" to an integer'
                     )
             elif len(parts) == 2:
                 try:

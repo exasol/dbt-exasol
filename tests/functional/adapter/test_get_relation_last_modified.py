@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 from dbt.cli.main import dbtRunner
 
 freshness_via_metadata_schema_yml = """version: 2
@@ -14,6 +14,7 @@ sources:
     tables:
       - name: test_table
 """
+
 
 class TestGetRelationLastModified:
     @pytest.fixture(scope="class", autouse=True)
@@ -45,9 +46,7 @@ class TestGetRelationLastModified:
             f"create table {custom_schema}.test_table (id integer, name varchar(100) not null, ts timestamp default current_timestamp)"
         )
 
-        project.run_sql(
-            f"insert into {custom_schema}.test_table (id, name) values (1, 'exasol')"
-        )
+        project.run_sql(f"insert into {custom_schema}.test_table (id, name) values (1, 'exasol')")
 
         project.run_sql("COMMIT")
 

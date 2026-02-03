@@ -28,6 +28,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - Lint SQL: `uv run sqlfluff lint`
 
 ## Code Style
+- **Formatting**: ALL code changes MUST conform to the formatting enforced by `nox -s format:check`. Run `nox -s format:fix` to auto-format before committing.
 - **Imports**: stdlib first, then third-party, then local. Use `# pylint: disable=` for import order issues.
 - **Naming**: PascalCase for classes (`ExasolAdapter`), snake_case for functions/variables, UPPER_CASE for constants.
 - **Types**: Use type hints where practical. `# type: ignore` acceptable for dbt base class issues.

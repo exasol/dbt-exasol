@@ -1,8 +1,8 @@
-from dbt.tests.util import run_dbt
 from dbt.tests.adapter.basic.test_incremental import (
     BaseIncremental,
     BaseIncrementalNotSchemaChange,
 )
+from dbt.tests.util import run_dbt
 
 
 class TestBaseIncrementalNotSchemaChange(BaseIncrementalNotSchemaChange):

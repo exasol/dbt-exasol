@@ -1,5 +1,7 @@
 # dbt-exasol
 
+![CI](https://github.com/tglunde/dbt-exasol/actions/workflows/ci.yml/badge.svg)
+
 **[dbt](https://www.getdbt.com/)** enables data analysts and engineers to transform their data using the same practices that software engineers use to build applications.
 
 Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/reference/warehouse-setups/exasol-setup)** for more information on how to start using the Exasol adapter.
@@ -8,7 +10,7 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 | dbt-exasol | dbt-core | Python | Exasol |
 |------------|----------|--------|--------|
-| 1.10.x     | 1.10.x   | 3.9-3.12 | 7.x, 8.x |
+| 1.10.x     | 1.10.x   | 3.10-3.12 | 7.x, 8.x |
 | 1.8.x      | 1.8.x    | 3.9-3.12 | 7.x, 8.x |
 | 1.7.x      | 1.7.x    | 3.8-3.11 | 7.x, 8.x |
 
@@ -362,9 +364,91 @@ The SQL function listagg in Exasol does not support the num_part parameter.
 
 In order to support packages like dbt-utils and dbt-audit-helper, we needed to create the [shim package exasol-utils](https://github.com/exasol/dbt-exasol-utils).
 
+# Development
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Workflow**: Runs on every pull request and push to main/master
+  - Format checking (`nox -s format:check`)
+  - Linting (`nox -s lint:code`)
+  - Security checks (`nox -s lint:security`)
+  - Type checking (`nox -s lint:typing`)
+  - Unit tests with coverage reporting (`nox -s test:unit`)
+  - Python version matrix (3.10, 3.11, 3.12)
+  - **SonarCloud Integration**: Quality gates and coverage reporting
+
+- **Release Workflow**: Triggered by version tags
+  - Builds package using `uv build`
+  - Publishes to PyPI
+  - Creates GitHub Release
+
+## Local Development Commands
+
+If using devbox, the following commands are available:
+
+```bash
+# Run format check
+devbox run format
+
+# Run linting
+devbox run lint
+
+# Run unit tests
+devbox run unit-test
+
+# Run unit tests with coverage report
+devbox run coverage
+
+# Run complete CI pipeline locally
+devbox run ci
+
+# Test GitHub Actions workflows locally (requires Docker)
+devbox run act
+```
+
+## Branch Protection
+
+Maintainers should configure the following branch protection rules on the `main` branch:
+
+1. Go to Settings > Branches > Add rule
+2. Branch name pattern: `main`
+3. Enable:
+   - Require a pull request before merging
+   - Require status checks to pass before merging
+   - Select "test" as required status check
+   - Require branches to be up to date before merging
+
+## Release Process
+
+To create a new release:
+
+1. Update version in `pyproject.toml`
+2. Commit the change
+3. Create and push a version tag with `v` prefix:
+   ```bash
+   git tag v1.10.2
+   git push origin v1.10.2
+   ```
+4. GitHub Actions will automatically:
+   - Build the package
+   - Publish to PyPI
+   - Create a GitHub Release
+
+**Note**: Only semantic version tags with `v` prefix (e.g., `v1.10.2`) trigger releases.
+
+## Code Quality Requirements
+
+- All code must pass format checks (`ruff check`)
+- All code must pass linting (`nox -s lint:code`)
+- Unit test coverage must be >= 80%
+- All tests must pass before merging
+
 # Reporting bugs and contributing code
 
 - Please report bugs using the issues
+- All changes to main must go through pull requests with CI checks passing
 
 # Releases
 

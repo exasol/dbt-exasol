@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  checks:
+    name: Checks (Python-${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: uv sync --all-extras
+      
+      - name: Format Check
+        run: uv run nox -s format:check
+      
+      - name: Lint Code
+        run: uv run nox -s lint:code
+
+      - name: Lint Security
+        run: uv run nox -s lint:security
+        
+      - name: Type Check
+        run: uv run nox -s lint:typing
+
+      - name: Unit Tests
+        run: uv run nox -s test:unit -- --coverage
+      
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-python${{ matrix.python-version }}
+          path: .coverage
+          include-hidden-files: true
+      
+      - name: Upload Lint Artifact
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: lint-python${{ matrix.python-version }}
+          path: |
+            .lint.txt
+            .lint.json
+          include-hidden-files: true
+      
+      - name: Upload Security Artifact
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: security-python${{ matrix.python-version }}
+          path: .security.json
+          include-hidden-files: true
+
+  report:
+    name: Report
+    needs: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      
+      - name: Install dependencies
+        run: uv sync --all-extras
+        
+      - name: Download Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: artifacts
+          
+      - name: Copy Artifacts
+        run: uv run nox -s artifacts:copy -- artifacts
+        
+      - name: Sonar Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run nox -s sonar:check

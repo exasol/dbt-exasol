@@ -1,12 +1,12 @@
-from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
 import pytest
-
 from dbt.tests.adapter.basic.files import (
     base_table_sql,
-    schema_base_yml,
-    generic_test_view_yml,
     generic_test_table_yml,
+    generic_test_view_yml,
+    schema_base_yml,
 )
+from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
+
 
 class TestExasolViewComment(BaseGenericTests):
     @pytest.fixture(scope="class")
@@ -23,5 +23,4 @@ class TestExasolViewComment(BaseGenericTests):
             "schema.yml": schema_base_yml,
             "schema_view.yml": generic_test_view_yml,
             "schema_table.yml": generic_test_table_yml,
-        }   
-
+        }
