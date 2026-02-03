@@ -283,8 +283,37 @@ def artifacts_copy(session: Session) -> None:
 
     session.log(f"Found {len(coverage_files)} coverage file(s): {[str(f) for f in coverage_files]}")
 
+    # Debug: Show paths in first coverage file before combining
+    import sqlite3
+
+    first_cov = coverage_files[0]
+    conn = sqlite3.connect(first_cov)
+    cursor = conn.cursor()
+    cursor.execute("SELECT path FROM file LIMIT 5")
+    session.log(f"Paths in {first_cov} (first 5):")
+    for row in cursor.fetchall():
+        session.log(f"  {row[0]}")
+    conn.close()
+
     # Combine all coverage files from all Python versions
-    session.run("coverage", "combine", "--keep", *[str(f) for f in coverage_files])
+    # Use --rcfile to ensure relative_files and paths settings are applied
+    session.run(
+        "coverage",
+        "combine",
+        "--keep",
+        f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
+        *[str(f) for f in coverage_files],
+    )
+
+    # Debug: Show paths in combined coverage file
+    combined_cov = PROJECT_CONFIG.root_path / ".coverage"
+    conn = sqlite3.connect(combined_cov)
+    cursor = conn.cursor()
+    cursor.execute("SELECT path FROM file LIMIT 5")
+    session.log("Paths in combined .coverage (first 5):")
+    for row in cursor.fetchall():
+        session.log(f"  {row[0]}")
+    conn.close()
 
     # Copy lint and security artifacts from Python 3.10 (they're identical across versions)
     lint_txt = artifacts_path / "lint-python3.10" / ".lint.txt"
@@ -306,6 +335,16 @@ def artifacts_copy(session: Session) -> None:
         f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
     )
 
+    # Debug: Show first 30 lines of generated XML
+    xml_file = PROJECT_CONFIG.root_path / "ci-coverage.xml"
+    if xml_file.exists():
+        session.log("Generated ci-coverage.xml (first 30 lines):")
+        with open(xml_file) as f:
+            for i, line in enumerate(f):
+                if i >= 30:
+                    break
+                session.log(f"  {line.rstrip()}")
+
 
 @nox.session(name="sonar:check", python=False)  # type: ignore[no-redef]
 def sonar_check(session: Session) -> None:
@@ -324,9 +363,27 @@ def sonar_check(session: Session) -> None:
         nox -s sonar:check
     """
     import os
-
-    from exasol.toolbox.nox._artifacts import _upload_to_sonar
+    from pathlib import Path
 
     sonar_token = os.getenv("SONAR_TOKEN")
-    # Skip _prepare_coverage_xml() - our artifacts:copy already created ci-coverage.xml
-    _upload_to_sonar(session, sonar_token, PROJECT_CONFIG)
+
+    # Build pysonar command manually to use relative paths
+    # This ensures coverage XML paths match what SonarCloud expects
+    command = [
+        "pysonar",
+        "--sonar-token",
+        sonar_token,
+        "--sonar-python-pylint-report-path",
+        ".lint.json",
+        "--sonar-python-bandit-report-paths",
+        ".security.json",
+        "--sonar-python-version",
+        ",".join(PROJECT_CONFIG.python_versions),
+        "--sonar-sources",
+        "dbt",  # Use relative path, not absolute
+    ]
+    if Path("ci-coverage.xml").exists():
+        command.extend(["--sonar-python-coverage-report-paths", "ci-coverage.xml"])
+
+    session.log(f"Running pysonar with command: {' '.join(str(c) for c in command)}")
+    session.run(*command)
