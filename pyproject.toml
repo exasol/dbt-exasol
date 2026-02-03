@@ -1,6 +1,6 @@
 [project]
 name = "dbt-exasol"
-version = "1.10.1"
+version = "1.10.2"
 description = "Adapter to dbt-core for warehouse Exasol"
 authors = [
   { name = "Torsten Glunde", email = "torsten.glunde@alligator-company.com" },
@@ -11,7 +11,6 @@ readme = "README.md"
 requires-python = ">=3.10,<4"
 dependencies = [
   "pyexasol>=1.0.0",
-  "pyyaml==6.0.1",
   "protobuf>=5.0,<7.0",
   "dbt-adapters>=1.10.0",
   "dbt-core>=1.10.0",
@@ -26,7 +25,7 @@ dev = [
   "black>=22.8,<25.0",
   "dbt-tests-adapter>=1.10.0",
   "exasol-integration-test-docker-environment>=4.3.0",
-  "exasol-toolbox>=4.0.0",
+  "exasol-toolbox>=5.1.0",
   "exceptiongroup>=1.1.1",
   "ipykernel>=6.25.0",
   "nox>=2024.4.15",
@@ -50,28 +49,48 @@ packages = ["dbt"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
-    "python-dotenv>=1.2.1",
-    "tox-uv>=1.28.1",
+  "exasol-toolbox>=5.1.0",
+  "poetry>=2.3.1",
+  "pytest>=9.0.2",
+  "python-dotenv>=1.2.1",
+  "tox-uv>=1.28.1",
+  "xdist>=0.0.2",
 ]
 
 [tool.coverage.run]
+# Use "dbt" as the source directory so coverage XML generates paths like
+# "adapters/exasol/column.py" which SonarCloud can match when --sonar-sources=dbt
+source = ["dbt"]
 relative_files = true
-source = ["dbt/adapters/exasol", "dbt/include/exasol"]
 omit = [
   "*/site-packages/*",
   "dbt/__init__.py",
   "dbt/adapters/__init__.py",
+  "dbt/adapters/exasol/__init__.py",
   "dbt/adapters/exasol/__version__.py",
   "dbt/adapters/exasol/version.py",
   "dbt/include/__init__.py",
+  "dbt/include/exasol/__init__.py",
 ]
 
 [tool.coverage.report]
 fail_under = 47
-omit = [
-  "*/__version__.py",
-  "*/version.py",
+omit = ["*/__version__.py", "*/version.py"]
+
+[tool.coverage.xml]
+output = "ci-coverage.xml"
+
+# Path remapping for combining coverage from different machines (CI runners)
+# The first path in each list is the canonical relative path used in reports
+# Subsequent paths are patterns that may appear in .coverage files from CI
+[tool.coverage.paths]
+source = [
+  "dbt/",
+  # GitHub Actions runner paths
+  "/home/runner/work/dbt-exasol/dbt-exasol/dbt/",
+  "/home/runner/work/*/dbt/",
+  # Generic patterns for other CI environments
+  "*/dbt-exasol/dbt/",
 ]
 
 [tool.black]
@@ -123,7 +142,4 @@ module = ["dbt.adapters.exasol.*"]
 warn_return_any = false
 ignore_errors = false
 
-[tool.sonar]
-projectKey = "com.exasol:dbt-exasol"
-host.url = "https://sonarcloud.io"
-organization = "exasol"
+# Sonar configuration is in sonar-project.properties
