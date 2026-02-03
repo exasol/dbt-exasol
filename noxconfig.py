@@ -23,7 +23,7 @@ def start_test_db(
 ) -> None:
     # For Docker in a VM setup, refer to the ``doc/user_guide/developer_guide.rst``
     command = [
-        "itde",
+        "direnv exec . devbox run itde",
         "spawn-test-environment",
         "--environment-name",
         CONTAINER_SUFFIX,

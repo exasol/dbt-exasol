@@ -73,6 +73,13 @@ def stop_db(session: Session) -> None:
     stop_test_db(session=session)
 
 
+def _is_xdist_available() -> bool:
+    """Check if pytest-xdist is available."""
+    import importlib.util
+
+    return importlib.util.find_spec("xdist") is not None
+
+
 def _test_command(
     path: Path,
     config: Any,
@@ -102,12 +109,15 @@ def _test_command(
     )
     pytest_command = ["pytest", "-v", f"{path}"]
 
+    # Only add -n argument if pytest-xdist is available
+    xdist_available = _is_xdist_available()
+
     # When coverage is enabled, disable pytest-xdist parallelism (-n 0) because
     # 'coverage run' only measures the main process, not subprocess workers.
     # pytest-xdist with -n >= 1 spawns workers as subprocesses, causing 0% coverage.
-    if is_coverage:
+    if is_coverage and xdist_available:
         pytest_command.extend(["-n", "0"])
-    elif parallel_workers is not None:
+    elif parallel_workers is not None and xdist_available:
         if parallel_workers == 0:
             # Disable parallelism explicitly
             pytest_command.extend(["-n", "0"])
@@ -228,7 +238,9 @@ def check(session: Session) -> None:
     )
 
     context = _context(session, coverage=True)
-    py_files = get_filtered_python_files(PROJECT_CONFIG.root_path)
+    all_py_files = get_filtered_python_files(PROJECT_CONFIG.root_path)
+    # Exclude tests directory from linting
+    py_files = [f for f in all_py_files if "/tests/" not in str(f)]
     _version(session, Mode.Check)
     _code_format(session, Mode.Check, py_files)
     _pylint(session, py_files)
@@ -293,3 +305,28 @@ def artifacts_copy(session: Session) -> None:
         "ci-coverage.xml",
         f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
     )
+
+
+@nox.session(name="sonar:check", python=False)  # type: ignore[no-redef]
+def sonar_check(session: Session) -> None:
+    """
+    Upload artifacts to sonar for analysis.
+
+    Custom override: Skip _prepare_coverage_xml() because our artifacts:copy
+    session already generates ci-coverage.xml with correct path mappings.
+
+    The default toolbox implementation calls _prepare_coverage_xml() which
+    regenerates ci-coverage.xml with --include filters that don't match
+    the absolute paths stored in the .coverage database from CI runners,
+    resulting in 0% coverage being reported to SonarQube.
+
+    Usage:
+        nox -s sonar:check
+    """
+    import os
+
+    from exasol.toolbox.nox._artifacts import _upload_to_sonar
+
+    sonar_token = os.getenv("SONAR_TOKEN")
+    # Skip _prepare_coverage_xml() - our artifacts:copy already created ci-coverage.xml
+    _upload_to_sonar(session, sonar_token, PROJECT_CONFIG)
