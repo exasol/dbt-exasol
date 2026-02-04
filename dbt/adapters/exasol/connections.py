@@ -380,9 +380,9 @@ class ExasolCursor:
 
             # Build table_info tuple
             if columns_csv:
-                table_info = (schema, table_name, columns_csv)
+                table_info = [schema, table_name, columns_csv]
             else:
-                table_info = (schema, table_name)
+                table_info = [schema, table_name]
 
             self.import_from_file(bindings, table_info)  # type: ignore
         elif "|SEPARATEMEPLEASE|" in query:
