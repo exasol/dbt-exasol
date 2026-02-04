@@ -17,6 +17,7 @@ from typing import Any
 import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
 import pyexasol
+from pyexasol import ExaConnection
 from dateutil import parser  # type: ignore[import-untyped]
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
@@ -33,6 +34,10 @@ else:
     from enum import Enum
 
     class StrEnum(str, Enum):
+        """
+        Shim for StrEnum for Python < 3.11
+        """
+
         pass
 
 
@@ -201,7 +206,9 @@ class ExasolConnectionManager(SQLConnectionManager):
         return rows
 
     @classmethod
-    def _apply_type_conversions(cls, rows: list[Any], col_idx: int, col_type: str) -> list[Any]:
+    def _apply_type_conversions(
+        cls, rows: list[Any], col_idx: int, col_type: str
+    ) -> list[Any]:
         """Apply appropriate type conversion based on column type."""
         if not cls._needs_type_conversion(rows, col_idx):
             return rows
@@ -283,7 +290,9 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
+            conn.execute(
+                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
+            )
 
             return conn
 
@@ -393,7 +402,9 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
+                raise dbt_common.exceptions.DbtDatabaseError(
+                    "Exasol Query Error: " + e.message
+                )
         return self
 
     def fetchone(self):
