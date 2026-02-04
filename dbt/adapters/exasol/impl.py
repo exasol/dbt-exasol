@@ -27,7 +27,7 @@ from dbt.adapters.exasol.connections import ExasolConnectionManager
 from dbt.adapters.exasol.relation import ExasolRelation
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
-
+ExasolKeywords: list[str] | None = None
 
 class ExasolConfig(AdapterConfig):
     partition_by_config: str | list[str] | None = None
@@ -103,6 +103,8 @@ class ExasolAdapter(SQLAdapter):
         quote_columns: bool = False
         if isinstance(quote_config, bool):
             quote_columns = quote_config
+        elif self.should_identifier_be_quoted(column):
+            quote_columns = True
         elif quote_config is None:
             pass
         else:
@@ -139,13 +141,20 @@ class ExasolAdapter(SQLAdapter):
 
     @available
     def should_identifier_be_quoted(self, identifier, models_column_dict=None) -> bool:
+        # Populate ExasolKeywords List if empty
+        global ExasolKeywords
+        if ExasolKeywords is None:
+            ExasolKeywords = self.connections.get_thread_connection().handle.meta.list_sql_keywords()
+        # Check if identifier is an Exasol keyword   
+        if identifier.upper() in ExasolKeywords:
+            return True
         # Check if the naming is valid
-        if not self.is_valid_identifier(identifier):
+        elif not self.is_valid_identifier(identifier):
             return True
         # check if the column is set to be quoted in the model config
-        if models_column_dict and identifier in models_column_dict:
+        elif models_column_dict and identifier in models_column_dict:
             return models_column_dict[identifier].get("quote", False)
-        if models_column_dict and self.quote(identifier) in models_column_dict:
+        elif models_column_dict and self.quote(identifier) in models_column_dict:
             return models_column_dict[self.quote(identifier)].get("quote", False)
         return False
 
