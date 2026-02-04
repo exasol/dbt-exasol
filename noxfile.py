@@ -27,7 +27,9 @@ def _create_start_db_parser() -> argparse.ArgumentParser:
         usage="nox -s start:db -- [-h] [-t | --port {int} --db-version {str} --with-certificate]",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--port", default=8563, type=int, help="forward port for the Exasol DB")
+    parser.add_argument(
+        "--port", default=8563, type=int, help="forward port for the Exasol DB"
+    )
     parser.add_argument(
         "--db-version",
         default=DEFAULT_DB_VERSION,
@@ -74,8 +76,12 @@ def artifacts_copy(session: Session) -> None:
     artifacts_dir = session.posargs[0] if session.posargs else "artifacts"
     artifacts_path = PROJECT_CONFIG.root_path / artifacts_dir
 
-    # Find all coverage files from all Python versions
-    coverage_files = list(artifacts_path.glob("coverage-python*/.coverage"))
+    # Find all coverage files from all Python versions (unit and integration tests)
+    unit_coverage = list(artifacts_path.glob("coverage-python*/.coverage"))
+    integration_coverage = list(
+        artifacts_path.glob("integration-coverage-python*/.coverage")
+    )
+    coverage_files = unit_coverage + integration_coverage
 
     if not coverage_files:
         session.error(f"No coverage files found in {artifacts_path}")
@@ -153,7 +159,9 @@ def sonar_check(session: Session) -> None:
 def unit_tests(session: Session) -> None:
     """Runs all unit tests"""
     context = _context(session)
-    command = _test_command(PROJECT_CONFIG.root_path / "tests" / "unit", PROJECT_CONFIG, context)
+    command = _test_command(
+        PROJECT_CONFIG.root_path / "tests" / "unit", PROJECT_CONFIG, context
+    )
     session.run(*command)
 
 
@@ -162,10 +170,16 @@ def integration_tests(session: Session) -> None:
     """Runs all integration/functional tests"""
     context = _context(session)
     pm = NoxTasks.plugin_manager(PROJECT_CONFIG)
-    pm.hook.pre_integration_tests_hook(session=session, config=PROJECT_CONFIG, context=context)
-    command = _test_command(PROJECT_CONFIG.root_path / "tests" / "functional", PROJECT_CONFIG, context)
+    pm.hook.pre_integration_tests_hook(
+        session=session, config=PROJECT_CONFIG, context=context
+    )
+    command = _test_command(
+        PROJECT_CONFIG.root_path / "tests" / "functional", PROJECT_CONFIG, context
+    )
     session.run(*command)
-    pm.hook.post_integration_tests_hook(session=session, config=PROJECT_CONFIG, context=context)
+    pm.hook.post_integration_tests_hook(
+        session=session, config=PROJECT_CONFIG, context=context
+    )
 
 
 @nox.session(name="test:coverage", python=False)

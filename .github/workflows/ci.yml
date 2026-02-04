@@ -5,6 +5,18 @@ on:
     branches: [main, master]
   push:
     branches: [main, master]
+  schedule:
+    - cron: "0 2 * * *" # Nightly at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: 'Python version (or "all" for matrix)'
+        required: false
+        default: "3.13"
+      db-version:
+        description: "Exasol DB version"
+        required: false
+        default: "8.29.13"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,21 +26,38 @@ jobs:
   setup:
     name: Setup
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     outputs:
-      python-matrix: ${{ steps.matrix.outputs.python-versions }}
-    env:
-      DBT_DSN: localhost/nocertcheck:8563
-      DBT_USER: sys
-      DBT_PASS: exasol
-      DBT_TEST_USER_1: dbt_test_role_1
-      DBT_TEST_USER_2: dbt_test_role_2
-      DBT_TEST_USER_3: dbt_test_role_3
-      EXASOL_RELEASE: "8"
-      DOCKER_API_VERSION: "1.41"
-      DOCKER_HOST: ssh://root@188.245.102.102
+      python-matrix: ${{ steps.matrix.outputs.versions }}
+      integration-matrix: ${{ steps.integration-matrix.outputs.versions }}
+      run-integration: ${{ steps.should-run-integration.outputs.run }}
     steps:
       - uses: actions/checkout@v5
+
+      - name: Detect path changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            integration:
+              - 'dbt/adapters/exasol/**'
+              - 'dbt/include/**'
+              - 'tests/functional/**'
+              - 'tests/conftest.py'
+              - 'noxfile.py'
+              - 'noxconfig.py'
+              - 'pyproject.toml'
+
+      - name: Determine if integration should run
+        id: should-run-integration
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=${{ steps.changes.outputs.integration }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup mise
         uses: jdx/mise-action@v2
@@ -41,9 +70,23 @@ jobs:
           path: ~/.local/share/mise
           key: mise-${{ runner.os }}-${{ hashFiles('mise.toml') }}
 
-      - name: Generate Python version matrix
+      - name: Generate Python matrix (checks)
         id: matrix
-        run: echo "python-versions=$(mise run nox -- -s matrix:python)" >> $GITHUB_OUTPUT
+        run: echo "versions=$(mise run nox -- -s matrix:python)" >> $GITHUB_OUTPUT
+
+      - name: Generate Python matrix (integration)
+        id: integration-matrix
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" ]] || \
+             [[ "${{ github.event.inputs.python-version }}" == "all" ]]; then
+            # Full matrix for scheduled/push to main/manual "all"
+            echo "versions=$(mise run nox -- -s matrix:python)" >> $GITHUB_OUTPUT
+          else
+            # Single version for PRs (fast feedback)
+            VERSION="${{ github.event.inputs.python-version || '3.13' }}"
+            echo "versions=[\"$VERSION\"]" >> $GITHUB_OUTPUT
+          fi
 
   checks:
     name: Checks (Python-${{ matrix.python-version }})
@@ -62,8 +105,6 @@ jobs:
       DBT_TEST_USER_2: dbt_test_role_2
       DBT_TEST_USER_3: dbt_test_role_3
       EXASOL_RELEASE: "8"
-      DOCKER_API_VERSION: "1.41"
-      DOCKER_HOST: ssh://root@188.245.102.102
     steps:
       - uses: actions/checkout@v5
 
@@ -86,22 +127,22 @@ jobs:
 
       - name: Install dependencies
         run: mise run sync -- --all-extras
-      
+
       - name: Format Check
         run: mise run format-check
-      
+
       - name: Lint Code
         run: mise run nox -- -s lint:code
 
       - name: Lint Security
         run: mise run nox -- -s lint:security
-        
+
       - name: Type Check
         run: mise run nox -- -s lint:typing
 
       - name: Unit Tests
         run: mise run nox -- -s test:unit -- --coverage
-      
+
       - name: Upload Coverage Artifact
         uses: actions/upload-artifact@v5
         with:
@@ -130,12 +171,16 @@ jobs:
           include-hidden-files: true
           retention-days: 30
 
-  report:
-    name: Report
-    needs: checks
+  integration:
+    name: Integration (Python-${{ matrix.python-version }})
+    needs: setup
+    if: needs.setup.outputs.run-integration == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: needs.checks.result == 'success'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.setup.outputs.integration-matrix) }}
     env:
       DBT_DSN: localhost/nocertcheck:8563
       DBT_USER: sys
@@ -144,8 +189,60 @@ jobs:
       DBT_TEST_USER_2: dbt_test_role_2
       DBT_TEST_USER_3: dbt_test_role_3
       EXASOL_RELEASE: "8"
-      DOCKER_API_VERSION: "1.41"
-      DOCKER_HOST: ssh://root@188.245.102.102
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}
+
+      - name: Cache mise
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/mise
+          key: mise-cache-${{ runner.os }}
+
+      - name: Install dependencies
+        run: mise run sync
+
+      - name: Run integration tests
+        run: mise run nox -- -s test:integration -- --coverage -n8
+        env:
+          EXASOL_DB_MEM_SIZE: 4GB
+
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: integration-coverage-python${{ matrix.python-version }}
+          path: .coverage
+          include-hidden-files: true
+          retention-days: 7
+
+  report:
+    name: Report
+    needs: [checks, integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: |
+      always() &&
+      needs.checks.result == 'success' &&
+      (needs.integration.result == 'success' || needs.integration.result == 'skipped')
+    env:
+      DBT_DSN: localhost/nocertcheck:8563
+      DBT_USER: sys
+      DBT_PASS: exasol
+      DBT_TEST_USER_1: dbt_test_role_1
+      DBT_TEST_USER_2: dbt_test_role_2
+      DBT_TEST_USER_3: dbt_test_role_3
+      EXASOL_RELEASE: "8"
     steps:
       - uses: actions/checkout@v5
 
@@ -168,15 +265,15 @@ jobs:
 
       - name: Install dependencies
         run: mise run sync -- --all-extras
-        
+
       - name: Download Artifacts
         uses: actions/download-artifact@v6
         with:
           path: artifacts
-          
+
       - name: Copy Artifacts
         run: mise run nox -- -s artifacts:copy -- artifacts
-        
+
       - name: Sonar Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
