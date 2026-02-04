@@ -5,7 +5,6 @@ import os
 import pytest
 from dbt.tests.util import run_dbt
 
-
 # CSV with SQL keyword column names
 seeds__keywords_csv = """id,name,order,from,date,user,group,time
 1,active,100,source1,2024-01-01,alice,admin,10:00

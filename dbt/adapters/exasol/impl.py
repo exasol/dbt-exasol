@@ -29,6 +29,7 @@ from dbt.adapters.exasol.relation import ExasolRelation
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 ExasolKeywords: list[str] | None = None
 
+
 class ExasolConfig(AdapterConfig):
     partition_by_config: str | list[str] | None = None
     distribute_by_config: str | list[str] | None = None
@@ -145,7 +146,7 @@ class ExasolAdapter(SQLAdapter):
         global ExasolKeywords
         if ExasolKeywords is None:
             ExasolKeywords = self.connections.get_thread_connection().handle.meta.list_sql_keywords()
-        # Check if identifier is an Exasol keyword   
+        # Check if identifier is an Exasol keyword
         if identifier.upper() in ExasolKeywords:
             return True
         # Check if the naming is valid

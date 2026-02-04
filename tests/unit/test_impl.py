@@ -74,9 +74,7 @@ class TestMakeMatchKwargs(unittest.TestCase):
         self.adapter = Mock(spec=ExasolAdapter)
         self.adapter.config = mock_config
         # Call the real _make_match_kwargs method
-        self.adapter._make_match_kwargs = (
-            lambda *args: ExasolAdapter._make_match_kwargs(self.adapter, *args)
-        )
+        self.adapter._make_match_kwargs = lambda *args: ExasolAdapter._make_match_kwargs(self.adapter, *args)
 
     def test_make_match_kwargs_no_quoting(self):
         """Test _make_match_kwargs converts to lowercase when quoting is False."""
@@ -168,10 +166,8 @@ class TestTimestampAddSql(unittest.TestCase):
         """Set up test adapter."""
         self.adapter = Mock(spec=ExasolAdapter)
         # Call the real timestamp_add_sql method
-        self.adapter.timestamp_add_sql = (
-            lambda *args, **kwargs: ExasolAdapter.timestamp_add_sql(
-                self.adapter, *args, **kwargs
-            )
+        self.adapter.timestamp_add_sql = lambda *args, **kwargs: ExasolAdapter.timestamp_add_sql(
+            self.adapter, *args, **kwargs
         )
 
     def test_timestamp_add_sql_default(self):
@@ -203,9 +199,7 @@ class TestQuoteSeedColumn(unittest.TestCase):
         self.adapter = Mock(spec=ExasolAdapter)
         self.adapter.quote = Mock(side_effect=lambda x: f'"{x}"')
         # Call the real quote_seed_column method
-        self.adapter.quote_seed_column = lambda *args: ExasolAdapter.quote_seed_column(
-            self.adapter, *args
-        )
+        self.adapter.quote_seed_column = lambda *args: ExasolAdapter.quote_seed_column(self.adapter, *args)
 
     def test_quote_seed_column_with_true(self):
         """Test quote_seed_column with quote_config=True."""
@@ -297,9 +291,7 @@ class TestListRelationsWithoutCaching(unittest.TestCase):
         )
 
         schema_relation = Mock()
-        result = ExasolAdapter.list_relations_without_caching(
-            self.adapter, schema_relation
-        )
+        result = ExasolAdapter.list_relations_without_caching(self.adapter, schema_relation)
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].identifier, "table1")
@@ -321,9 +313,7 @@ class TestListRelationsWithoutCaching(unittest.TestCase):
         )
 
         schema_relation = Mock()
-        result = ExasolAdapter.list_relations_without_caching(
-            self.adapter, schema_relation
-        )
+        result = ExasolAdapter.list_relations_without_caching(self.adapter, schema_relation)
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].identifier, "external_table")
@@ -335,9 +325,7 @@ class TestValidIncrementalStrategies(unittest.TestCase):
     def test_valid_incremental_strategies(self):
         """Test valid_incremental_strategies returns expected strategies."""
         adapter = Mock(spec=ExasolAdapter)
-        adapter.valid_incremental_strategies = (
-            lambda: ExasolAdapter.valid_incremental_strategies(adapter)
-        )
+        adapter.valid_incremental_strategies = lambda: ExasolAdapter.valid_incremental_strategies(adapter)
         strategies = adapter.valid_incremental_strategies()
 
         expected = ["append", "merge", "delete+insert", "microbatch"]
