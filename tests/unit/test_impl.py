@@ -74,7 +74,9 @@ class TestMakeMatchKwargs(unittest.TestCase):
         self.adapter = Mock(spec=ExasolAdapter)
         self.adapter.config = mock_config
         # Call the real _make_match_kwargs method
-        self.adapter._make_match_kwargs = lambda *args: ExasolAdapter._make_match_kwargs(self.adapter, *args)
+        self.adapter._make_match_kwargs = (
+            lambda *args: ExasolAdapter._make_match_kwargs(self.adapter, *args)
+        )
 
     def test_make_match_kwargs_no_quoting(self):
         """Test _make_match_kwargs converts to lowercase when quoting is False."""
@@ -166,8 +168,10 @@ class TestTimestampAddSql(unittest.TestCase):
         """Set up test adapter."""
         self.adapter = Mock(spec=ExasolAdapter)
         # Call the real timestamp_add_sql method
-        self.adapter.timestamp_add_sql = lambda *args, **kwargs: ExasolAdapter.timestamp_add_sql(
-            self.adapter, *args, **kwargs
+        self.adapter.timestamp_add_sql = (
+            lambda *args, **kwargs: ExasolAdapter.timestamp_add_sql(
+                self.adapter, *args, **kwargs
+            )
         )
 
     def test_timestamp_add_sql_default(self):
@@ -199,7 +203,9 @@ class TestQuoteSeedColumn(unittest.TestCase):
         self.adapter = Mock(spec=ExasolAdapter)
         self.adapter.quote = Mock(side_effect=lambda x: f'"{x}"')
         # Call the real quote_seed_column method
-        self.adapter.quote_seed_column = lambda *args: ExasolAdapter.quote_seed_column(self.adapter, *args)
+        self.adapter.quote_seed_column = lambda *args: ExasolAdapter.quote_seed_column(
+            self.adapter, *args
+        )
 
     def test_quote_seed_column_with_true(self):
         """Test quote_seed_column with quote_config=True."""
@@ -212,15 +218,58 @@ class TestQuoteSeedColumn(unittest.TestCase):
         self.assertEqual(result, "column_name")
 
     def test_quote_seed_column_with_none(self):
-        """Test quote_seed_column with quote_config=None."""
+        """Test quote_seed_column with quote_config=None for non-keyword column."""
+        # Setup mock for should_identifier_be_quoted to return False for non-keywords
+        self.adapter.should_identifier_be_quoted = lambda x, y=None: False
         result = self.adapter.quote_seed_column("column_name", None)
         self.assertEqual(result, "column_name")
 
     def test_quote_seed_column_with_invalid_type(self):
         """Test quote_seed_column raises error with invalid type."""
+        # Setup mock for should_identifier_be_quoted (needed to reach the else branch)
+        self.adapter.should_identifier_be_quoted = lambda x, y=None: False
         with self.assertRaises(CompilationError) as context:
             self.adapter.quote_seed_column("column_name", "invalid")
         self.assertIn("invalid type", str(context.exception))
+
+    def test_quote_seed_column_with_keyword(self):
+        """Test quote_seed_column automatically quotes SQL keywords."""
+        # Setup mock for should_identifier_be_quoted
+        self.adapter.should_identifier_be_quoted = lambda x, y=None: x.upper() in [
+            "ORDER",
+            "STATE",
+            "FROM",
+            "USER",
+        ]
+
+        # Test that keywords are quoted even with quote_config=None
+        result = self.adapter.quote_seed_column("order", None)
+        self.assertEqual(result, '"order"')
+
+        result = self.adapter.quote_seed_column("state", None)
+        self.assertEqual(result, '"state"')
+
+        result = self.adapter.quote_seed_column("from", None)
+        self.assertEqual(result, '"from"')
+
+        result = self.adapter.quote_seed_column("user", None)
+        self.assertEqual(result, '"user"')
+
+    def test_quote_seed_column_with_non_keyword(self):
+        """Test quote_seed_column doesn't quote non-keywords unless configured."""
+        # Setup mock for should_identifier_be_quoted
+        self.adapter.should_identifier_be_quoted = lambda x, y=None: x.upper() in [
+            "ORDER",
+            "STATE",
+        ]
+
+        # Test that non-keywords are not quoted with quote_config=None
+        result = self.adapter.quote_seed_column("regular_column", None)
+        self.assertEqual(result, "regular_column")
+
+        # But they are quoted with quote_config=True
+        result = self.adapter.quote_seed_column("regular_column", True)
+        self.assertEqual(result, '"regular_column"')
 
 
 class TestListRelationsWithoutCaching(unittest.TestCase):
@@ -248,7 +297,9 @@ class TestListRelationsWithoutCaching(unittest.TestCase):
         )
 
         schema_relation = Mock()
-        result = ExasolAdapter.list_relations_without_caching(self.adapter, schema_relation)
+        result = ExasolAdapter.list_relations_without_caching(
+            self.adapter, schema_relation
+        )
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].identifier, "table1")
@@ -270,7 +321,9 @@ class TestListRelationsWithoutCaching(unittest.TestCase):
         )
 
         schema_relation = Mock()
-        result = ExasolAdapter.list_relations_without_caching(self.adapter, schema_relation)
+        result = ExasolAdapter.list_relations_without_caching(
+            self.adapter, schema_relation
+        )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].identifier, "external_table")
@@ -282,7 +335,9 @@ class TestValidIncrementalStrategies(unittest.TestCase):
     def test_valid_incremental_strategies(self):
         """Test valid_incremental_strategies returns expected strategies."""
         adapter = Mock(spec=ExasolAdapter)
-        adapter.valid_incremental_strategies = lambda: ExasolAdapter.valid_incremental_strategies(adapter)
+        adapter.valid_incremental_strategies = (
+            lambda: ExasolAdapter.valid_incremental_strategies(adapter)
+        )
         strategies = adapter.valid_incremental_strategies()
 
         expected = ["append", "merge", "delete+insert", "microbatch"]

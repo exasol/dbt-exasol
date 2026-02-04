@@ -201,7 +201,9 @@ class ExasolConnectionManager(SQLConnectionManager):
         return rows
 
     @classmethod
-    def _apply_type_conversions(cls, rows: list[Any], col_idx: int, col_type: str) -> list[Any]:
+    def _apply_type_conversions(
+        cls, rows: list[Any], col_idx: int, col_type: str
+    ) -> list[Any]:
         """Apply appropriate type conversion based on column type."""
         if not cls._needs_type_conversion(rows, col_idx):
             return rows
@@ -283,7 +285,9 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
+            conn.execute(
+                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
+            )
 
             return conn
 
@@ -325,19 +329,66 @@ class ExasolCursor:
         self.connection = connection
         self.stmt = None
 
-    def import_from_file(self, agate_table, table):
-        """importing csv skip=1 parameter for header row"""
-        self.connection.import_from_file(
-            agate_table.original_abspath,
-            (table.split(".")[0], table.split(".")[1]),
-            import_params={"skip": 1, "row_separator": self.connection.row_separator},
-        )
+    def import_from_file(self, agate_table, table_info):
+        """
+        Import CSV data into pre-created table with proper column quoting.
+
+        Args:
+            agate_table: agate table with CSV data
+            table_info: tuple of (schema, table_name, column_names_csv)
+                        or tuple of (schema, table_name) for backwards compat
+        """
+        if len(table_info) == 3:
+            # New format with explicit column names
+            schema, table_name, columns_csv = table_info
+            column_list = [col.strip() for col in columns_csv.split(",")]
+        else:
+            # Legacy format (shouldn't happen after migration)
+            schema, table_name = table_info
+            # Fallback: use agate column names without quoting
+            column_list = None
+
+        import_params = {
+            "skip": 1,  # Skip CSV header row
+            "row_separator": self.connection.row_separator,
+        }
+
+        # Use column list if available (for proper quoting support)
+        if column_list:
+            self.connection.import_from_file(
+                agate_table.original_abspath,
+                (schema, table_name),
+                import_params=import_params,
+                columns=column_list,
+            )
+        else:
+            # Fallback without column specification
+            self.connection.import_from_file(
+                agate_table.original_abspath,
+                (schema, table_name),
+                import_params=import_params,
+            )
+
         return self
 
     def execute(self, query, bindings: Any | None = None):
         """executing query"""
         if query.startswith("0CSV|"):
-            self.import_from_file(bindings, query.split("|", 1)[1])  # type: ignore
+            # Format: "0CSV|schema.table" or "0CSV|schema.table|col1,col2,col3"
+            parts = query.split("|", 2)[1:]  # Skip "0CSV" prefix
+            table_path = parts[0]
+            columns_csv = parts[1] if len(parts) > 1 else None
+
+            # Parse schema.table
+            schema, table_name = table_path.split(".", 1)
+
+            # Build table_info tuple
+            if columns_csv:
+                table_info = (schema, table_name, columns_csv)
+            else:
+                table_info = (schema, table_name)
+
+            self.import_from_file(bindings, table_info)  # type: ignore
         elif "|SEPARATEMEPLEASE|" in query:
             sqls = query.split("|SEPARATEMEPLEASE|")
             for sql in sqls:
@@ -346,7 +397,9 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
+                raise dbt_common.exceptions.DbtDatabaseError(
+                    "Exasol Query Error: " + e.message
+                )
         return self
 
     def fetchone(self):
