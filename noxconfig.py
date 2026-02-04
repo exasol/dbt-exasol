@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from exasol.toolbox.config import BaseConfig
@@ -23,7 +24,7 @@ def start_test_db(
 ) -> None:
     # For Docker in a VM setup, refer to the ``doc/user_guide/developer_guide.rst``
     command = [
-        "direnv exec . devbox run itde",
+        "itde",
         "spawn-test-environment",
         "--environment-name",
         CONTAINER_SUFFIX,
@@ -34,7 +35,7 @@ def start_test_db(
         "--docker-db-image-version",
         db_version,
         "--db-mem-size",
-        "8GB",
+        os.getenv("EXASOL_DB_MEM_SIZE", "16GB"),
     ]
     if with_certificate:
         command.append(
