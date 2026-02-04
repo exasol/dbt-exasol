@@ -10,7 +10,7 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 | dbt-exasol | dbt-core | Python | Exasol |
 |------------|----------|--------|--------|
-| 1.10.x     | 1.10.x   | 3.10-3.12 | 7.x, 8.x |
+| 1.10.x     | 1.10.x   | 3.10-3.13 | 7.x, 8.x |
 | 1.8.x      | 1.8.x    | 3.9-3.12 | 7.x, 8.x |
 | 1.7.x      | 1.7.x    | 3.8-3.11 | 7.x, 8.x |
 
@@ -22,6 +22,7 @@ This project uses [mise-en-place](https://mise.jdx.dev/) for managing developmen
 
 1. Install mise: [mise.jdx.dev/installing-mise](https://mise.jdx.dev/installing-mise.html)
 2. Add shell activation to your rc file:
+
    ```bash
    # For bash (~/.bashrc)
    eval "$(mise activate bash)"
@@ -50,35 +51,42 @@ mise run sync
 
 | Command | Description |
 |---------|-------------|
-| `mise run test` | Run pytest with parallel execution |
-| `mise run lint` | Run ruff and sqlfluff linters |
-| `mise run nox` | Run nox test sessions |
+| `mise run test` | Run all tests with coverage (nox -s test:coverage) |
+| `mise run test:unit` | Run unit tests only |
+| `mise run test:integration` | Run integration tests only |
+| `mise run format` | Auto-format code (nox -s format:fix) |
+| `mise run format-check` | Check code formatting without changes |
+| `mise run lint` | Run all linters (code + security) |
+| `mise run check` | Run all checks (format, lint, type) |
 | `mise run sync` | Sync dependencies using uv |
+| `mise run nox` | Run nox sessions directly |
 | `mise run tunnel-start` | Start SSH tunnel to remote Docker host |
 | `mise run tunnel-stop` | Stop SSH tunnel |
 | `mise run tunnel-status` | Check SSH tunnel status |
 | `mise run tunnel-restart` | Restart SSH tunnel |
 
-Arguments can be passed to tasks: `mise run nox -- -s tests`
+Arguments can be passed to tasks: `mise run nox -- -s test:unit`
 
 ### Environment Configuration
 
-- `test.env` - Default environment variables (committed)
-- `.env` - Local overrides (gitignored)
-- `mise.local.toml` - Developer-specific mise overrides (gitignored)
+See @mise.toml [env] section for environment variables with default values.
 
-Required environment variables (`DBT_DSN`, `DBT_USER`, `DBT_PASS`, etc.) are defined in `test.env`. To override for local development, create a `.env` file.
+- `.env` - Local overrides (gitignored)
+- Required environment variables (`DBT_DSN`, `DBT_USER`, `DBT_PASS`, etc. as described in @mise.toml)
+- `mise.local.toml` - Developer-specific mise overrides (gitignored)
 
 ### Docker SSH Tunnel
 
 To use a remote Docker host via SSH:
 
 1. **Configure the connection** in `.env`:
+
    ```bash
    DOCKER_HOST=ssh://user@remote-host
    ```
 
 2. **Manage the SSH tunnel** using mise tasks:
+
    ```bash
    # Start the SSH tunnel
    mise run tunnel-start
@@ -94,17 +102,20 @@ To use a remote Docker host via SSH:
    ```
 
 The tunnel manager creates a persistent SSH connection that Docker can use for remote operations. It handles:
+
 - Background SSH master connection with control sockets
 - Automatic PID tracking
 - Graceful shutdown and cleanup
 - Connection keepalive (60s intervals)
 
 **Requirements:**
+
 - SSH access to the remote host with key-based authentication
 - SSH keys available in `~/.ssh/` or SSH agent
 - Docker installed on the remote host
 
 **Troubleshooting:**
+
 ```bash
 # Check detailed status
 mise run tunnel-status
@@ -370,14 +381,22 @@ In order to support packages like dbt-utils and dbt-audit-helper, we needed to c
 
 This project uses GitHub Actions for continuous integration and deployment:
 
-- **CI Workflow**: Runs on every pull request and push to main/master
-  - Format checking (`nox -s format:check`)
-  - Linting (`nox -s lint:code`)
-  - Security checks (`nox -s lint:security`)
-  - Type checking (`nox -s lint:typing`)
-  - Unit tests with coverage reporting (`nox -s test:unit`)
-  - Python version matrix (3.10, 3.11, 3.12)
-  - **SonarCloud Integration**: Quality gates and coverage reporting
+- **CI Workflow**: Runs on pull requests, pushes to main/master, scheduled nightly, and manual dispatch
+  - **Smart Integration Testing**: Only runs integration tests when relevant files change (on PRs)
+  - **Python Matrix**: Tests across Python 3.10, 3.11, 3.12, and 3.13
+  - **Checks Job** (runs for all Python versions):
+    - Format checking (`nox -s format:check`)
+    - Linting (`nox -s lint:code`)
+    - Security checks (`nox -s lint:security`)
+    - Type checking (`nox -s lint:typing`)
+    - Unit tests with coverage reporting (`nox -s test:unit`)
+  - **Integration Job** (parallel execution with 8 workers):
+    - Functional tests against Exasol database (`nox -s test:integration`)
+    - Conditional execution based on file changes
+  - **Report Job**:
+    - Combines coverage from all jobs
+    - SonarCloud integration for quality gates and coverage reporting
+  - **Concurrency Control**: Cancels redundant runs on the same branch
 
 - **Release Workflow**: Triggered by version tags
   - Builds package using `uv build`
@@ -386,26 +405,33 @@ This project uses GitHub Actions for continuous integration and deployment:
 
 ## Local Development Commands
 
-If using devbox, the following commands are available:
+The following commands are available via mise:
 
 ```bash
 # Run format check
-devbox run format
+mise run format-check
 
-# Run linting
-devbox run lint
+# Auto-format code
+mise run format
+
+# Run all linters
+mise run lint
 
 # Run unit tests
-devbox run unit-test
+mise run test:unit
 
-# Run unit tests with coverage report
-devbox run coverage
+# Run integration tests
+mise run test:integration
 
-# Run complete CI pipeline locally
-devbox run ci
+# Run all tests with coverage
+mise run test
 
-# Test GitHub Actions workflows locally (requires Docker)
-devbox run act
+# Run all checks (format, lint, type)
+mise run check
+
+# Run specific nox sessions
+mise run nox -- -s test:unit
+mise run nox -- -s lint:security
 ```
 
 ## Branch Protection
@@ -427,10 +453,12 @@ To create a new release:
 1. Update version in `pyproject.toml`
 2. Commit the change
 3. Create and push a version tag with `v` prefix:
+
    ```bash
    git tag v1.10.2
    git push origin v1.10.2
    ```
+
 4. GitHub Actions will automatically:
    - Build the package
    - Publish to PyPI
