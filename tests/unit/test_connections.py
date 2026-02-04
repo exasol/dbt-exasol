@@ -1,6 +1,7 @@
 """Unit tests for ExasolConnectionManager and ExasolCursor."""
 
 import ssl
+import sys
 import unittest
 from unittest.mock import (
     Mock,
@@ -14,6 +15,7 @@ from dbt.adapters.exasol.connections import (
     ExasolConnectionManager,
     ExasolCredentials,
     ExasolCursor,
+    ProtocolVersionType,
 )
 
 
@@ -88,7 +90,9 @@ class TestGetResultFromCursor(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     @patch("dbt_common.clients.agate_helper.table_from_data_flat")
-    def test_get_result_from_cursor_with_timestamp_conversion(self, mock_table_from_data):
+    def test_get_result_from_cursor_with_timestamp_conversion(
+        self, mock_table_from_data
+    ):
         """Test get_result_from_cursor converts TIMESTAMP strings to datetime."""
         mock_table = Mock()
         mock_table.__len__ = Mock(return_value=1)
@@ -327,7 +331,9 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
 
         call_args = mock_connect.call_args
         self.assertEqual(call_args[1]["encryption"], True)
-        self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED})
+        self.assertEqual(
+            call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED}
+        )
 
     @patch("dbt.adapters.exasol.connections.connect")
     def test_open_with_ssl_enabled_without_validation(self, mock_connect):
@@ -412,7 +418,9 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
 
         # Verify timestamp format was set
         self.assertEqual(mock_conn_obj.timestamp_format, "YYYY-MM-DD HH24:MI:SS")
-        mock_conn_obj.execute.assert_called_once_with("alter session set NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'")
+        mock_conn_obj.execute.assert_called_once_with(
+            "alter session set NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'"
+        )
 
 
 class TestExasolCursorProperties(unittest.TestCase):
@@ -557,7 +565,9 @@ class TestConnectionRetryBehavior(unittest.TestCase):
         from dbt.adapters.exceptions.connection import FailedToConnectError
 
         # All attempts fail with ExaError
-        mock_connect.side_effect = self._create_exa_error("Persistent connection failure")
+        mock_connect.side_effect = self._create_exa_error(
+            "Persistent connection failure"
+        )
 
         connection = self._create_connection_with_credentials(retries=3)
 
@@ -625,7 +635,9 @@ class TestConnectionRetryBehavior(unittest.TestCase):
 
     @patch("dbt.adapters.exasol.connections.connect")
     @patch("dbt.adapters.base.connections.sleep")
-    def test_retry_passes_exa_error_as_retryable_exception(self, mock_sleep, mock_connect):
+    def test_retry_passes_exa_error_as_retryable_exception(
+        self, mock_sleep, mock_connect
+    ):
         """Test that ExaError (base class) triggers retry behavior."""
         mock_conn_obj = Mock(spec=ExasolConnection)
         # Use base ExaError class
@@ -640,6 +652,308 @@ class TestConnectionRetryBehavior(unittest.TestCase):
 
         self.assertEqual(mock_connect.call_count, 2)
         self.assertEqual(result.state, "open")
+
+
+class TestStrEnumBackport(unittest.TestCase):
+    """Test StrEnum backport for Python < 3.11."""
+
+    def test_protocol_version_type_is_string(self):
+        """Test ProtocolVersionType enum values are strings."""
+        self.assertEqual(ProtocolVersionType.V1, "v1")
+        self.assertEqual(ProtocolVersionType.V2, "v2")
+        self.assertEqual(ProtocolVersionType.V3, "v3")
+
+    def test_protocol_version_type_is_str_subclass(self):
+        """Test ProtocolVersionType is a string subclass."""
+        self.assertIsInstance(ProtocolVersionType.V1, str)
+        self.assertIsInstance(ProtocolVersionType.V2, str)
+        self.assertIsInstance(ProtocolVersionType.V3, str)
+
+
+class TestConnectFunction(unittest.TestCase):
+    """Test global connect function."""
+
+    @patch("dbt.adapters.exasol.connections.ExasolConnection")
+    def test_connect_default_autocommit(self, mock_exa_connection):
+        """Test connect function sets autocommit=False by default."""
+        from dbt.adapters.exasol.connections import connect
+
+        connect(dsn="test:8563", user="sys", password="exasol")
+        mock_exa_connection.assert_called_once()
+        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], False)
+
+    @patch("dbt.adapters.exasol.connections.ExasolConnection")
+    def test_connect_explicit_autocommit(self, mock_exa_connection):
+        """Test connect function respects explicit autocommit."""
+        from dbt.adapters.exasol.connections import connect
+
+        connect(dsn="test:8563", user="sys", password="exasol", autocommit=True)
+        mock_exa_connection.assert_called_once()
+        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], True)
+
+
+class TestExasolConnectionCursor(unittest.TestCase):
+    """Test ExasolConnection cursor method."""
+
+    def test_cursor_returns_exasol_cursor(self):
+        """Test cursor method returns ExasolCursor instance."""
+        # Create a mock connection with required attributes
+        mock_conn = Mock(spec=ExasolConnection)
+        # Bind the real cursor method to the mock
+        mock_conn.cursor = ExasolConnection.cursor.__get__(mock_conn, ExasolConnection)
+
+        cursor = mock_conn.cursor()
+        self.assertIsInstance(cursor, ExasolCursor)
+
+
+class TestExasolCredentialsProperties(unittest.TestCase):
+    """Test ExasolCredentials properties and methods."""
+
+    def setUp(self):
+        """Set up test credentials."""
+        self.credentials = ExasolCredentials(
+            dsn="localhost:8563",
+            user="sys",
+            password="exasol",
+            database="test",
+            schema="test_schema",
+        )
+
+    def test_type_property(self):
+        """Test type property returns 'exasol'."""
+        self.assertEqual(self.credentials.type, "exasol")
+
+    def test_unique_field_property(self):
+        """Test unique_field property returns dsn."""
+        self.assertEqual(self.credentials.unique_field, "localhost:8563")
+
+    def test_connection_keys_method(self):
+        """Test _connection_keys returns expected keys."""
+        keys = self.credentials._connection_keys()
+        self.assertIn("dsn", keys)
+        self.assertIn("user", keys)
+        self.assertIn("database", keys)
+        self.assertIn("schema", keys)
+        self.assertIn("connection_timeout", keys)
+        self.assertIn("encryption", keys)
+        self.assertIn("protocol_version", keys)
+
+
+class TestExceptionHandler(unittest.TestCase):
+    """Test exception_handler context manager."""
+
+    @patch.object(ExasolConnectionManager, "rollback_if_open")
+    def test_exception_handler_with_dbt_runtime_error(self, mock_rollback):
+        """Test exception_handler re-raises DbtRuntimeError."""
+        from dbt_common.exceptions import DbtRuntimeError
+
+        manager = ExasolConnectionManager(Mock(), Mock())
+
+        with self.assertRaises(DbtRuntimeError) as context:
+            with manager.exception_handler("SELECT 1"):
+                raise DbtRuntimeError("Test error")
+
+        self.assertIn("Test error", str(context.exception))
+        mock_rollback.assert_called_once()
+
+    @patch.object(ExasolConnectionManager, "rollback_if_open")
+    def test_exception_handler_wraps_other_exceptions(self, mock_rollback):
+        """Test exception_handler wraps non-DbtRuntimeError exceptions."""
+        from dbt_common.exceptions import DbtRuntimeError
+
+        manager = ExasolConnectionManager(Mock(), Mock())
+
+        with self.assertRaises(DbtRuntimeError):
+            with manager.exception_handler("SELECT 1"):
+                raise ValueError("Some error")
+
+        mock_rollback.assert_called_once()
+
+
+class TestInvalidProtocolVersion(unittest.TestCase):
+    """Test handling of invalid protocol versions."""
+
+    @patch("dbt.adapters.exasol.connections.connect")
+    def test_open_with_invalid_protocol_version(self, mock_connect):
+        """Test open raises error with invalid protocol version."""
+        from dbt_common.exceptions import DbtRuntimeError
+
+        credentials = ExasolCredentials(
+            dsn="localhost:8563",
+            user="sys",
+            password="exasol",
+            database="test",
+            schema="test_schema",
+            protocol_version="invalid",
+        )
+
+        connection = Mock()
+        connection.state = "closed"
+        connection.credentials = credentials
+
+        with self.assertRaises(DbtRuntimeError) as context:
+            ExasolConnectionManager.open(connection)
+
+        self.assertIn("is not a valid protocol version", str(context.exception))
+
+
+class TestConnectionManagerMethods(unittest.TestCase):
+    """Test ExasolConnectionManager utility methods."""
+
+    def test_add_begin_query(self):
+        """Test add_begin_query returns None."""
+        manager = ExasolConnectionManager(Mock(), Mock())
+        result = manager.add_begin_query()
+        self.assertIsNone(result)
+
+    def test_cancel(self):
+        """Test cancel calls abort_query on connection."""
+        manager = ExasolConnectionManager(Mock(), Mock())
+        mock_connection = Mock()
+        manager.cancel(mock_connection)
+        mock_connection.abort_query.assert_called_once()
+
+
+class TestCursorImportFromFile(unittest.TestCase):
+    """Test ExasolCursor import_from_file method."""
+
+    def test_import_from_file_with_column_list(self):
+        """Test import_from_file with explicit column list."""
+        mock_connection = Mock(spec=ExasolConnection)
+        mock_connection.row_separator = "LF"
+        cursor = ExasolCursor(mock_connection)
+
+        mock_agate_table = Mock()
+        mock_agate_table.original_abspath = "/path/to/file.csv"
+
+        table_info = ["schema", "table", '"col1","col2","col3"']
+
+        cursor.import_from_file(mock_agate_table, table_info)
+
+        mock_connection.import_from_file.assert_called_once()
+        call_args = mock_connection.import_from_file.call_args
+        self.assertEqual(call_args[1]["columns"], ['"col1"', '"col2"', '"col3"'])
+
+    def test_import_from_file_without_column_list(self):
+        """Test import_from_file without explicit column list (legacy format)."""
+        mock_connection = Mock(spec=ExasolConnection)
+        mock_connection.row_separator = "LF"
+        cursor = ExasolCursor(mock_connection)
+
+        mock_agate_table = Mock()
+        mock_agate_table.original_abspath = "/path/to/file.csv"
+
+        table_info = ["schema", "table"]
+
+        cursor.import_from_file(mock_agate_table, table_info)
+
+        mock_connection.import_from_file.assert_called_once()
+        call_args = mock_connection.import_from_file.call_args
+        self.assertNotIn("columns", call_args[1])
+
+
+class TestCursorExecuteVariations(unittest.TestCase):
+    """Test ExasolCursor execute method variations."""
+
+    def test_execute_csv_import_with_columns(self):
+        """Test execute with CSV import including column list."""
+        mock_connection = Mock(spec=ExasolConnection)
+        mock_connection.row_separator = "LF"
+        cursor = ExasolCursor(mock_connection)
+
+        mock_agate_table = Mock()
+        mock_agate_table.original_abspath = "/path/to/file.csv"
+
+        cursor.execute("0CSV|schema.table|col1,col2", mock_agate_table)
+
+        mock_connection.import_from_file.assert_called_once()
+
+
+class TestCursorFetchMethods(unittest.TestCase):
+    """Test ExasolCursor fetch methods with edge cases."""
+
+    def test_fetchone_with_no_statement(self):
+        """Test fetchone raises RuntimeError when stmt is None."""
+        cursor = ExasolCursor(Mock())
+        with self.assertRaises(RuntimeError) as context:
+            cursor.fetchone()
+        self.assertIn("Cannot fetch on unset statement", str(context.exception))
+
+    def test_fetchone_with_statement(self):
+        """Test fetchone calls stmt.fetchone()."""
+        cursor = ExasolCursor(Mock())
+        mock_stmt = Mock()
+        mock_stmt.fetchone.return_value = [1, "test"]
+        cursor.stmt = mock_stmt
+
+        result = cursor.fetchone()
+        mock_stmt.fetchone.assert_called_once()
+        self.assertEqual(result, [1, "test"])
+
+    def test_fetchmany_with_no_statement(self):
+        """Test fetchmany raises RuntimeError when stmt is None."""
+        cursor = ExasolCursor(Mock())
+        with self.assertRaises(RuntimeError) as context:
+            cursor.fetchmany()
+        self.assertIn("Cannot fetch on unset statement", str(context.exception))
+
+    def test_fetchmany_with_custom_size(self):
+        """Test fetchmany with custom size."""
+        cursor = ExasolCursor(Mock())
+        mock_stmt = Mock()
+        mock_stmt.fetchmany.return_value = [[1, "test"], [2, "test2"]]
+        cursor.stmt = mock_stmt
+
+        result = cursor.fetchmany(10)
+        mock_stmt.fetchmany.assert_called_once_with(10)
+        self.assertEqual(len(result), 2)
+
+    def test_fetchmany_with_default_size(self):
+        """Test fetchmany uses array_size when size is None."""
+        cursor = ExasolCursor(Mock())
+        cursor.array_size = 5
+        mock_stmt = Mock()
+        cursor.stmt = mock_stmt
+
+        cursor.fetchmany()
+        mock_stmt.fetchmany.assert_called_once_with(5)
+
+    def test_fetchall_with_no_statement(self):
+        """Test fetchall raises RuntimeError when stmt is None."""
+        cursor = ExasolCursor(Mock())
+        with self.assertRaises(RuntimeError) as context:
+            cursor.fetchall()
+        self.assertIn("Cannot fetch on unset statement", str(context.exception))
+
+    def test_fetchall_with_statement(self):
+        """Test fetchall calls stmt.fetchall()."""
+        cursor = ExasolCursor(Mock())
+        mock_stmt = Mock()
+        mock_stmt.fetchall.return_value = [[1, "test"], [2, "test2"]]
+        cursor.stmt = mock_stmt
+
+        result = cursor.fetchall()
+        mock_stmt.fetchall.assert_called_once()
+        self.assertEqual(len(result), 2)
+
+
+class TestCursorClose(unittest.TestCase):
+    """Test ExasolCursor close method."""
+
+    def test_close_with_statement(self):
+        """Test close calls stmt.close()."""
+        cursor = ExasolCursor(Mock())
+        mock_stmt = Mock()
+        cursor.stmt = mock_stmt
+
+        cursor.close()
+        mock_stmt.close.assert_called_once()
+
+    def test_close_without_statement(self):
+        """Test close does nothing when stmt is None."""
+        cursor = ExasolCursor(Mock())
+        cursor.stmt = None
+        cursor.close()  # Should not raise
 
 
 if __name__ == "__main__":

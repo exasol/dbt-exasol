@@ -31,6 +31,7 @@ from dbt.adapters.exasol.connections import ExasolConnectionManager
 from dbt.adapters.exasol.relation import ExasolRelation
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
+PYTHON_MODEL_NOT_SUPPORTED = "Python models are not supported on Exasol"
 
 
 class ExasolConfig(
@@ -256,16 +257,16 @@ class ExasolAdapter(SQLAdapter):
     @property
     def default_python_submission_method(self) -> str:
         """Python models are not supported on Exasol."""
-        raise NotImplementedError("Python models are not supported on Exasol")
+        raise NotImplementedError(PYTHON_MODEL_NOT_SUPPORTED)
 
     @property
     def python_submission_helpers(self) -> dict[str, type[PythonJobHelper]]:
         """Python models are not supported on Exasol."""
-        raise NotImplementedError("Python models are not supported on Exasol")
+        raise NotImplementedError(PYTHON_MODEL_NOT_SUPPORTED)
 
     def generate_python_submission_response(self, submission_result: Any) -> AdapterResponse:
         """Python models are not supported on Exasol."""
-        raise NotImplementedError("Python models are not supported on Exasol")
+        raise NotImplementedError(PYTHON_MODEL_NOT_SUPPORTED)
 
     def get_catalog_for_single_relation(self, relation: BaseRelation) -> CatalogTable | None:
         """Get catalog information for a single relation."""
