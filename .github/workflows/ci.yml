@@ -51,8 +51,8 @@ jobs:
             integration:
               - 'dbt/adapters/exasol/**'
               - 'dbt/include/**'
-              - 'tests/functional/**'
-              - 'tests/conftest.py'
+              - 'test/integration/**'
+              - 'test/conftest.py'
               - 'noxfile.py'
               - 'noxconfig.py'
               - 'pyproject.toml'
@@ -60,10 +60,15 @@ jobs:
       - name: Determine if integration should run
         id: should-run-integration
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]] || \
-             [[ "${{ github.event_name }}" == "schedule" ]] || \
+          # Always run for scheduled builds and manual workflow dispatch
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "run=true" >> $GITHUB_OUTPUT
+          # For push to main/master, always run integration tests
+          elif [[ "${{ github.event_name }}" == "push" ]] && \
+               [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          # For PRs, use path-based filtering
           else
             echo "run=${{ steps.changes.outputs.integration }}" >> $GITHUB_OUTPUT
           fi
