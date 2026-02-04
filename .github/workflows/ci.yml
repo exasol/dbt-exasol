@@ -17,6 +17,16 @@ jobs:
     timeout-minutes: 15
     outputs:
       python-matrix: ${{ steps.matrix.outputs.python-versions }}
+    env:
+      DBT_DSN: localhost/nocertcheck:8563
+      DBT_USER: sys
+      DBT_PASS: exasol
+      DBT_TEST_USER_1: dbt_test_role_1
+      DBT_TEST_USER_2: dbt_test_role_2
+      DBT_TEST_USER_3: dbt_test_role_3
+      EXASOL_RELEASE: "8"
+      DOCKER_API_VERSION: "1.41"
+      DOCKER_HOST: ssh://root@188.245.102.102
     steps:
       - uses: actions/checkout@v5
 
@@ -44,6 +54,16 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ${{ fromJSON(needs.setup.outputs.python-matrix) }}
+    env:
+      DBT_DSN: localhost/nocertcheck:8563
+      DBT_USER: sys
+      DBT_PASS: exasol
+      DBT_TEST_USER_1: dbt_test_role_1
+      DBT_TEST_USER_2: dbt_test_role_2
+      DBT_TEST_USER_3: dbt_test_role_3
+      EXASOL_RELEASE: "8"
+      DOCKER_API_VERSION: "1.41"
+      DOCKER_HOST: ssh://root@188.245.102.102
     steps:
       - uses: actions/checkout@v5
 
@@ -116,6 +136,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: needs.checks.result == 'success'
+    env:
+      DBT_DSN: localhost/nocertcheck:8563
+      DBT_USER: sys
+      DBT_PASS: exasol
+      DBT_TEST_USER_1: dbt_test_role_1
+      DBT_TEST_USER_2: dbt_test_role_2
+      DBT_TEST_USER_3: dbt_test_role_3
+      EXASOL_RELEASE: "8"
+      DOCKER_API_VERSION: "1.41"
+      DOCKER_HOST: ssh://root@188.245.102.102
     steps:
       - uses: actions/checkout@v5
 
