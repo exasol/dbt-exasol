@@ -1,5 +1,5 @@
-# pylint: disable=wrong-import-order
-# pylint: disable=ungrouped-imports
+# pylint: disable=wrong-import-order  # Necessary due to conditional Python 3.11+ StrEnum import
+# pylint: disable=ungrouped-imports  # Required for proper conditional StrEnum import grouping
 """
 DBT adapter connection implementation for Exasol.
 """
@@ -17,16 +17,14 @@ from typing import Any
 import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
 import pyexasol
-from pyexasol import ExaConnection
 from dateutil import parser  # type: ignore[import-untyped]
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
     Credentials,
 )
 from dbt.adapters.events.logging import AdapterLogger
-
-# from dbt.adapters.base import Credentials  # type: ignore
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
+from pyexasol import ExaConnection
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -35,16 +33,17 @@ else:
 
     class StrEnum(str, Enum):
         """
-        Shim for StrEnum for Python < 3.11
+        Backport of StrEnum for Python < 3.11.
+
+        StrEnum members are strings and can be used in string contexts.
+        This shim provides compatibility with the built-in StrEnum
+        available in Python 3.11+.
         """
 
-        pass
-
-
-from pyexasol import ExaConnection
 
 ROW_SEPARATOR_DEFAULT = "LF" if os.linesep == "\n" else "CRLF"
 TIMESTAMP_FORMAT_DEFAULT = "YYYY-MM-DDTHH:MI:SS.FF6"
+_UNSET_STATEMENT_ERROR = "Cannot fetch on unset statement"
 
 LOGGER = AdapterLogger("exasol")
 
@@ -88,7 +87,7 @@ class ExasolAdapterResponse(AdapterResponse):
     execution_time: float | None = None
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes  # All attributes are required Exasol connection parameters from pyexasol
 @dataclass
 class ExasolCredentials(Credentials):
     """Profile parameters for Exasol in dbt profiles.yml"""
@@ -98,7 +97,7 @@ class ExasolCredentials(Credentials):
     schema: str
     # One of user+pass, access_token, or refresh_token needs to be specified in profiles.yml
     user: str = ""
-    password: str = ""
+    password: str = ""  # noqa: S105 # Field name for user credential, not a hardcoded password
     access_token: str = ""
     refresh_token: str = ""
     # optional statements that can be set in profiles.yml
@@ -206,16 +205,14 @@ class ExasolConnectionManager(SQLConnectionManager):
         return rows
 
     @classmethod
-    def _apply_type_conversions(
-        cls, rows: list[Any], col_idx: int, col_type: str
-    ) -> list[Any]:
+    def _apply_type_conversions(cls, rows: list[Any], col_idx: int, col_type: str) -> list[Any]:
         """Apply appropriate type conversion based on column type."""
         if not cls._needs_type_conversion(rows, col_idx):
             return rows
 
         if col_type in ["DECIMAL", "BIGINT"]:
             return cls._convert_column_to_decimal(rows, col_idx)
-        elif col_type.startswith("TIMESTAMP"):
+        if col_type.startswith("TIMESTAMP"):
             return cls._convert_column_to_timestamp(rows, col_idx)
         return rows
 
@@ -236,7 +233,7 @@ class ExasolConnectionManager(SQLConnectionManager):
         return dbt_common.clients.agate_helper.table_from_data_flat(data, column_names)  # type: ignore
 
     @classmethod
-    # pylint: disable=raise-missing-from
+    # pylint: disable=raise-missing-from  # Chain context preserved via `from exc` on line 259
     def open(cls, connection):
         if connection.state == "open":
             LOGGER.debug("Connection is already open, skipping open.")
@@ -290,9 +287,7 @@ class ExasolConnectionManager(SQLConnectionManager):
             # those can be added to ExasolConnection as members
             conn.row_separator = credentials.row_separator
             conn.timestamp_format = credentials.timestamp_format
-            conn.execute(
-                f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'"
-            )
+            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
 
             return conn
 
@@ -402,15 +397,13 @@ class ExasolCursor:
             try:
                 self.stmt = self.connection.execute(query)
             except pyexasol.ExaQueryError as e:
-                raise dbt_common.exceptions.DbtDatabaseError(
-                    "Exasol Query Error: " + e.message
-                )
+                raise dbt_common.exceptions.DbtDatabaseError("Exasol Query Error: " + e.message)
         return self
 
     def fetchone(self):
         """fetch single row"""
         if self.stmt is None:
-            raise RuntimeError("Cannot fetch on unset statement")
+            raise RuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchone()
 
     def fetchmany(self, size=None):
@@ -419,13 +412,13 @@ class ExasolCursor:
             size = self.array_size
 
         if self.stmt is None:
-            raise RuntimeError("Cannot fetch on unset statement")
+            raise RuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchmany(size)
 
     def fetchall(self):
         """fetch single row"""
         if self.stmt is None:
-            raise RuntimeError("Cannot fetch on unset statement")
+            raise RuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchall()
 
     @property

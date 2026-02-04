@@ -9,9 +9,9 @@
 
 {% macro exasol__call_dcl_statements(dcl_statement_list) %}
     {#- Exasol doesn't allow multiple statements so we have to call it individually... -#}
-    {% for dcl_statement in dcl_statement_list %}
-        {% call statement('grants') %}
+    {%- for dcl_statement in dcl_statement_list %}
+        {%- call statement('grants') -%}
             {{ dcl_statement }};
-        {% endcall %}
-    {% endfor %}
+        {%- endcall %}
+    {%- endfor %}
 {% endmacro %}

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from dbt.adapters.base.column import Column
-from dbt_common.exceptions import DbtRuntimeError
+from dbt_common.exceptions import DbtRuntimeError  # pylint: disable=wrong-import-order
 
 
 @dataclass
