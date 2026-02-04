@@ -79,8 +79,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v5
+      - name: Setup mise
+        uses: jdx/mise-action@v2
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -90,32 +90,49 @@ jobs:
           path: .venv
           key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}
 
-      - name: Cache uv
+      - name: Cache mise
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: uv-cache-${{ runner.os }}
+          path: ~/.local/share/mise
+          key: mise-cache-${{ runner.os }}
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: mise run sync
 
       - name: Start Exasol database
-        run: |
-          uv run nox -s db:start -- --db-version ${{ github.event.inputs.db-version || '8.29.13' }}
+        run: mise db:start -- --db-version ${{ github.event.inputs.db-version || '8.29.13' }}
         env:
           EXASOL_DB_MEM_SIZE: 4GB
-
-      - name: Run integration tests
-        run: |
-          uv run pytest tests/functional -v --tb=short -n 8
-        env:
-          DBT_DSN: localhost:8563
+          DBT_DSN: localhost/nocertcheck:8563
           DBT_USER: sys
           DBT_PASS: exasol
+          DBT_TEST_USER_1: dbt_test_role_1
+          DBT_TEST_USER_2: dbt_test_role_2
+          DBT_TEST_USER_3: dbt_test_role_3
+          EXASOL_RELEASE: "8"
+
+      - name: Run integration tests
+        run: mise test:integration
+        env:
+          DBT_DSN: localhost/nocertcheck:8563
+          DBT_USER: sys
+          DBT_PASS: exasol
+          DBT_TEST_USER_1: dbt_test_role_1
+          DBT_TEST_USER_2: dbt_test_role_2
+          DBT_TEST_USER_3: dbt_test_role_3
+          EXASOL_RELEASE: "8"
 
       - name: Stop Exasol database
         if: always()
-        run: uv run nox -s db:stop
+        run: mise db:stop
+        env:
+          DBT_DSN: localhost/nocertcheck:8563
+          DBT_USER: sys
+          DBT_PASS: exasol
+          DBT_TEST_USER_1: dbt_test_role_1
+          DBT_TEST_USER_2: dbt_test_role_2
+          DBT_TEST_USER_3: dbt_test_role_3
+          EXASOL_RELEASE: "8"
 
       - name: Upload test results
         uses: actions/upload-artifact@v5

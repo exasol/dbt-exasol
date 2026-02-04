@@ -82,3 +82,11 @@ run = "./scripts/tunnel.sh status"
 [tasks.tunnel-restart]
 description = "Restart SSH tunnel"
 run = "./scripts/tunnel.sh restart"
+
+[tasks."db:start"]
+description = "Start Exasol database container"
+run = "uv run nox -s db:start"
+
+[tasks."db:stop"]
+description = "Stop Exasol database container"
+run = "uv run nox -s db:stop"
