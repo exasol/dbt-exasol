@@ -15,6 +15,15 @@ parse_ssh_host() {
     fi
 }
 
+# Parse port from DBT_DSN (format: host/options:port)
+parse_dbt_port() {
+    if [[ "${DBT_DSN:-}" =~ :([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[1]}"
+    else
+        echo "8563"  # Default Exasol port
+    fi
+}
+
 # Check if tunnel is running
 is_running() {
     if [[ -f "$PIDFILE" ]]; then
@@ -43,17 +52,23 @@ start_tunnel() {
         return 0
     fi
 
-    echo "Starting SSH tunnel to $ssh_host..."
+    local forward_port
+    forward_port=$(parse_dbt_port)
 
-    # Start SSH master connection in background
+    echo "Starting SSH tunnel to $ssh_host..."
+    echo "Forwarding localhost:${forward_port} -> ${ssh_host}:${forward_port}"
+
+    # Start SSH master connection in background with port forwarding
     # -M: Master mode (control socket)
     # -N: No remote command
     # -f: Background after authentication
+    # -L: Local port forwarding (localhost:port -> remote:port)
     # -o ControlMaster=auto: Reuse connections
     # -o ControlPersist=yes: Keep alive
     # -o ServerAliveInterval=60: Keepalive every 60s
     # -o ServerAliveCountMax=3: Max 3 failed keepalives
     ssh -M -N -f \
+        -L "${forward_port}:localhost:${forward_port}" \
         -o ControlMaster=auto \
         -o ControlPath="$CONTROL_PATH" \
         -o ControlPersist=yes \
@@ -69,6 +84,7 @@ start_tunnel() {
         echo "$pid" > "$PIDFILE"
         echo "SSH tunnel started successfully (PID $pid)"
         echo "Docker can now connect via: $DOCKER_HOST"
+        echo "Port forwarding: localhost:${forward_port} -> ${ssh_host}:${forward_port}"
         return 0
     else
         echo "Warning: SSH tunnel may have started but PID not found" >&2
@@ -113,6 +129,9 @@ stop_tunnel() {
 status_tunnel() {
     local ssh_host
     ssh_host=$(parse_ssh_host 2>/dev/null || echo "")
+    
+    local forward_port
+    forward_port=$(parse_dbt_port)
 
     if is_running; then
         local pid
@@ -120,6 +139,7 @@ status_tunnel() {
         echo "SSH tunnel is RUNNING (PID $pid)"
         echo "Docker host: ${DOCKER_HOST:-not set}"
         echo "SSH target: $ssh_host"
+        echo "Port forwarding: localhost:${forward_port} -> ${ssh_host}:${forward_port}"
     else
         echo "SSH tunnel is NOT RUNNING"
         if [[ -n "$ssh_host" ]]; then

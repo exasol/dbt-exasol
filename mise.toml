@@ -10,6 +10,8 @@ opencode = "latest"
 [env]
 # Load test.env as defaults, then .env for local overrides
 _.file = [".env"]
+_.path = ["./.venv/bin"]
+VIRTUAL_ENV = "{{config_root}}/.venv"
 
 # Required environment variables (mise will error if missing)
 DBT_DSN = { required = "Database connection string (e.g., 'localhost/nocertcheck:8563')" }
@@ -27,22 +29,42 @@ DOCKER_BUILDKIT = "{% if env.DOCKER_BUILDKIT %}{{ env.DOCKER_BUILDKIT }}{% elif 
 DOCKER_API_VERSION = "{% if env.DOCKER_API_VERSION %}{{ env.DOCKER_API_VERSION }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1.41{% endif %}"
 
 [hooks]
-enter = "mise run sync"
-
-[tasks.test]
-description = "Run pytest with parallel execution"
-run = "uv run pytest -n48"
+enter = ["mise run sync"]
 
 [tasks.sync]
 description = "Sync dependencies using uv"
-run = "uv sync"
+run = "uv sync --dev"
+
+[tasks.format]
+description = "Auto-fix code formatting"
+run = "uv run nox -s format:fix"
+
+[tasks.format-check]
+description = "Check code formatting without fixing"
+run = "uv run nox -s format:check"
 
 [tasks.lint]
-description = "Run ruff and sqlfluff linters"
-run = ["uv run ruff check .", "uv run sqlfluff lint"]
+description = "Run code and security linters"
+run = "uv run nox -s lint:code lint:security"
+
+[tasks.check]
+description = "Run all checks (format, lint, type)"
+run = "uv run nox -s format:check lint:code lint:security lint:typing"
+
+[tasks.test]
+description = "Run all tests with coverage"
+run = "uv run nox -s test:coverage"
+
+[tasks."test:unit"]
+description = "Run unit tests"
+run = "uv run nox -s test:unit"
+
+[tasks."test:integration"]
+description = "Run integration tests (requires database)"
+run = "uv run nox -s test:integration"
 
 [tasks.nox]
-description = "Run nox test sessions"
+description = "Run nox sessions (pass session names as args)"
 run = "uv run nox"
 
 [tasks.tunnel-start]

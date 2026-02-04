@@ -6,22 +6,65 @@ on:
   push:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      python-matrix: ${{ steps.matrix.outputs.python-versions }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
+      - name: Install nox
+        run: uv pip install nox
+
+      - name: Generate Python version matrix
+        id: matrix
+        run: echo "python-versions=$(uv run nox -s matrix:python)" >> $GITHUB_OUTPUT
+
   checks:
     name: Checks (Python-${{ matrix.python-version }})
+    needs: setup
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ${{ fromJSON(needs.setup.outputs.python-matrix) }}
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
       - name: Install dependencies
         run: uv sync --all-extras
       
@@ -46,7 +89,8 @@ jobs:
           name: coverage-python${{ matrix.python-version }}
           path: .coverage
           include-hidden-files: true
-      
+          retention-days: 30
+
       - name: Upload Lint Artifact
         uses: actions/upload-artifact@v5
         if: always()
@@ -56,7 +100,8 @@ jobs:
             .lint.txt
             .lint.json
           include-hidden-files: true
-      
+          retention-days: 30
+
       - name: Upload Security Artifact
         uses: actions/upload-artifact@v5
         if: always()
@@ -64,17 +109,32 @@ jobs:
           name: security-python${{ matrix.python-version }}
           path: .security.json
           include-hidden-files: true
+          retention-days: 30
 
   report:
     name: Report
     needs: checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: needs.checks.result == 'success'
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
       - name: Install dependencies
         run: uv sync --all-extras
         

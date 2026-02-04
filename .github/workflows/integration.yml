@@ -1,0 +1,128 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'dbt/adapters/exasol/**'
+      - 'dbt/include/**'
+      - 'tests/functional/**'
+      - 'tests/conftest.py'
+      - 'noxfile.py'
+      - 'noxconfig.py'
+      - 'pyproject.toml'
+
+  push:
+    branches: [main, master]
+
+  schedule:
+    - cron: '0 2 * * *'  # Nightly at 2 AM UTC
+
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: 'Python version (or "all" for matrix)'
+        required: false
+        default: '3.13'
+      db-version:
+        description: 'Exasol DB version'
+        required: false
+        default: '8.29.13'
+
+concurrency:
+  group: integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python-matrix: ${{ steps.matrix.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
+      - name: Determine Python versions
+        id: matrix
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" ]] || \
+             [[ "${{ github.event.inputs.python-version }}" == "all" ]]; then
+            # Full matrix for scheduled/push to main
+            uv pip install nox
+            echo "versions=$(uv run nox -s matrix:python)" >> $GITHUB_OUTPUT
+          else
+            # Single version for PRs (fast feedback)
+            VERSION="${{ github.event.inputs.python-version || '3.13' }}"
+            echo "versions=[\"$VERSION\"]" >> $GITHUB_OUTPUT
+          fi
+
+  integration:
+    name: Integration (Python-${{ matrix.python-version }})
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.setup.outputs.python-matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-py${{ matrix.python-version }}
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Start Exasol database
+        run: |
+          uv run nox -s db:start -- --db-version ${{ github.event.inputs.db-version || '8.29.13' }}
+        env:
+          EXASOL_DB_MEM_SIZE: 4GB
+
+      - name: Run integration tests
+        run: |
+          uv run pytest tests/functional -v --tb=short -n 8
+        env:
+          DBT_DSN: localhost:8563
+          DBT_USER: sys
+          DBT_PASS: exasol
+
+      - name: Stop Exasol database
+        if: always()
+        run: uv run nox -s db:stop
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: integration-results-python${{ matrix.python-version }}
+          path: |
+            .coverage
+          include-hidden-files: true
+          retention-days: 7

@@ -5,24 +5,55 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-cache-${{ runner.os }}
+
       - name: Build package
         run: uv build
-      
-      - name: Publish to PyPI
-        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
-      
-      - name: Create GitHub Release
+
+      - name: Verify CI Passed
+        run: |
+          gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[] |
+              select(.head_sha == "${{ github.sha }}") |
+              select(.event == "push" or .event == "pull_request") |
+              .conclusion' |
+            grep -v failure || { echo "CI must pass before release"; exit 1; }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes dist/*
+
+      - name: Publish to PyPI
+        id: publish
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
+
+      - name: Create GitHub Release (Draft)
+        run: gh release create ${{ github.ref_name }} --draft --generate-notes dist/*
+
+      - name: Finalize Release
+        if: steps.publish.outcome == 'success'
+        run: gh release edit ${{ github.ref_name }} --draft=false

@@ -3,9 +3,7 @@
 ## Purpose
 
 This specification defines the continuous integration and deployment workflows for the dbt-exasol project. It ensures automated quality checks on every pull request and provides a streamlined release process to PyPI.
-
 ## Requirements
-
 ### Requirement: Continuous Integration
 
 The CI workflow SHALL run automated checks on every pull request to the main branch.
@@ -19,7 +17,9 @@ The workflow SHALL execute the following checks in order:
 
 The workflow SHALL fail if any check fails.
 
-The workflow SHALL test across Python versions 3.10, 3.11, and 3.12 using a matrix strategy.
+The workflow SHALL dynamically derive the Python version matrix from `noxconfig.py` using `nox -s matrix:python`.
+
+The workflow SHALL test across Python versions 3.10, 3.11, 3.12, and 3.13.
 
 #### Scenario: PR triggers CI checks
 
@@ -31,6 +31,12 @@ The workflow SHALL test across Python versions 3.10, 3.11, and 3.12 using a matr
 
 - **WHEN** a commit is pushed directly to the main branch
 - **THEN** the CI workflow runs all checks to validate the branch state
+
+#### Scenario: Python matrix derived from noxconfig
+
+- **WHEN** the CI workflow starts
+- **THEN** a setup job runs `nox -s matrix:python` to output the Python versions
+- **AND** the checks job uses the output as its matrix
 
 ### Requirement: SonarCloud Integration
 
@@ -164,41 +170,26 @@ The documentation SHALL instruct maintainers to:
 
 ### Requirement: Local CI Testing
 
-The devbox environment SHALL include `act` for testing GitHub Actions workflows locally.
+The mise environment SHALL provide tasks that delegate to nox sessions for consistent local/CI behavior.
 
-Devbox SHALL provide convenience scripts for running CI steps:
-- `format` - Run format check
-- `lint` - Run linting
-- `unit-test` - Run unit tests
-- `coverage` - Run unit tests with coverage report
-- `ci` - Run complete CI pipeline
-- `act` - Run GitHub Actions workflow locally using `act`
-- `act:checks` - Run only the checks job locally
-- `act:report` - Run only the report job locally
-- `act:release` - Test release workflow locally
-- `act:list` - List available workflow jobs
-- `restart` - Reload devbox environment
+mise SHALL provide the following tasks:
+- `lint` - Run linters via `nox -s lint:code lint:security`
+- `format` - Auto-fix formatting via `nox -s format:fix`
+- `format-check` - Check formatting via `nox -s format:check`
+- `test` - Run all tests with coverage via `nox -s test:coverage`
+- `test:unit` - Run unit tests via `nox -s test:unit`
+- `test:integration` - Run integration tests via `nox -s test:integration`
+- `check` - Run all checks via `nox -s format:check lint:code lint:security lint:typing`
 
-#### Scenario: Developer runs CI locally
+#### Scenario: Developer runs lint locally
 
-- **WHEN** a developer runs `devbox run ci`
-- **THEN** format check, lint, and unit tests with coverage execute locally
-- **AND** the developer sees the same results as CI would produce
+- **WHEN** a developer runs `mise run lint`
+- **THEN** `nox -s lint:code lint:security` executes
+- **AND** the developer sees the same results as CI
 
-#### Scenario: Developer tests workflow with act
+#### Scenario: Developer runs full check locally
 
-- **WHEN** a developer runs `devbox run act`
-- **THEN** the GitHub Actions CI workflow runs in a local Docker container
-- **AND** the developer can validate workflow changes before pushing
+- **WHEN** a developer runs `mise run check`
+- **THEN** format, lint, security, and type checks execute
+- **AND** the developer gets comprehensive feedback before pushing
 
-#### Scenario: Developer runs individual CI step
-
-- **WHEN** a developer runs `devbox run lint`
-- **THEN** only the linting step executes
-- **AND** the developer gets fast feedback on a specific check
-
-#### Scenario: Developer tests specific workflow job
-
-- **WHEN** a developer runs `devbox run act:checks`
-- **THEN** only the checks job of the CI workflow executes locally
-- **AND** the developer can iterate on specific jobs without running the full workflow

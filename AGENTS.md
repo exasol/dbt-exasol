@@ -21,11 +21,15 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 ## Build & Test Commands
 - Install: `uv sync`
-- Run all tests: `uv run pytest -n48` (uses `-n4` parallel by default from pytest.ini)
-- Run single test: `pytest tests/functional/adapter/test_basic.py::TestClass::test_method -n0`
-- Run with tox: `tox` (tests across Python 3.9-3.12)
-- Format: `uv run ruff check .`
-- Lint SQL: `uv run sqlfluff lint`
+- Run all tests: `uv run nox -s test:coverage` (or `mise run test`)
+- Run unit tests: `uv run nox -s test:unit` (or `mise run test:unit`)
+- Run integration tests: `uv run nox -s test:integration` (or `mise run test:integration`)
+- Run single test: `pytest test/integration/adapter/test_basic.py::TestClass::test_method -n0`
+- Run with tox: `tox` (tests across Python 3.10-3.13)
+- Format: `uv run nox -s format:fix` (or `mise run format`)
+- Check format: `uv run nox -s format:check` (or `mise run format-check`)
+- Lint: `uv run nox -s lint:code lint:security` (or `mise run lint`)
+- All checks: `uv run nox -s format:check lint:code lint:security lint:typing` (or `mise run check`)
 
 ## Code Style
 - **Formatting**: ALL code changes MUST conform to the formatting enforced by `nox -s format:check`. Run `nox -s format:fix` to auto-format before committing.
