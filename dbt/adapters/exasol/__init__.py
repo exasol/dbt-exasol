@@ -1,3 +1,5 @@
+"""dbt-exasol adapter package initialization"""
+
 from dbt.adapters.base import AdapterPlugin
 
 from dbt.adapters.exasol.column import ExasolColumn
@@ -15,11 +17,15 @@ __all__ = [
     "ExasolConnectionManager",
     "ExasolCredentials",
     "ExasolRelation",
+    "PLUGIN",
     "Plugin",
 ]
 
-Plugin = AdapterPlugin(
+PLUGIN = AdapterPlugin(
     adapter=ExasolAdapter,  # type: ignore[arg-type]
     credentials=ExasolCredentials,
     include_path=exasol.PACKAGE_PATH,
 )
+
+# dbt-core 1.11+ expects Plugin (capital P only) instead of PLUGIN
+Plugin = PLUGIN

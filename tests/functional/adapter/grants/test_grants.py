@@ -17,7 +17,7 @@ class TestInvalidGrantsExasol(BaseInvalidGrants):
         return "does not exist"
 
     def privilege_does_not_exist_error(self):
-        return "syntax error, unexpected ON_, expecting ',' or TO_ [line 3, column 34]"
+        return "syntax error, unexpected ON_, expecting ',' or TO_"
 
 
 class TestBaseModelGrantsExasol(BaseModelGrants):

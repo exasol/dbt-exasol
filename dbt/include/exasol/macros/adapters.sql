@@ -208,9 +208,9 @@ AS
 {%- endmacro %}
 
 {% macro persist_view_relation_docs() %}
-    {%- if config.persist_relation_docs() %}
-COMMENT IS '{{ model.description | replace("'", "''") }}'
-    {%- endif %}
+    {%- if config.persist_relation_docs() -%}
+    COMMENT IS '{{ model.description | replace("'", "''") }}'
+    {%- endif -%}
 {% endmacro %}
 
 {% macro exasol__alter_column_type(relation, column_name, new_column_type) -%}

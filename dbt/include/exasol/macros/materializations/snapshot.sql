@@ -45,6 +45,12 @@
     {% if strategy.hard_deletes == 'new_record' %}
         {% set new_scd_id = snapshot_hash_arguments([columns.dbt_scd_id, snapshot_get_time()]) %}
     {% endif %}
+    {#- Constants for snapshot operations -#}
+    {%- set DBT_IS_DELETED_TRUE = "'True'" -%}
+    {%- set DBT_IS_DELETED_FALSE = "'False'" -%}
+    {%- set DBT_CHANGE_TYPE_INSERT = "'insert'" -%}
+    {%- set DBT_CHANGE_TYPE_UPDATE = "'update'" -%}
+    {%- set DBT_CHANGE_TYPE_DELETE = "'delete'" -%}
     with snapshot_query as (
 
         {{ source_sql }}
@@ -105,10 +111,10 @@
     insertions as (
 
         select
-            'insert' as dbt_change_type,
+            {{ DBT_CHANGE_TYPE_INSERT }} as dbt_change_type,
             source_data.*
           {%- if strategy.hard_deletes == 'new_record' -%}
-            ,'False' as {{ columns.dbt_is_deleted }}
+            ,{{ DBT_IS_DELETED_FALSE }} as {{ columns.dbt_is_deleted }}
           {%- endif %}
 
         from insertions_source_data as source_data
@@ -116,7 +122,7 @@
             on {{ unique_key_join_on(strategy.unique_key, "snapshotted_data", "source_data") }}
             where {{ unique_key_is_null(strategy.unique_key, "snapshotted_data") }}
             or ({{ unique_key_is_not_null(strategy.unique_key, "snapshotted_data") }} and (
-               {{ strategy.row_changed }} {%- if strategy.hard_deletes == 'new_record' -%} or snapshotted_data.{{ columns.dbt_is_deleted }} = 'True' {% endif %}
+               {{ strategy.row_changed }} {%- if strategy.hard_deletes == 'new_record' -%} or snapshotted_data.{{ columns.dbt_is_deleted }} = {{ DBT_IS_DELETED_TRUE }} {% endif %}
             )
 
         )
@@ -126,7 +132,7 @@
     updates as (
 
         select
-            'update' as dbt_change_type,
+            {{ DBT_CHANGE_TYPE_UPDATE }} as dbt_change_type,
             source_data.*,
             snapshotted_data.{{ columns.dbt_scd_id }}
           {%- if strategy.hard_deletes == 'new_record' -%}
@@ -137,7 +143,7 @@
         join snapshotted_data
             on {{ unique_key_join_on(strategy.unique_key, "snapshotted_data", "source_data") }}
         where (
-            {{ strategy.row_changed }}  {%- if strategy.hard_deletes == 'new_record' -%} or snapshotted_data.{{ columns.dbt_is_deleted }} = 'True' {% endif %}
+            {{ strategy.row_changed }}  {%- if strategy.hard_deletes == 'new_record' -%} or snapshotted_data.{{ columns.dbt_is_deleted }} = {{ DBT_IS_DELETED_TRUE }} {% endif %}
         )
     )
 
@@ -146,7 +152,7 @@
     deletes as (
 
         select
-            'delete' as dbt_change_type,
+            {{ DBT_CHANGE_TYPE_DELETE }} as dbt_change_type,
             source_data.*,
             {{ snapshot_get_time() }} as {{ columns.dbt_valid_from }},
             {{ snapshot_get_time() }} as {{ columns.dbt_updated_at }},
@@ -163,7 +169,7 @@
             {%- if strategy.hard_deletes == 'new_record' %}
             and not (
                 --avoid updating the record's valid_to if the latest entry is marked as deleted
-                snapshotted_data.{{ columns.dbt_is_deleted }} = 'True'
+                snapshotted_data.{{ columns.dbt_is_deleted }} = {{ DBT_IS_DELETED_TRUE }}
                 and
                 {% if config.get('dbt_valid_to_current') -%}
                     snapshotted_data.{{ columns.dbt_valid_to }} = {{ snapshot_string_as_time(config.get('dbt_valid_to_current')) }}
@@ -183,7 +189,7 @@
     deletion_records as (
 
         select
-            'insert' as dbt_change_type,
+            {{ DBT_CHANGE_TYPE_INSERT }} as dbt_change_type,
             {#/*
                 If a column has been added to the source it won't yet exist in the
                 snapshotted table so we insert a null value as a placeholder for the column.
@@ -208,14 +214,14 @@
             {{ snapshot_get_time() }} as {{ columns.dbt_updated_at }},
             snapshotted_data.{{ columns.dbt_valid_to }} as {{ columns.dbt_valid_to }},
             {{ new_scd_id }} as {{ columns.dbt_scd_id }},
-            'True' as {{ columns.dbt_is_deleted }}
+            {{ DBT_IS_DELETED_TRUE }} as {{ columns.dbt_is_deleted }}
         from snapshotted_data
         left join deletes_source_data as source_data
             on {{ unique_key_join_on(strategy.unique_key, "snapshotted_data", "source_data") }}
         where {{ unique_key_is_null(strategy.unique_key, "source_data") }}
         and not (
             --avoid inserting a new record if the latest one is marked as deleted
-            snapshotted_data.{{ columns.dbt_is_deleted }} = 'True'
+            snapshotted_data.{{ columns.dbt_is_deleted }} = {{ DBT_IS_DELETED_TRUE }}
             and
             {% if config.get('dbt_valid_to_current') -%}
                 snapshotted_data.{{ columns.dbt_valid_to }} = {{ snapshot_string_as_time(config.get('dbt_valid_to_current')) }}

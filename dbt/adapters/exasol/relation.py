@@ -98,7 +98,10 @@ class ExasolRelation(BaseRelation):
         end_str = format_ts(event_time_filter.end)
 
         if start_str and end_str:
-            return f"{event_time_filter.field_name} >= TIMESTAMP '{start_str}' and {event_time_filter.field_name} < TIMESTAMP '{end_str}'"
+            return (
+                f"{event_time_filter.field_name} >= TIMESTAMP '{start_str}' and "
+                f"{event_time_filter.field_name} < TIMESTAMP '{end_str}'"
+            )
         if start_str:
             return f"{event_time_filter.field_name} >= TIMESTAMP '{start_str}'"
         if end_str:
