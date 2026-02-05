@@ -123,7 +123,7 @@ class ExasolAdapter(SQLAdapter):
             quote_columns = True
         elif quote_config is not None:
             raise CompilationError(
-                f'The seed configuration value of "quote_columns" has an ' f"invalid type {type(quote_config)}"
+                f'The seed configuration value of "quote_columns" has an invalid type {type(quote_config)}'
             )
 
         if quote_columns:

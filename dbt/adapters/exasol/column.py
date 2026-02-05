@@ -90,15 +90,13 @@ class ExasolColumn(Column):
                     numeric_precision = int(parts[0])
                 except ValueError:
                     raise DbtRuntimeError(
-                        f'Could not interpret data_type "{raw_data_type}": '
-                        f'could not convert "{parts[0]}" to an integer'
+                        f'Could not interpret data_type "{raw_data_type}": could not convert "{parts[0]}" to an integer'
                     )
                 try:
                     numeric_scale = int(parts[1])
                 except ValueError:
                     raise DbtRuntimeError(
-                        f'Could not interpret data_type "{raw_data_type}": '
-                        f'could not convert "{parts[1]}" to an integer'
+                        f'Could not interpret data_type "{raw_data_type}": could not convert "{parts[1]}" to an integer'
                     )
 
         return cls(name, data_type, char_size, numeric_precision, numeric_scale)

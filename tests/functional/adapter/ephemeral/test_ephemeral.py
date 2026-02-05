@@ -13,7 +13,6 @@ from dbt.tests.util import (
 
 
 class TestEphemeralMultiExasol(BaseEphemeralMulti):
-
     def test_ephemeral_multi(self, project):
         run_dbt(["seed"])
         results = run_dbt(["run"])

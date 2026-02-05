@@ -6,7 +6,6 @@ from dbt.tests.util import run_dbt
 
 
 class TestSnapshot(BaseSimpleSnapshot):
-
     def test_updates_are_captured_by_snapshot(self, project):
         """
         Update the last 5 records. Show that all ids are current, but the last 5 reflect updates.

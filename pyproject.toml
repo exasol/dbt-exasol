@@ -105,15 +105,42 @@ ignore = []
 max-line-length = 120
 max-module-lines = 800
 
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.format]
+# Ruff format automatically removes trailing whitespace by default
+# NOTE: Project currently uses black for formatting (via nox format:check/fix)
+# This configuration is for potential future migration to ruff format
+# To use: run `ruff format` instead of `black`
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
 [tool.ruff.lint]
-extend-ignore = [
-  "E",  # Syntax errors
-  "F",  # Pyflakes rules (excluding F401)
-  "UP", # pyupgrade rules
-  "D",  # Docstring rules
+select = [
+  "E", # pycodestyle errors
+  "W", # pycodestyle warnings
+  "F", # Pyflakes (bugs, undefined names)
+  # Note: "I" (isort) is NOT selected because project uses standalone isort in nox sessions
 ]
-extend-select = ["F401"]
+ignore = []
 unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Exclude F841 (unused variable) and E501 (line too long) for test files
+"tests/**/*.py" = ["F841", "E501", "F405", "W291", "W293"]
+
+[tool.ruff.lint.isort]
+# Import sorting is handled by standalone isort (via nox format:check/fix)
+# Ruff's isort implementation differs slightly from standalone isort with black profile
+# in how it groups 'from X import Y' statements, so ruff's "I" rules are disabled above.
+# This configuration is kept for potential future migration to ruff-only workflow.
+known-first-party = ["dbt"]
+lines-after-imports = 2
+split-on-trailing-comma = true
 
 [tool.mypy]
 warn_unused_ignores = false

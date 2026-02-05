@@ -12,12 +12,12 @@ from dbt.adapters.exasol.relation import ExasolRelation
 from dbt.include import exasol
 
 __all__ = [
+    "PLUGIN",
     "ExasolAdapter",
     "ExasolColumn",
     "ExasolConnectionManager",
     "ExasolCredentials",
     "ExasolRelation",
-    "PLUGIN",
     "Plugin",
 ]
 

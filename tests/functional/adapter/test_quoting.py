@@ -135,9 +135,9 @@ class TestQuotingSourceConfiguration:
         # According to the spec, when quoting is enabled for schema and identifier,
         # the generated SQL should contain quoted identifiers like "TEST"."seed_order"
         # The schema should be quoted
-        assert '"' in compiled_sql, (
-            f"Expected quoted identifiers in compiled SQL but found none. " f"Compiled SQL: {compiled_sql}"
-        )
+        assert (
+            '"' in compiled_sql
+        ), f"Expected quoted identifiers in compiled SQL but found none. Compiled SQL: {compiled_sql}"
 
         # Check that the identifier is quoted (should be "seed_order" not seed_order)
         # Note: Exasol uppercases unquoted identifiers, so we expect uppercase schema
@@ -199,6 +199,6 @@ class TestQuotingSourceConfiguration:
             compiled_sql = f.read()
 
         # The source reference should be quoted based on source configuration
-        assert '"seed_order"' in compiled_sql or '"SEED_ORDER"' in compiled_sql, (
-            f"Expected quoted source identifier in compiled SQL. " f"Compiled SQL: {compiled_sql}"
-        )
+        assert (
+            '"seed_order"' in compiled_sql or '"SEED_ORDER"' in compiled_sql
+        ), f"Expected quoted source identifier in compiled SQL. Compiled SQL: {compiled_sql}"
