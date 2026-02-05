@@ -3,6 +3,12 @@
 import os
 
 import pyexasol
+import pytest
+
+from dbt.adapters.exasol.connections import (
+    ExasolConnectionManager,
+    ExasolCredentials,
+)
 
 
 def _setup_test_roles(dsn: str, user: str, password: str) -> None:
@@ -56,6 +62,42 @@ def _setup_test_roles(dsn: str, user: str, password: str) -> None:
         print(f"✓ Created test roles: {', '.join(created)}")
     if skipped:
         print(f"ℹ Test roles already exist: {', '.join(skipped)}")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def initialize_connection_pool():
+    """Initialize connection pool at start of functional test session."""
+    pool_size = int(os.getenv("DBT_CONN_POOL_SIZE", "5"))
+
+    # Create credentials from environment variables
+    dsn = os.getenv("DBT_DSN", "localhost:8563")
+    user = os.getenv("DBT_USER", "sys")
+    password = os.getenv("DBT_PASS", "exasol")
+    database = os.getenv("DBT_DATABASE", "DB")
+    schema = os.getenv("DBT_SCHEMA", "public")
+
+    credentials = ExasolCredentials(
+        dsn=dsn,
+        user=user,
+        password=password,
+        database=database,
+        schema=schema,
+        validate_server_certificate=False,
+    )
+
+    # Initialize pool
+    ExasolConnectionManager.initialize_pool(credentials, pool_size)
+
+    yield
+
+    # Cleanup is handled by cleanup_connection_pool fixture
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_connection_pool():
+    """Cleanup connection pool at end of functional test session."""
+    yield
+    ExasolConnectionManager.cleanup_pool()
 
 
 def pytest_sessionstart(session):

@@ -75,6 +75,12 @@ See @mise.toml [env] section for environment variables with default values.
 - Required environment variables (`DBT_DSN`, `DBT_USER`, `DBT_PASS`, etc. as described in @mise.toml)
 - `mise.local.toml` - Developer-specific mise overrides (gitignored)
 
+#### Optional Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DBT_CONN_POOL_SIZE` | 5 | Number of connections to pre-initialize in the pool for improved test performance |
+
 ### Docker SSH Tunnel
 
 To use a remote Docker host via SSH:
