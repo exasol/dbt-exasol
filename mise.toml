@@ -22,6 +22,12 @@ DBT_TEST_USER_2 = { required = "Test role 2 name" }
 DBT_TEST_USER_3 = { required = "Test role 3 name" }
 EXASOL_RELEASE = { required = "Exasol major version (e.g., '8')" }
 
+# Connection pooling configuration
+DBT_CONN_POOL_SIZE = { default = "32", required = "Number of connections to pre-initialize in the pool" }
+
+# Disable dbt telemetry for faster test runs
+DBT_SEND_ANONYMOUS_USAGE_STATS = { default = "false", required = "En/Disable usage statistics" }
+
 # Docker SSH tunnel configuration
 # Uses DOCKER_HOST from .env if set, otherwise constructs from DOCKER_SSH_HOST if available
 DOCKER_HOST = "{% if env.DOCKER_HOST %}{{ env.DOCKER_HOST }}{% elif env.DOCKER_SSH_HOST %}ssh://{{ env.DOCKER_SSH_HOST }}{% endif %}"

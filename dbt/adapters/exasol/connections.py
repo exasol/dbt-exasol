@@ -5,11 +5,13 @@ DBT adapter connection implementation for Exasol.
 """
 
 import decimal
+import hashlib
 import os
 import ssl
 
 # Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
 import sys
+import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
@@ -20,7 +22,10 @@ import pyexasol
 from dateutil import parser  # type: ignore[import-untyped]
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
+    Connection,
+    ConnectionState,
     Credentials,
+    Identifier,
 )
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
@@ -154,6 +159,8 @@ class ExasolConnectionManager(SQLConnectionManager):
     """Managing Exasol connections"""
 
     TYPE = "exasol"
+    _pool: dict[str, ExaConnection] = {}
+    _pool_lock = threading.Lock()
 
     @contextmanager
     def exception_handler(self, sql):
@@ -171,6 +178,75 @@ class ExasolConnectionManager(SQLConnectionManager):
                 raise
 
             raise dbt_common.exceptions.DbtRuntimeError(yielded_exception)
+
+    @classmethod
+    def _get_pool(cls) -> dict[str, ExaConnection]:
+        """Get the class-level connection pool."""
+        return cls._pool
+
+    @classmethod
+    def _get_pool_key(cls, credentials: ExasolCredentials) -> str:
+        """Generate pool key from credentials hash."""
+        key_parts = (
+            credentials.dsn,
+            credentials.user,
+            credentials.database,
+            credentials.schema,
+        )
+        return hashlib.sha256(str(key_parts).encode()).hexdigest()
+
+    @classmethod
+    def _is_connection_valid(cls, conn: ExaConnection) -> bool:
+        """Validate connection with SELECT 1 query."""
+        try:
+            if conn.is_closed:
+                return False
+            cursor = conn.execute("SELECT 1")
+            cursor.fetchone()
+            return True
+        except Exception:  # pylint: disable=broad-except
+            return False
+
+    @classmethod
+    def cleanup_pool(cls) -> None:
+        """Close all pooled connections with thread-safe locking."""
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            for conn in pool.values():
+                try:
+                    if not conn.is_closed:
+                        conn.close()
+                except Exception:  # pylint: disable=broad-except
+                    pass
+            pool.clear()
+
+    @classmethod
+    def initialize_pool(cls, credentials: ExasolCredentials, size: int) -> None:
+        """Pre-warm pool with connections for given credentials."""
+        pool_key = cls._get_pool_key(credentials)
+
+        # Check existing connections with lock
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            existing_count = 0
+            if pool_key in pool and cls._is_connection_valid(pool[pool_key]):
+                existing_count = 1
+
+        # Calculate how many more connections we need
+        connections_to_create = max(0, size - existing_count)
+
+        # Create connections and close them so they get added to the pool
+        for i in range(connections_to_create):
+            connection = Connection(
+                type=Identifier(cls.TYPE),
+                name=f"pool_init_{i}",
+                state=ConnectionState.INIT,
+                credentials=credentials,
+            )
+            # Open connection (creates it)
+            cls.open(connection)
+            # Close it so it gets added to the pool
+            cls._close_handle(connection)
 
     @classmethod
     def _fetch_rows(cls, cursor: Any, limit: int | None) -> list[Any]:
@@ -240,6 +316,31 @@ class ExasolConnectionManager(SQLConnectionManager):
             return connection
         credentials = connection.credentials
 
+        # Check pool for existing valid connection
+        pool_key = cls._get_pool_key(credentials)
+
+        # Acquire lock to check and remove from pool
+        pooled_conn = None
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            if pool_key in pool:
+                conn = pool[pool_key]
+                if cls._is_connection_valid(conn):
+                    LOGGER.debug("Reusing pooled connection")
+                    pooled_conn = conn
+                    # Remove from pool while in use
+                    del pool[pool_key]
+                else:
+                    # Remove invalid connection from pool
+                    LOGGER.debug("Removing invalid connection from pool")
+                    del pool[pool_key]
+
+        # If we found a valid pooled connection, use it
+        if pooled_conn is not None:
+            connection.handle = pooled_conn
+            connection.state = "open"
+            return connection
+
         # Support protocol versions
         try:
             format_protocol_version = credentials.protocol_version.lower()
@@ -293,7 +394,7 @@ class ExasolConnectionManager(SQLConnectionManager):
 
         repeatable_exceptions = [pyexasol.ExaError]
 
-        return cls.retry_connection(
+        connection = cls.retry_connection(
             connection,
             connect=_connect,
             logger=LOGGER,
@@ -301,11 +402,30 @@ class ExasolConnectionManager(SQLConnectionManager):
             retryable_exceptions=repeatable_exceptions,
         )
 
+        # Don't store new connection in pool immediately - it will be returned
+        # to the pool when _close_handle() is called
+
+        return connection
+
     def add_begin_query(self):
         return
 
     def cancel(self, connection):
         connection.abort_query()  # type: ignore
+
+    @classmethod
+    def _close_handle(cls, connection) -> None:
+        """Override to return connection to pool instead of closing."""
+        if connection.handle is None or connection.credentials is None:
+            return
+
+        # Return connection to pool with locking
+        pool_key = cls._get_pool_key(connection.credentials)
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            # Only add to pool if it's still valid and not already there
+            if cls._is_connection_valid(connection.handle) and pool_key not in pool:
+                pool[pool_key] = connection.handle
 
     @classmethod
     def get_response(cls, cursor) -> ExasolAdapterResponse:
