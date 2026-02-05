@@ -738,9 +738,8 @@ class TestExceptionHandler(unittest.TestCase):
 
         manager = ExasolConnectionManager(Mock(), Mock())
 
-        with self.assertRaises(DbtRuntimeError) as context:
-            with manager.exception_handler("SELECT 1"):
-                raise DbtRuntimeError("Test error")
+        with self.assertRaises(DbtRuntimeError) as context, manager.exception_handler("SELECT 1"):
+            raise DbtRuntimeError("Test error")
 
         self.assertIn("Test error", str(context.exception))
         mock_rollback.assert_called_once()
@@ -752,9 +751,8 @@ class TestExceptionHandler(unittest.TestCase):
 
         manager = ExasolConnectionManager(Mock(), Mock())
 
-        with self.assertRaises(DbtRuntimeError):
-            with manager.exception_handler("SELECT 1"):
-                raise ValueError("Some error")
+        with self.assertRaises(DbtRuntimeError), manager.exception_handler("SELECT 1"):
+            raise ValueError("Some error")
 
         mock_rollback.assert_called_once()
 

@@ -225,7 +225,7 @@ class TestRenderEventTimeFiltered(unittest.TestCase):
             end=datetime(2024, 12, 31, 23, 59, 59),
         )
         result = self.relation._render_event_time_filtered(event_filter)
-        expected = "created_at >= TIMESTAMP '2024-01-01 10:30:00' " "and created_at < TIMESTAMP '2024-12-31 23:59:59'"
+        expected = "created_at >= TIMESTAMP '2024-01-01 10:30:00' and created_at < TIMESTAMP '2024-12-31 23:59:59'"
         self.assertEqual(result, expected)
 
     def test_render_event_time_filtered_with_start_only(self):

@@ -102,7 +102,7 @@ class ExasolCredentials(Credentials):
     schema: str
     # One of user+pass, access_token, or refresh_token needs to be specified in profiles.yml
     user: str = ""
-    password: str = ""  # noqa: S105 # Field name for user credential, not a hardcoded password
+    password: str = ""  # Field name for user credential, not a hardcoded password
     access_token: str = ""
     refresh_token: str = ""
     # optional statements that can be set in profiles.yml
@@ -127,7 +127,7 @@ class ExasolCredentials(Credentials):
     row_separator: str = ROW_SEPARATOR_DEFAULT
     timestamp_format: str = TIMESTAMP_FORMAT_DEFAULT
 
-    _ALIASES = {"dbname": "database", "pass": "password"}  # noqa: S105 # Sonar: field name alias, not actual password
+    _ALIASES = {"dbname": "database", "pass": "password"}  # Sonar: field name alias, not actual password
 
     @property
     def type(self):
@@ -217,7 +217,8 @@ class ExasolConnectionManager(SQLConnectionManager):
                     if not conn.is_closed:
                         conn.close()
                 except Exception:  # pylint: disable=broad-except
-                    pass
+                    # Best-effort cleanup - log and continue closing other connections
+                    LOGGER.debug("Failed to close pooled connection during cleanup")
             pool.clear()
 
     @classmethod
@@ -309,97 +310,142 @@ class ExasolConnectionManager(SQLConnectionManager):
         return dbt_common.clients.agate_helper.table_from_data_flat(data, column_names)  # type: ignore
 
     @classmethod
-    # pylint: disable=raise-missing-from  # Chain context preserved via `from exc` on line 259
+    def _try_get_pooled_connection(cls, credentials: ExasolCredentials) -> ExaConnection | None:
+        """Try to get a valid connection from the pool.
+
+        Returns the connection if found and valid, None otherwise.
+        Removes invalid connections from the pool.
+        """
+        pool_key = cls._get_pool_key(credentials)
+
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            if pool_key not in pool:
+                return None
+
+            conn = pool[pool_key]
+            if cls._is_connection_valid(conn):
+                LOGGER.debug("Reusing pooled connection")
+                # Remove from pool while in use
+                del pool[pool_key]
+                return conn
+
+            # Remove invalid connection from pool
+            LOGGER.debug("Removing invalid connection from pool")
+            del pool[pool_key]
+            return None
+
+    @classmethod
+    def _parse_protocol_version(cls, protocol_version_str: str) -> Any:
+        """Parse protocol version string to pyexasol constant.
+
+        Args:
+            protocol_version_str: Version string like 'v1', 'v2', 'v3'
+
+        Returns:
+            pyexasol protocol version constant
+
+        Raises:
+            DbtRuntimeError: If protocol version is invalid
+        """
+        try:
+            version = ProtocolVersionType(protocol_version_str.lower())
+
+            if version == ProtocolVersionType.V1:
+                return pyexasol.PROTOCOL_V1
+            if version == ProtocolVersionType.V2:
+                return pyexasol.PROTOCOL_V2
+            return pyexasol.PROTOCOL_V3
+        except (ValueError, KeyError, AttributeError) as exc:
+            raise dbt_common.exceptions.DbtRuntimeError(
+                f"{protocol_version_str} is not a valid protocol version."
+            ) from exc
+
+    @classmethod
+    def _build_ssl_options(cls, credentials: ExasolCredentials) -> dict | None:
+        """Build SSL options based on credentials settings.
+
+        Returns:
+            SSL options dict if encryption is enabled, None otherwise
+        """
+        if not credentials.encryption:
+            return None
+
+        if credentials.validate_server_certificate:
+            # Explicitly set CERT_REQUIRED to suppress PyExasol warnings
+            return {"cert_reqs": ssl.CERT_REQUIRED}
+        # Allow connections without certificate validation
+        return {"cert_reqs": ssl.CERT_NONE}
+
+    @classmethod
+    def _create_connection(cls, credentials: ExasolCredentials, protocol_version: Any) -> ExasolConnection:
+        """Create a new Exasol connection with the given credentials.
+
+        Args:
+            credentials: Connection credentials
+            protocol_version: pyexasol protocol version constant
+
+        Returns:
+            Configured ExasolConnection
+        """
+        websocket_sslopt = cls._build_ssl_options(credentials)
+
+        conn = connect(
+            dsn=credentials.dsn,
+            user=credentials.user,
+            password=credentials.password,
+            access_token=credentials.access_token,
+            refresh_token=credentials.refresh_token,
+            autocommit=True,
+            connection_timeout=credentials.connection_timeout,
+            socket_timeout=credentials.socket_timeout,
+            query_timeout=credentials.query_timeout,
+            compression=credentials.compression,
+            encryption=credentials.encryption,
+            websocket_sslopt=websocket_sslopt,
+            protocol_version=protocol_version,
+        )
+        # exasol adapter specific attributes that are unknown to pyexasol
+        # those can be added to ExasolConnection as members
+        conn.row_separator = credentials.row_separator
+        conn.timestamp_format = credentials.timestamp_format
+        conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
+
+        return conn
+
+    @classmethod
     def open(cls, connection):
+        """Open a connection to Exasol database.
+
+        Attempts to reuse a pooled connection if available, otherwise creates
+        a new connection with retry support.
+        """
         if connection.state == "open":
             LOGGER.debug("Connection is already open, skipping open.")
             return connection
+
         credentials = connection.credentials
 
-        # Check pool for existing valid connection
-        pool_key = cls._get_pool_key(credentials)
-
-        # Acquire lock to check and remove from pool
-        pooled_conn = None
-        with cls._pool_lock:
-            pool = cls._get_pool()
-            if pool_key in pool:
-                conn = pool[pool_key]
-                if cls._is_connection_valid(conn):
-                    LOGGER.debug("Reusing pooled connection")
-                    pooled_conn = conn
-                    # Remove from pool while in use
-                    del pool[pool_key]
-                else:
-                    # Remove invalid connection from pool
-                    LOGGER.debug("Removing invalid connection from pool")
-                    del pool[pool_key]
-
-        # If we found a valid pooled connection, use it
+        # Try to get a valid connection from the pool
+        pooled_conn = cls._try_get_pooled_connection(credentials)
         if pooled_conn is not None:
             connection.handle = pooled_conn
             connection.state = "open"
             return connection
 
-        # Support protocol versions
-        try:
-            format_protocol_version = credentials.protocol_version.lower()
-            version = ProtocolVersionType(format_protocol_version)
+        # Parse protocol version
+        protocol_version = cls._parse_protocol_version(credentials.protocol_version)
 
-            if version == ProtocolVersionType.V1:
-                protocol_version = pyexasol.PROTOCOL_V1
-            elif version == ProtocolVersionType.V2:
-                protocol_version = pyexasol.PROTOCOL_V2
-            else:
-                protocol_version = pyexasol.PROTOCOL_V3
-        except (ValueError, KeyError, AttributeError) as exc:
-            raise dbt_common.exceptions.DbtRuntimeError(
-                f"{credentials.protocol_version} is not a valid protocol version."
-            ) from exc
-
+        # Create connection factory for retry logic
         def _connect():
-            # Build SSL options based on validate_server_certificate setting
-            # Only applies when encryption is enabled
-            websocket_sslopt = None
-            if credentials.encryption:
-                if credentials.validate_server_certificate:
-                    # Explicitly set CERT_REQUIRED to suppress PyExasol warnings
-                    websocket_sslopt = {"cert_reqs": ssl.CERT_REQUIRED}
-                else:
-                    # Allow connections without certificate validation
-                    websocket_sslopt = {"cert_reqs": ssl.CERT_NONE}
-
-            conn = connect(
-                dsn=credentials.dsn,
-                user=credentials.user,
-                password=credentials.password,
-                access_token=credentials.access_token,
-                refresh_token=credentials.refresh_token,
-                autocommit=True,
-                connection_timeout=credentials.connection_timeout,
-                socket_timeout=credentials.socket_timeout,
-                query_timeout=credentials.query_timeout,
-                compression=credentials.compression,
-                encryption=credentials.encryption,
-                websocket_sslopt=websocket_sslopt,
-                protocol_version=protocol_version,
-            )
-            # exasol adapter specific attributes that are unknown to pyexasol
-            # those can be added to ExasolConnection as members
-            conn.row_separator = credentials.row_separator
-            conn.timestamp_format = credentials.timestamp_format
-            conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
-
-            return conn
-
-        repeatable_exceptions = [pyexasol.ExaError]
+            return cls._create_connection(credentials, protocol_version)
 
         connection = cls.retry_connection(
             connection,
             connect=_connect,
             logger=LOGGER,
             retry_limit=credentials.retries,
-            retryable_exceptions=repeatable_exceptions,
+            retryable_exceptions=[pyexasol.ExaError],
         )
 
         # Don't store new connection in pool immediately - it will be returned
@@ -548,7 +594,7 @@ class ExasolCursor:
         if self.stmt is None:
             return cols
 
-        if "resultSet" != self.stmt.result_type:
+        if self.stmt.result_type != "resultSet":
             return None
 
         for k, value_set in self.stmt.columns().items():

@@ -9,7 +9,6 @@ from dbt.tests.util import run_dbt
 
 
 class TestPersistDocsExasol(BasePersistDocs):
-
     def _assert_has_table_comments(self, table_node):
         table_comment = table_node["metadata"]["comment"]
         assert table_comment.startswith("Table model description")

@@ -16,7 +16,7 @@ from exasol.toolbox.nox._shared import (
     get_filtered_python_files,
 )
 from exasol.toolbox.nox.plugin import NoxTasks
-from exasol.toolbox.nox.tasks import *  # pylint: disable=wildcard-import disable=unused-wildcard-import
+from exasol.toolbox.nox.tasks import *  # noqa: F403,F401  # pylint: disable=wildcard-import,unused-wildcard-import
 from nox import Session
 
 from noxconfig import (
@@ -152,7 +152,7 @@ def sonar_check(session: Session) -> None:
         sonar_token,
     ]
 
-    session.log(f"Running pysonar")
+    session.log("Running pysonar")
     session.run(*command)
 
 
@@ -167,7 +167,7 @@ def _run_unit_tests(session: Session, context) -> None:
         command = [
             "pytest",
             "-v",
-            f"--cov=dbt",
+            "--cov=dbt",
             "--cov-append",
             f"--cov-config={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
             str(test_path),
@@ -192,7 +192,7 @@ def _run_integration_tests(session: Session, context) -> None:
             [
                 "pytest",
                 "-v",
-                f"--cov=dbt",
+                "--cov=dbt",
                 "--cov-append",
                 f"--cov-config={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
             ]
