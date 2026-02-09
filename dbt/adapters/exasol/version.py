@@ -10,6 +10,6 @@ If you need to change the version, do so in the pyproject.toml, e.g. by using
 
 MAJOR = 1
 MINOR = 10
-PATCH = 2
+PATCH = 3
 VERSION = f"{MAJOR}.{MINOR}.{PATCH}"
 __version__ = VERSION
