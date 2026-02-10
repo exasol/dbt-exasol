@@ -22,11 +22,11 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 ## Version Compatibility
 
-| dbt-exasol | dbt-core | Python | Exasol |
-|------------|----------|--------|--------|
-| 1.10.x     | 1.10.x   | 3.10-3.13 | 7.x, 8.x |
-| 1.8.x      | 1.8.x    | 3.9-3.12 | 7.x, 8.x |
-| 1.7.x      | 1.7.x    | 3.8-3.11 | 7.x, 8.x |
+| dbt-exasol | dbt-core | Python    | Exasol            |
+|------------|----------|-----------|-------------------|
+| 1.10.x     | 1.10.x   | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
+| 1.8.x      | 1.8.x    |  3.9-3.12 | 7.x, 8.x          |
+| 1.7.x      | 1.7.x    |  3.8-3.11 | 7.x, 8.x          |
 
 ## Development Setup
 
