@@ -127,7 +127,7 @@ class ExasolCredentials(Credentials):
     row_separator: str = ROW_SEPARATOR_DEFAULT
     timestamp_format: str = TIMESTAMP_FORMAT_DEFAULT
 
-    _ALIASES = {"dbname": "database", "pass": "password"}  # NOSONAR(B105) field name alias, not actual password
+    _ALIASES = {"dbname": "database", "pass": "password"}  # nosec: B105 - field name alias, not actual password
 
     @property
     def type(self):
