@@ -6,6 +6,8 @@
 
 Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/reference/warehouse-setups/exasol-setup)** for more information on how to start using the Exasol adapter.
 
+`dbt-exasol` is cleared for production use.
+
 ## Version Compatibility
 
 | dbt-exasol | dbt-core | Python | Exasol |
