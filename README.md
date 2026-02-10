@@ -2,6 +2,18 @@
 
 ![CI](https://github.com/tglunde/dbt-exasol/actions/workflows/ci.yml/badge.svg)
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=security_rating)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=sqale_index)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=code_smells)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=coverage)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=com.exasol%3Adbt-exasol&metric=ncloc)](https://sonarcloud.io/dashboard?id=com.exasol%3Adbt-exasol)
+
 **[dbt](https://www.getdbt.com/)** enables data analysts and engineers to transform their data using the same practices that software engineers use to build applications.
 
 Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/reference/warehouse-setups/exasol-setup)** for more information on how to start using the Exasol adapter.
