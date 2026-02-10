@@ -6,7 +6,7 @@ If you believe you have found a new security vulnerability in this repository, p
 
 * Please do **not** report security vulnerabilities through public GitHub issues.
 
-* Please create a draft security advisory on the Github page: the reporting form is under `> Security > Advisories`. The URL is https://github.com/exasol/virtual-schemas/security/advisories/new.
+* Please create a draft security advisory on the Github page: the reporting form is under `> Security > Advisories`. The URL is https://github.com/exasol/dbt-exasol/security/advisories/new.
 
 * If you prefer to email, please send your report to `infosec@exasol.com`.
 
