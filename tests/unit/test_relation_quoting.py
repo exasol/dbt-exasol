@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime
 
 from dbt.adapters.base.relation import EventTimeFilter
+from dbt.adapters.contracts.relation import RelationType
 
 from dbt.adapters.exasol import ExasolRelation
 from dbt.adapters.exasol.relation import ExasolQuotePolicy
@@ -324,6 +325,50 @@ class TestAddEphemeralPrefix(unittest.TestCase):
         """Test add_ephemeral_prefix with special characters in name."""
         result = ExasolRelation.add_ephemeral_prefix("model_with_underscores")
         self.assertEqual(result, "dbt__CTE__model_with_underscores")
+
+
+class TestRenameableRelations(unittest.TestCase):
+    """Test the can_be_renamed property for different relation types."""
+
+    def test_table_can_be_renamed(self):
+        """Test that tables can be renamed."""
+        relation = ExasolRelation.create(
+            schema="test",
+            identifier="my_table",
+            type=RelationType.Table,
+        )
+        self.assertTrue(relation.can_be_renamed)
+
+    def test_view_can_be_renamed(self):
+        """Test that views can be renamed."""
+        relation = ExasolRelation.create(
+            schema="test",
+            identifier="my_view",
+            type=RelationType.View,
+        )
+        self.assertTrue(relation.can_be_renamed)
+
+
+class TestReplaceableRelations(unittest.TestCase):
+    """Test the can_be_replaced property for different relation types."""
+
+    def test_table_can_be_replaced(self):
+        """Test that tables can be replaced."""
+        relation = ExasolRelation.create(
+            schema="test",
+            identifier="my_table",
+            type=RelationType.Table,
+        )
+        self.assertTrue(relation.can_be_replaced)
+
+    def test_view_can_be_replaced(self):
+        """Test that views can be replaced."""
+        relation = ExasolRelation.create(
+            schema="test",
+            identifier="my_view",
+            type=RelationType.View,
+        )
+        self.assertTrue(relation.can_be_replaced)
 
 
 if __name__ == "__main__":

@@ -33,6 +33,8 @@ class ExasolRelation(BaseRelation):
     """Relation implementation for exasol"""
 
     quote_policy: ExasolQuotePolicy = field(default_factory=ExasolQuotePolicy)
+    renameable_relations: frozenset[RelationType] = frozenset({RelationType.View, RelationType.Table})
+    replaceable_relations: frozenset[RelationType] = frozenset({RelationType.View, RelationType.Table})
 
     @classmethod
     # pylint: disable=too-many-arguments

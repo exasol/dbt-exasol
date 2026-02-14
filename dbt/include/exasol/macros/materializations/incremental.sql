@@ -18,16 +18,12 @@
   {% if existing_relation is none %}
       {% set build_sql = create_table_as(False, target_relation, sql) %}
   {% elif full_refresh_mode %}
-      {#-- Checking if backup relation exists#}
-      {% set backup_identifier = existing_relation.identifier ~ "__dbt_backup" %}
-      {% set backup_relation = existing_relation.incorporate(path={"identifier": backup_identifier}) %}
-      {% do adapter.drop_relation(backup_relation) %}
-      {% if existing_relation.is_view %}
-            {% do adapter.drop_relation(existing_relation) %}
-      {% else %}
-            {% do adapter.rename_relation(existing_relation, backup_relation) %}
-      {% endif %}
-      {% set build_sql = create_table_as(False, target_relation, sql) %}
+      {% set intermediate_relation = make_intermediate_relation(target_relation) %}
+      {% set backup_relation = make_backup_relation(target_relation, 'table') %}
+      {% do drop_relation_if_exists(intermediate_relation) %}
+      {% do drop_relation_if_exists(backup_relation) %}
+      {% set build_sql = create_table_as(False, intermediate_relation, sql) %}
+      {% do to_drop.append(intermediate_relation) %}
       {% do to_drop.append(backup_relation) %}
   {% else %}
       {% set tmp_relation = make_temp_relation(target_relation) %}
@@ -56,6 +52,11 @@
       {{ build_sql }}
   {% endcall %}
 
+  {% if full_refresh_mode and existing_relation is not none %}
+      {% do adapter.rename_relation(existing_relation, backup_relation) %}
+      {% do adapter.rename_relation(intermediate_relation, target_relation) %}
+  {% endif %}
+
   {% do persist_docs(target_relation, model) %}
 
   {{ run_hooks(post_hooks, inside_transaction=True) }}
@@ -64,7 +65,7 @@
   {% do adapter.commit() %}
 
   {% for rel in to_drop %}
-      {% do adapter.drop_relation(rel) %}
+      {% do drop_relation_if_exists(rel) %}
   {% endfor %}
 
   {{ run_hooks(post_hooks, inside_transaction=False) }}
