@@ -249,7 +249,7 @@
 {%- endmacro %}
 
 {% macro exasol__post_snapshot(staging_relation) %}
-    {% do adapter.drop_relation(staging_relation) %}
+    {% do drop_relation_if_exists(staging_relation) %}
 {% endmacro %}
 
 {% macro exasol__build_snapshot_staging_table(strategy, sql, target_relation) %}

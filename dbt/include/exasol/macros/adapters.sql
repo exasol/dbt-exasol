@@ -5,7 +5,6 @@ LIST_SCHEMAS_MACRO_NAME = 'list_schemas'
 CHECK_SCHEMA_EXISTS_MACRO_NAME = 'check_schema_exists'
 CREATE_SCHEMA_MACRO_NAME = 'create_schema'
 DROP_SCHEMA_MACRO_NAME = 'drop_schema'
-RENAME_RELATION_MACRO_NAME = 'rename_relation'
 TRUNCATE_RELATION_MACRO_NAME = 'truncate_relation'
 DROP_RELATION_MACRO_NAME = 'drop_relation'
 ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
@@ -77,11 +76,6 @@ AS
 {{ persist_view_relation_docs() }}
 {% endmacro %}
 
-{% macro exasol__rename_relation(from_relation, to_relation) -%}
-    {% call statement('rename_relation') -%}
-        RENAME {{ from_relation.type }} {{ from_relation.schema }}.{{ from_relation.identifier }} TO {{ to_relation.identifier }}
-    {%- endcall %}
-{% endmacro %}
 
 {% macro exasol__create_table_as(temporary, relation, sql) -%}
     {%- set contract_config = config.get('contract') -%}
