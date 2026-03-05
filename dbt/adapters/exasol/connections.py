@@ -4,6 +4,7 @@
 DBT adapter connection implementation for Exasol.
 """
 
+import atexit
 import decimal
 import hashlib
 import os
@@ -161,6 +162,14 @@ class ExasolConnectionManager(SQLConnectionManager):
     TYPE = "exasol"
     _pool: dict[str, ExaConnection] = {}
     _pool_lock = threading.Lock()
+    _atexit_registered = False
+
+    @classmethod
+    def _ensure_atexit_handler(cls):
+        """Register atexit handler once to clean up pooled connections on process exit."""
+        if not cls._atexit_registered:
+            atexit.register(cls.cleanup_pool)
+            cls._atexit_registered = True
 
     @contextmanager
     def exception_handler(self, sql):
@@ -424,6 +433,8 @@ class ExasolConnectionManager(SQLConnectionManager):
             LOGGER.debug("Connection is already open, skipping open.")
             return connection
 
+        cls._ensure_atexit_handler()
+
         credentials = connection.credentials
 
         # Try to get a valid connection from the pool
@@ -461,17 +472,21 @@ class ExasolConnectionManager(SQLConnectionManager):
 
     @classmethod
     def _close_handle(cls, connection) -> None:
-        """Override to return connection to pool instead of closing."""
+        """Return connection to pool or close it to prevent session leaks."""
         if connection.handle is None or connection.credentials is None:
             return
 
-        # Return connection to pool with locking
         pool_key = cls._get_pool_key(connection.credentials)
         with cls._pool_lock:
             pool = cls._get_pool()
-            # Only add to pool if it's still valid and not already there
             if cls._is_connection_valid(connection.handle) and pool_key not in pool:
                 pool[pool_key] = connection.handle
+            else:
+                try:
+                    if not connection.handle.is_closed:
+                        connection.handle.close()
+                except Exception:  # pylint: disable=broad-except
+                    LOGGER.debug("Failed to close unpooled connection")
 
     @classmethod
     def get_response(cls, cursor) -> ExasolAdapterResponse:
