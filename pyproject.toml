@@ -10,7 +10,7 @@ license = { text = "GPL-3.0-or-later" }
 readme = "README.md"
 requires-python = ">=3.10,<4"
 dependencies = [
-  "pyexasol>=1.0.0",
+  "pyexasol>=2",
   "protobuf>=5.0,<7.0",
   "dbt-adapters>=1.10.0",
   "dbt-core>=1.10.0",
@@ -69,7 +69,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 47
+fail_under = 85
 omit = ["*/__init__.py", "*/__version__.py", "*/version.py"]
 
 [tool.coverage.xml]
