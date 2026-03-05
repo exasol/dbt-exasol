@@ -1,9 +1,11 @@
 """Unit tests for connection pooling functionality."""
 
+import atexit
 import threading
 import unittest
 from unittest.mock import (
     Mock,
+    call,
     patch,
 )
 
@@ -37,6 +39,8 @@ class TestConnectionPool(unittest.TestCase):
         """Clean up after each test."""
         # Clear pool after each test
         ExasolConnectionManager.cleanup_pool()
+        # Reset atexit registration flag
+        ExasolConnectionManager._atexit_registered = False
 
     def test_get_pool_returns_class_level_dict(self):
         """Test _get_pool returns class-level pool dict."""
@@ -356,6 +360,113 @@ class TestConnectionPool(unittest.TestCase):
         self.assertEqual(len(results), 10)
         pool = ExasolConnectionManager._get_pool()
         self.assertEqual(len(pool), 10)
+
+
+    def test_close_handle_closes_connection_when_pool_occupied(self):
+        """Test _close_handle() closes connection when pool already has one for same credentials."""
+        # Create first connection and pool it
+        mock_pooled = Mock(spec=ExasolConnection)
+        mock_pooled.is_closed = False
+        mock_cursor1 = Mock()
+        mock_cursor1.fetchone.return_value = [1]
+        mock_pooled.execute.return_value = mock_cursor1
+
+        pool = ExasolConnectionManager._get_pool()
+        pool_key = ExasolConnectionManager._get_pool_key(self.credentials)
+        pool[pool_key] = mock_pooled
+
+        # Create second connection that can't be pooled
+        mock_extra = Mock(spec=ExasolConnection)
+        mock_extra.is_closed = False
+        mock_cursor2 = Mock()
+        mock_cursor2.fetchone.return_value = [1]
+        mock_extra.execute.return_value = mock_cursor2
+
+        mock_connection = Mock(spec=Connection)
+        mock_connection.handle = mock_extra
+        mock_connection.credentials = self.credentials
+
+        # Call _close_handle — should close since pool slot is taken
+        ExasolConnectionManager._close_handle(mock_connection)
+
+        # Verify the extra connection was closed
+        mock_extra.close.assert_called_once()
+
+        # Verify the original pooled connection is still there
+        self.assertIn(pool_key, pool)
+        self.assertEqual(pool[pool_key], mock_pooled)
+
+    def test_close_handle_closes_invalid_connection(self):
+        """Test _close_handle() closes connection that fails validation."""
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_handle.is_closed = False
+        mock_handle.execute.side_effect = Exception("Connection broken")
+
+        mock_connection = Mock(spec=Connection)
+        mock_connection.handle = mock_handle
+        mock_connection.credentials = self.credentials
+
+        ExasolConnectionManager._close_handle(mock_connection)
+
+        # Connection is invalid so it should be closed, not pooled
+        mock_handle.close.assert_called_once()
+        pool = ExasolConnectionManager._get_pool()
+        self.assertEqual(len(pool), 0)
+
+    def test_close_handle_handles_close_failure_gracefully(self):
+        """Test _close_handle() doesn't raise when close() fails on unpooled connection."""
+        # Occupy pool slot
+        mock_pooled = Mock(spec=ExasolConnection)
+        mock_pooled.is_closed = False
+        mock_cursor = Mock()
+        mock_cursor.fetchone.return_value = [1]
+        mock_pooled.execute.return_value = mock_cursor
+
+        pool = ExasolConnectionManager._get_pool()
+        pool_key = ExasolConnectionManager._get_pool_key(self.credentials)
+        pool[pool_key] = mock_pooled
+
+        # Create connection whose close() raises
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_handle.is_closed = False
+        mock_cursor2 = Mock()
+        mock_cursor2.fetchone.return_value = [1]
+        mock_handle.execute.return_value = mock_cursor2
+        mock_handle.close.side_effect = Exception("Close failed")
+
+        mock_connection = Mock(spec=Connection)
+        mock_connection.handle = mock_handle
+        mock_connection.credentials = self.credentials
+
+        # Should not raise
+        ExasolConnectionManager._close_handle(mock_connection)
+        mock_handle.close.assert_called_once()
+
+    @patch("atexit.register")
+    def test_ensure_atexit_handler_registers_once(self, mock_atexit_register):
+        """Test _ensure_atexit_handler registers cleanup_pool exactly once."""
+        ExasolConnectionManager._atexit_registered = False
+
+        ExasolConnectionManager._ensure_atexit_handler()
+        ExasolConnectionManager._ensure_atexit_handler()
+        ExasolConnectionManager._ensure_atexit_handler()
+
+        # Should only register once
+        mock_atexit_register.assert_called_once_with(ExasolConnectionManager.cleanup_pool)
+        self.assertTrue(ExasolConnectionManager._atexit_registered)
+
+    @patch.object(ExasolConnectionManager, "_ensure_atexit_handler")
+    @patch.object(ExasolConnectionManager, "retry_connection")
+    def test_open_calls_ensure_atexit_handler(self, mock_retry, mock_ensure_atexit):
+        """Test open() calls _ensure_atexit_handler."""
+        mock_connection = Mock(spec=Connection)
+        mock_connection.state = "init"
+        mock_connection.credentials = self.credentials
+        mock_retry.return_value = mock_connection
+
+        ExasolConnectionManager.open(mock_connection)
+
+        mock_ensure_atexit.assert_called_once()
 
 
 if __name__ == "__main__":
