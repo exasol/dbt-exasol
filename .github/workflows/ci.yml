@@ -53,8 +53,8 @@ jobs:
             integration:
               - 'dbt/adapters/exasol/**'
               - 'dbt/include/**'
-              - 'test/integration/**'
-              - 'test/conftest.py'
+              - 'tests/functional/**'
+              - 'tests/conftest.py'
               - 'noxfile.py'
               - 'noxconfig.py'
               - 'pyproject.toml'
