@@ -11,6 +11,8 @@ podman = "latest"
 "ubi:crc-org/vfkit" = "latest"
 k3d = "latest"
 "github:dlvhdr/gh-dash" = "latest"
+delta = "latest"
+"github:dlvhdr/diffnav" = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides

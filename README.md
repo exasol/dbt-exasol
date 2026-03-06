@@ -181,6 +181,7 @@ OpenID login through access_token or refresh_token instead of user+password
   <li><strong>protocol_version</strong>: default: v3</li>
   <li><strong>row_separator</strong>: default: CRLF for windows - LF otherwise</li>
   <li><strong>timestamp_format</strong>: default: YYYY-MM-DDTHH:MI:SS.FF6</li>
+  <li><strong>pool_size</strong>: default: None (resolved from dbt <code>threads</code> setting). Maximum number of pooled connections per credentials key. When omitted, the pool size equals the <code>threads</code> value so every thread can reuse a cached connection without creating a new one on each model run.</li>
 </ul>
 
 # Known isues
