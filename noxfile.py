@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import warnings
 
 import nox
 from exasol.toolbox.nox._format import _code_format
@@ -16,7 +17,13 @@ from exasol.toolbox.nox._shared import (
     get_filtered_python_files,
 )
 from exasol.toolbox.nox.plugin import NoxTasks
+
+# Suppress FutureWarning about duplicate session registration.
+# The toolbox registers default sessions via @nox.session at import time;
+# we intentionally override several of them below with project-specific versions.
+warnings.filterwarnings("ignore", message=".*has already been registered.*", category=FutureWarning)
 from exasol.toolbox.nox.tasks import *  # noqa: F403,F401  # pylint: disable=wildcard-import,unused-wildcard-import
+
 from nox import Session
 
 from noxconfig import (
