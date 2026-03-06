@@ -22,11 +22,10 @@ from exasol.toolbox.nox.plugin import NoxTasks
 # The toolbox registers default sessions via @nox.session at import time;
 # we intentionally override several of them below with project-specific versions.
 warnings.filterwarnings("ignore", message=".*has already been registered.*", category=FutureWarning)
-from exasol.toolbox.nox.tasks import *  # noqa: F403,F401  # pylint: disable=wildcard-import,unused-wildcard-import
+from exasol.toolbox.nox.tasks import *  # noqa: E402,F403,F401  # pylint: disable=wildcard-import,unused-wildcard-import
+from nox import Session  # noqa: E402
 
-from nox import Session
-
-from noxconfig import (
+from noxconfig import (  # noqa: E402
     DEFAULT_DB_VERSION,
     PROJECT_CONFIG,
     start_test_db,
