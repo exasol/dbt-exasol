@@ -581,6 +581,71 @@ class TestGetFilteredCatalog(unittest.TestCase):
         # Should not call where on None catalog
         self.assertIsNone(result)
 
+    def test_get_filtered_catalog_in_map_filters_matching_rows(self):
+        """Test in_map inner function filters catalog rows by relation schema/identifier."""
+        adapter = Mock(spec=ExasolAdapter)
+        adapter.supports = Mock(return_value=True)
+
+        # Create a real agate table as the catalog so in_map() actually executes
+        catalog = agate.Table(
+            [
+                ["SCHEMA1", "TABLE1"],
+                ["SCHEMA1", "TABLE2"],
+                ["SCHEMA2", "TABLE3"],
+            ],
+            column_names=["table_schema", "table_name"],
+            column_types=[agate.Text(), agate.Text()],
+        )
+        adapter.get_catalog_by_relations.return_value = (catalog, [])
+
+        # Only request schema1/table1
+        relation1 = Mock(schema="schema1", identifier="table1")
+        relations = {relation1}
+
+        result, exceptions = ExasolAdapter.get_filtered_catalog(
+            adapter,
+            relation_configs=[],
+            used_schemas=frozenset(),
+            relations=relations,
+        )
+
+        # Only the matching row should remain
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result.rows[0]["table_schema"], "SCHEMA1")
+        self.assertEqual(result.rows[0]["table_name"], "TABLE1")
+
+    def test_get_filtered_catalog_in_map_with_none_schema_and_identifier(self):
+        """Test in_map handles None schema and identifier in catalog rows."""
+        adapter = Mock(spec=ExasolAdapter)
+        adapter.supports = Mock(return_value=True)
+
+        # Create catalog with None values in schema/name columns
+        catalog = agate.Table(
+            [
+                [None, None],
+                ["SCHEMA1", "TABLE1"],
+            ],
+            column_names=["table_schema", "table_name"],
+            column_types=[agate.Text(), agate.Text()],
+        )
+        adapter.get_catalog_by_relations.return_value = (catalog, [])
+
+        # Relation with None schema and identifier
+        relation_with_nones = Mock(schema=None, identifier=None)
+        relations = {relation_with_nones}
+
+        result, exceptions = ExasolAdapter.get_filtered_catalog(
+            adapter,
+            relation_configs=[],
+            used_schemas=frozenset(),
+            relations=relations,
+        )
+
+        # Only the row with None/None should match
+        self.assertEqual(len(result), 1)
+        self.assertIsNone(result.rows[0]["table_schema"])
+        self.assertIsNone(result.rows[0]["table_name"])
+
 
 class TestPythonModelNotSupported(unittest.TestCase):
     """Test Python model not supported methods."""

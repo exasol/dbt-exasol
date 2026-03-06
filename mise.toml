@@ -6,6 +6,10 @@ gh = "latest"
 usage = "latest"
 docker-cli = "latest"
 opencode = "latest"
+podman = "latest"
+"github:containers/gvisor-tap-vsock" = "latest"
+"ubi:crc-org/vfkit" = "latest"
+k3d = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
@@ -30,6 +34,7 @@ DBT_SEND_ANONYMOUS_USAGE_STATS = { default = "false", required = "En/Disable usa
 
 # Docker SSH tunnel configuration
 # Uses DOCKER_HOST from .env if set, otherwise constructs from DOCKER_SSH_HOST if available
+# Fallback to podman machine socket if neither is set
 DOCKER_HOST = "{% if env.DOCKER_HOST %}{{ env.DOCKER_HOST }}{% elif env.DOCKER_SSH_HOST %}ssh://{{ env.DOCKER_SSH_HOST }}{% endif %}"
 DOCKER_BUILDKIT = "{% if env.DOCKER_BUILDKIT %}{{ env.DOCKER_BUILDKIT }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1{% endif %}"
 DOCKER_API_VERSION = "{% if env.DOCKER_API_VERSION %}{{ env.DOCKER_API_VERSION }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1.41{% endif %}"
@@ -89,6 +94,10 @@ run = "./scripts/tunnel.sh status"
 description = "Restart SSH tunnel"
 run = "./scripts/tunnel.sh restart"
 
+[tasks."podman:setup"]
+description = "Configure Podman helper binaries (gvproxy, vfkit) for macOS"
+run = "./scripts/podman-setup.sh"
+
 [tasks."db:start"]
 description = "Start Exasol database container"
 run = "uv run nox -s db:start"
@@ -96,3 +105,7 @@ run = "uv run nox -s db:start"
 [tasks."db:stop"]
 description = "Stop Exasol database container"
 run = "uv run nox -s db:stop"
+
+[tasks."project:check"]
+description = "Run project checks"
+run = "uv run nox -s project:check"
