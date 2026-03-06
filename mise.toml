@@ -10,6 +10,7 @@ podman = "latest"
 "github:containers/gvisor-tap-vsock" = "latest"
 "ubi:crc-org/vfkit" = "latest"
 k3d = "latest"
+"github:dlvhdr/gh-dash" = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
@@ -63,6 +64,14 @@ description = "Run all checks (format, lint, type)"
 run = "uv run nox -s format:check lint:code lint:security lint:typing"
 
 [tasks.test]
+description = "Run all tests with coverage"
+run = "uv run nox -s test:coverage"
+
+[tasks.coverage]
+description = "Run tests and report code coverage"
+run = "uv run nox -s test:coverage"
+
+[tasks."test:coverage"]
 description = "Run all tests with coverage"
 run = "uv run nox -s test:coverage"
 
