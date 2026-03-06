@@ -310,6 +310,107 @@ class TestConnectionPool(unittest.TestCase):
         self.assertEqual(mock_open.call_count, 2)
         self.assertEqual(mock_close_handle.call_count, 2)
 
+    def test_try_get_pooled_connection_returns_valid_connection(self):
+        """Test _try_get_pooled_connection returns and removes a valid pooled connection."""
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_handle.is_closed = False
+        mock_cursor = Mock()
+        mock_cursor.fetchone.return_value = [1]
+        mock_handle.execute.return_value = mock_cursor
+
+        # Add connection to pool
+        pool_key = ExasolConnectionManager._get_pool_key(self.credentials)
+        pool = ExasolConnectionManager._get_pool()
+        pool[pool_key] = mock_handle
+
+        # Call _try_get_pooled_connection
+        result = ExasolConnectionManager._try_get_pooled_connection(self.credentials)
+
+        # Should return the valid connection
+        self.assertIs(result, mock_handle)
+        # Connection should be removed from pool (in use)
+        self.assertNotIn(pool_key, pool)
+
+    def test_try_get_pooled_connection_removes_invalid_connection(self):
+        """Test _try_get_pooled_connection removes invalid connection and returns None."""
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_handle.is_closed = True  # Invalid connection
+
+        # Add invalid connection to pool
+        pool_key = ExasolConnectionManager._get_pool_key(self.credentials)
+        pool = ExasolConnectionManager._get_pool()
+        pool[pool_key] = mock_handle
+
+        # Call _try_get_pooled_connection
+        result = ExasolConnectionManager._try_get_pooled_connection(self.credentials)
+
+        # Should return None since connection is invalid
+        self.assertIsNone(result)
+        # Invalid connection should be removed from pool
+        self.assertNotIn(pool_key, pool)
+
+    def test_try_get_pooled_connection_returns_none_when_exception_during_validation(self):
+        """Test _try_get_pooled_connection returns None when validation raises exception."""
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_handle.is_closed = False
+        mock_handle.execute.side_effect = Exception("Connection lost")
+
+        # Add connection to pool
+        pool_key = ExasolConnectionManager._get_pool_key(self.credentials)
+        pool = ExasolConnectionManager._get_pool()
+        pool[pool_key] = mock_handle
+
+        # Call _try_get_pooled_connection
+        result = ExasolConnectionManager._try_get_pooled_connection(self.credentials)
+
+        # Should return None since validation failed
+        self.assertIsNone(result)
+        # Invalid connection should be removed from pool
+        self.assertNotIn(pool_key, pool)
+
+    @patch.object(ExasolConnectionManager, "_try_get_pooled_connection")
+    def test_open_uses_pooled_connection_when_available(self, mock_try_pool):
+        """Test open() sets handle and state when pooled connection is available."""
+        mock_handle = Mock(spec=ExasolConnection)
+        mock_try_pool.return_value = mock_handle
+
+        connection = Connection(
+            type="exasol",
+            name="test",
+            state="init",
+            credentials=self.credentials,
+        )
+
+        result = ExasolConnectionManager.open(connection)
+
+        self.assertIs(result.handle, mock_handle)
+        self.assertEqual(result.state, "open")
+        mock_try_pool.assert_called_once_with(self.credentials)
+
+    def test_close_handle_early_return_when_handle_is_none(self):
+        """Test _close_handle returns early when handle is None."""
+        mock_connection = Mock(spec=Connection)
+        mock_connection.handle = None
+        mock_connection.credentials = self.credentials
+
+        # Should not raise and should not modify pool
+        ExasolConnectionManager._close_handle(mock_connection)
+
+        pool = ExasolConnectionManager._get_pool()
+        self.assertEqual(len(pool), 0)
+
+    def test_close_handle_early_return_when_credentials_is_none(self):
+        """Test _close_handle returns early when credentials is None."""
+        mock_connection = Mock(spec=Connection)
+        mock_connection.handle = Mock(spec=ExasolConnection)
+        mock_connection.credentials = None
+
+        # Should not raise and should not modify pool
+        ExasolConnectionManager._close_handle(mock_connection)
+
+        pool = ExasolConnectionManager._get_pool()
+        self.assertEqual(len(pool), 0)
+
     def test_concurrent_pool_access_with_locking(self):
         """Test concurrent pool access from multiple threads is thread-safe."""
         # Create multiple mock connections
