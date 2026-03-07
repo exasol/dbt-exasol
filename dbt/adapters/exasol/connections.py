@@ -21,15 +21,13 @@ import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
 import pyexasol
 from dateutil import parser  # type: ignore[import-untyped]
-from pyexasol import ExaConnection
-
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
     Credentials,
 )
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
-
+from pyexasol import ExaConnection
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
