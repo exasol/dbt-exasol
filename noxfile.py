@@ -118,11 +118,12 @@ def artifacts_copy(session: Session) -> None:
             session.log(f"Copying {artifact_file.name}")
             shutil.copy(str(artifact_file), str(PROJECT_CONFIG.root_path))
 
-    # Generate coverage report
+    # Generate coverage report (enforce threshold after combining all jobs)
     session.run(
         "coverage",
         "report",
         "-m",
+        "--fail-under=85",
         f"--rcfile={PROJECT_CONFIG.root_path / 'pyproject.toml'}",
     )
 
@@ -234,7 +235,7 @@ def coverage(session: Session) -> None:
     coverage_file.unlink(missing_ok=True)
     _run_unit_tests(session, context)
     _run_integration_tests(session, context)
-    session.run("coverage", "report", "-m")
+    session.run("coverage", "report", "-m", "--fail-under=85")
 
 
 @nox.session(name="project:check", python=False)  # type: ignore[no-redef]
@@ -250,4 +251,4 @@ def project_check(session: Session) -> None:
     _type_check(session, py_files)
     _run_unit_tests(session, context)
     _run_integration_tests(session, context)
-    session.run("coverage", "report", "-m")
+    session.run("coverage", "report", "-m", "--fail-under=85")

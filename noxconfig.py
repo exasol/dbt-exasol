@@ -42,7 +42,11 @@ def start_test_db(
             "--create-certificates",
         )
 
-    session.run(*command, external=True)
+    session.run(
+        *command,
+        external=True,
+        env={"PYTHONWARNINGS": "ignore:::requests"},
+    )
 
     # Note: Test role setup is now handled by pytest fixture in tests/conftest.py
     # This ensures it runs for both nox and pure pytest calls

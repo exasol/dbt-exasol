@@ -46,7 +46,7 @@ class TestSeedWithKeywords:
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
@@ -100,7 +100,7 @@ class TestSeedKeywordsAutoDetect:
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
@@ -137,7 +137,7 @@ class TestSeedMixedQuoting:
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
@@ -181,7 +181,7 @@ class TestSeedKeywordsUppercase:
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
