@@ -482,6 +482,28 @@ class ExasolConnectionManager(SQLConnectionManager):
         connection.abort_query()  # type: ignore
 
     @classmethod
+    def _try_close_handle(cls, handle, log_message: str) -> None:
+        """Close a handle if not already closed, logging failures."""
+        try:
+            if not handle.is_closed:
+                handle.close()
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.debug(log_message)
+
+    @classmethod
+    def _return_handle_to_pool(cls, handle, pool_key: str, credentials) -> None:
+        """Return a validated handle to the pool or close it if the pool is full."""
+        with cls._pool_lock:
+            pool = cls._get_pool()
+            capacity = cls._pool_sizes.get(pool_key) or credentials.pool_size or 1
+            if pool_key not in pool:
+                pool[pool_key] = []
+            if len(pool[pool_key]) < capacity and not handle.is_closed:
+                pool[pool_key].append(handle)
+            else:
+                cls._try_close_handle(handle, "Failed to close unpooled connection")
+
+    @classmethod
     def _close_handle(cls, connection) -> None:
         """Return connection to pool or close it to prevent session leaks."""
         if connection.handle is None or connection.credentials is None:
@@ -492,29 +514,11 @@ class ExasolConnectionManager(SQLConnectionManager):
 
         # Validate outside the lock to minimise lock-hold time (~1 ms round-trip).
         # The is_closed guard inside the lock catches concurrent invalidation.
-        is_valid = cls._is_connection_valid(handle)
-
-        if not is_valid:
-            try:
-                if not handle.is_closed:
-                    handle.close()
-            except Exception:  # pylint: disable=broad-except
-                LOGGER.debug("Failed to close invalid connection")
+        if not cls._is_connection_valid(handle):
+            cls._try_close_handle(handle, "Failed to close invalid connection")
             return
 
-        with cls._pool_lock:
-            pool = cls._get_pool()
-            capacity = cls._pool_sizes.get(pool_key) or connection.credentials.pool_size or 1
-            if pool_key not in pool:
-                pool[pool_key] = []
-            if len(pool[pool_key]) < capacity and not handle.is_closed:
-                pool[pool_key].append(handle)
-            else:
-                try:
-                    if not handle.is_closed:
-                        handle.close()
-                except Exception:  # pylint: disable=broad-except
-                    LOGGER.debug("Failed to close unpooled connection")
+        cls._return_handle_to_pool(handle, pool_key, connection.credentials)
 
     @classmethod
     def get_response(cls, cursor) -> ExasolAdapterResponse:
