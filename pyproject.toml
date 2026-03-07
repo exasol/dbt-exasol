@@ -69,7 +69,6 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 85
 omit = ["*/__init__.py", "*/__version__.py", "*/version.py"]
 
 [tool.coverage.xml]

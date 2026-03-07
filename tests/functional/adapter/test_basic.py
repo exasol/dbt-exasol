@@ -76,7 +76,7 @@ class TestDocsGenerateExasol(BaseDocsGenerate):
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
@@ -91,7 +91,7 @@ class TestDocsGenReferencesExasol(BaseDocsGenReferences):
     def dbt_profile_target(self):
         return {
             "type": "exasol",
-            "threads": 1,
+            "threads": 8,
             "dsn": os.getenv("DBT_DSN", "localhost:8563"),
             "user": os.getenv("DBT_USER", "sys"),
             "pass": os.getenv("DBT_PASS", "exasol"),
