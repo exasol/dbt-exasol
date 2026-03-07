@@ -21,13 +21,15 @@ import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
 import pyexasol
 from dateutil import parser  # type: ignore[import-untyped]
+from pyexasol import ExaConnection
+
 from dbt.adapters.contracts.connection import (
     AdapterResponse,
     Credentials,
 )
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
-from pyexasol import ExaConnection
+
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -47,6 +49,7 @@ else:
 ROW_SEPARATOR_DEFAULT = "LF" if os.linesep == "\n" else "CRLF"
 TIMESTAMP_FORMAT_DEFAULT = "YYYY-MM-DDTHH:MI:SS.FF6"
 _UNSET_STATEMENT_ERROR = "Cannot fetch on unset statement"
+MAX_POOL_VALIDATION_ATTEMPTS = 3
 
 LOGGER = AdapterLogger("exasol")
 
@@ -61,18 +64,12 @@ def connect(**kwargs: Any):
 
 
 class ProtocolVersionType(StrEnum):
-    """Exasol protocol versions"""
-
     V1 = "v1"
     V2 = "v2"
     V3 = "v3"
 
 
 class ExasolConnection(ExaConnection):
-    """
-    Override to instantiate ExasolCursor
-    """
-
     row_separator: str = ROW_SEPARATOR_DEFAULT
     timestamp_format: str = TIMESTAMP_FORMAT_DEFAULT
 
@@ -111,15 +108,12 @@ class ExasolCredentials(Credentials):
     compression: bool = False
     encryption: bool = True
     validate_server_certificate: bool = True
-    ## Because of potential interference with dbt,
-    # the following statements are not (yet) implemented
-    # fetch_dict: bool
-    # fetch_size_bytes: int
-    # lower_ident: bool
-    # quote_ident: bool
-    # verbose_error: bool
-    # debug: bool
-    # udf_output_port: int
+    ## The following pyexasol options are intentionally not implemented
+    ## because they would interfere with dbt's connection and transaction management:
+    ## - fetch_dict, fetch_size_bytes: dbt handles result fetching internally
+    ## - lower_ident, quote_ident: dbt manages identifier quoting
+    ## - verbose_error, debug: dbt has its own error handling and logging
+    ## - udf_output_port: UDFs are not supported through dbt adapter
     protocol_version: str = "v3"
     retries: int = 1
     row_separator: str = ROW_SEPARATOR_DEFAULT
@@ -155,8 +149,6 @@ class ExasolCredentials(Credentials):
 
 
 class ExasolConnectionManager(SQLConnectionManager):
-    """Managing Exasol connections"""
-
     TYPE = "exasol"
     _pool: dict[str, list[ExaConnection]] = {}
     _pool_sizes: dict[str, int] = {}
@@ -167,11 +159,11 @@ class ExasolConnectionManager(SQLConnectionManager):
         """Initialize connection manager and resolve effective pool size per credentials key."""
         super().__init__(profile, mp_context)
         credentials = profile.credentials
-        key = self.__class__._get_pool_key(credentials)  # type: ignore[arg-type]
+        key = type(self)._get_pool_key(credentials)  # type: ignore[arg-type]
         if credentials.pool_size is not None:  # type: ignore[union-attr]
-            self.__class__._pool_sizes[key] = credentials.pool_size  # type: ignore[union-attr]
+            type(self)._pool_sizes[key] = credentials.pool_size  # type: ignore[union-attr]
         else:
-            self.__class__._pool_sizes[key] = profile.threads
+            type(self)._pool_sizes[key] = profile.threads
 
     @classmethod
     def _ensure_atexit_handler(cls):
@@ -200,7 +192,6 @@ class ExasolConnectionManager(SQLConnectionManager):
 
     @classmethod
     def _get_pool(cls) -> dict[str, list[ExaConnection]]:
-        """Get the class-level connection pool."""
         return cls._pool
 
     @classmethod
@@ -276,35 +267,33 @@ class ExasolConnectionManager(SQLConnectionManager):
 
     @classmethod
     def _fetch_rows(cls, cursor: Any, limit: int | None) -> list[Any]:
-        """Fetch rows from cursor based on limit."""
         if limit:
             return cursor.fetchmany(limit)
         return cursor.fetchall()
 
     @classmethod
     def _needs_type_conversion(cls, rows: list[Any], col_idx: int) -> bool:
-        """Check if column needs type conversion from string."""
         return len(rows) > 0 and isinstance(rows[0][col_idx], str)
+
+    @classmethod
+    def _convert_column_values(cls, rows: list[Any], col_idx: int, converter: Any) -> list[Any]:
+        """Convert column values using the provided converter function."""
+        for rownum, row in enumerate(rows):
+            if row[col_idx] is not None:
+                tmp = list(row)
+                tmp[col_idx] = converter(row[col_idx])
+                rows[rownum] = tmp
+        return rows
 
     @classmethod
     def _convert_column_to_decimal(cls, rows: list[Any], col_idx: int) -> list[Any]:
         """Convert string column values to Decimal."""
-        for rownum, row in enumerate(rows):
-            if row[col_idx] is not None:
-                tmp = list(row)
-                tmp[col_idx] = decimal.Decimal(row[col_idx])
-                rows[rownum] = tmp
-        return rows
+        return cls._convert_column_values(rows, col_idx, decimal.Decimal)
 
     @classmethod
     def _convert_column_to_timestamp(cls, rows: list[Any], col_idx: int) -> list[Any]:
         """Convert string column values to datetime."""
-        for rownum, row in enumerate(rows):
-            if row[col_idx] is not None:
-                tmp = list(row)
-                tmp[col_idx] = parser.parse(row[col_idx])
-                rows[rownum] = tmp
-        return rows
+        return cls._convert_column_values(rows, col_idx, parser.parse)
 
     @classmethod
     def _apply_type_conversions(cls, rows: list[Any], col_idx: int, col_type: str) -> list[Any]:
@@ -543,8 +532,6 @@ class ExasolConnectionManager(SQLConnectionManager):
 
 
 class ExasolCursor:
-    """Exasol dbt-adapter cursor implementation"""
-
     array_size = 1
 
     def __init__(self, connection):
@@ -594,7 +581,6 @@ class ExasolCursor:
         return self
 
     def execute(self, query, bindings: Any | None = None):
-        """executing query"""
         if query.startswith("0CSV|"):
             # Format: "0CSV|schema.table" or "0CSV|schema.table|col1,col2,col3"
             parts = query.split("|", 2)[1:]  # Skip "0CSV" prefix
@@ -623,13 +609,11 @@ class ExasolCursor:
         return self
 
     def fetchone(self):
-        """fetch single row"""
         if self.stmt is None:
             raise RuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchone()
 
     def fetchmany(self, size=None):
-        """fetch single row"""
         if size is None:
             size = self.array_size
 
@@ -638,14 +622,12 @@ class ExasolCursor:
         return self.stmt.fetchmany(size)
 
     def fetchall(self):
-        """fetch single row"""
         if self.stmt is None:
             raise RuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchall()
 
     @property
     def description(self):
-        """columns in cursor"""
         cols = []
         if self.stmt is None:
             return cols
@@ -670,19 +652,16 @@ class ExasolCursor:
 
     @property
     def rowcount(self):
-        """number of rows in result set"""
         if self.stmt is not None:
             return self.stmt.rowcount()
         return 0
 
     @property
     def execution_time(self):
-        """elapsed time for query"""
         if self.stmt is not None:
             return self.stmt.execution_time
         return 0
 
     def close(self):
-        """closing the cursor / statement"""
         if self.stmt is not None:
             self.stmt.close()
