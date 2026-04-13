@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change Proposal Summary: atomic-ctas</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --heading: #e6edf3; --accent: #58a6ff; --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 960px; margin: 0 auto; }
+  h1 { color: var(--heading); font-size: 1.8rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+  h2 { color: var(--accent); font-size: 1.3rem; margin: 1.5rem 0 0.75rem; }
+  h3 { color: var(--purple); font-size: 1.05rem; margin: 1rem 0 0.5rem; }
+  p, li { margin-bottom: 0.4rem; }
+  ul, ol { padding-left: 1.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 0.4rem; }
+  .badge-new { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.4); }
+  .badge-mod { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.4); }
+  .badge-break { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.4); }
+  .badge-risk { background: rgba(248,81,73,0.1); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .meta { display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.9rem; color: #8b949e; margin-bottom: 1rem; }
+  .meta span { display: flex; align-items: center; gap: 0.3rem; }
+  .task-group { margin-bottom: 0.75rem; }
+  .task-group-title { font-weight: 600; color: var(--heading); margin-bottom: 0.3rem; }
+  .task { padding: 0.2rem 0; padding-left: 0.5rem; border-left: 2px solid var(--border); margin-bottom: 0.15rem; font-size: 0.92rem; }
+  code { background: rgba(110,118,129,0.2); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--accent); }
+  .decision { border-left: 3px solid var(--purple); padding-left: 1rem; margin-bottom: 0.75rem; }
+  .decision strong { color: var(--heading); }
+  .risk-item { border-left: 3px solid var(--red); padding-left: 1rem; margin-bottom: 0.75rem; }
+  .impact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 600px) { .impact-grid { grid-template-columns: 1fr; } body { padding: 1rem; } }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .toc { list-style: none; padding: 0; }
+  .toc li { padding: 0.2rem 0; }
+  .toc li::before { content: "→ "; color: var(--accent); }
+  .separator { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🔄 Change Proposal: <code>atomic-ctas</code></h1>
+
+<div class="meta">
+  <span>📅 Created: 2026-04-13</span>
+  <span>📋 Schema: spec-driven</span>
+  <span>🐛 Fixes: <a href="https://github.com/exasol/dbt-exasol/issues/195">#195</a></span>
+  <span><span class="badge badge-break">BREAKING</span> SQL output change</span>
+</div>
+
+<!-- Problem -->
+<div class="card">
+  <h2>🎯 Problem</h2>
+  <p>The <code>exasol__create_table_as</code> macro emits <strong>two separate SQL statements</strong>:</p>
+  <ol>
+    <li><code>CREATE OR REPLACE TABLE ... WITH NO DATA</code> — auto-commits an <strong>empty table</strong></li>
+    <li><code>INSERT INTO ...</code> — populates the table</li>
+  </ol>
+  <p>If the dbt process crashes between steps 1 and 2 (signal, network drop, OOM), the target table is left <strong>permanently empty</strong>. Downstream models silently produce zero-row results.</p>
+</div>
+
+<!-- Solution -->
+<div class="card">
+  <h2>✅ Solution</h2>
+  <p>Replace the two-step pattern with a <strong>single atomic</strong> <code>CREATE OR REPLACE TABLE ... AS &lt;sql&gt;</code> statement. The table either has the new data or the previous version is preserved unchanged.</p>
+  <ul>
+    <li><strong>Non-contract path:</strong> Single <code>CREATE OR REPLACE TABLE t AS &lt;sql&gt; [DISTRIBUTE BY ...] [PARTITION BY ...]</code></li>
+    <li><strong>Contract-enforced path:</strong> Atomic CTAS first, then <code>ALTER TABLE</code> for constraints (NOT NULL, PK, FK) — additive operations that can't cause data loss</li>
+    <li><strong>Distribution/Partitioning:</strong> Moved inline with CTAS (no separate ALTER needed)</li>
+  </ul>
+</div>
+
+<!-- Capabilities -->
+<div class="card">
+  <h2>📦 Capabilities</h2>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <span class="badge badge-new">NEW</span> <code>atomic-ctas</code>
+      <p style="font-size:0.9rem; margin-top:0.3rem;">Guarantees create_table_as is atomic — populated with data or previous version preserved</p>
+    </div>
+    <div>
+      <span class="badge badge-mod">MODIFIED</span> <code>relation-management</code>
+      <p style="font-size:0.9rem; margin-top:0.3rem;">get_replace_table_sql now produces single atomic CTAS via delegation</p>
+    </div>
+  </div>
+</div>
+
+<!-- Key Decisions -->
+<div class="card">
+  <h2>⚖️ Key Design Decisions</h2>
+
+  <div class="decision">
+    <strong>D1: Single atomic CTAS (non-contract)</strong><br>
+    <code>CREATE OR REPLACE TABLE t AS &lt;sql&gt; DISTRIBUTE BY ... PARTITION BY ...</code> — one statement, inline distribution. If SELECT fails, existing table is preserved.
+  </div>
+
+  <div class="decision">
+    <strong>D2: CTAS + ALTER CONSTRAINT (contract path)</strong><br>
+    Exasol cannot combine column defs with <code>AS subquery</code>. Solution: atomic CTAS first, then <code>ALTER TABLE ADD CONSTRAINT</code> — safe because data is guaranteed present.
+  </div>
+
+  <div class="decision">
+    <strong>D3: PK via ALTER TABLE (not inline)</strong><br>
+    Primary keys applied after data load via <code>ALTER TABLE ADD CONSTRAINT ... PRIMARY KEY (...)</code>. Actually safer — PK validated against real data.
+  </div>
+
+  <div class="decision">
+    <strong>D4: Macro restructuring</strong><br>
+    <code>add_constraints</code> split into inline clauses (DISTRIBUTE/PARTITION) and post-creation ALTERs (PK). <code>|SEPARATEMEPLEASE|</code> splitter retained only for ALTER statements.
+  </div>
+</div>
+
+<!-- Risks -->
+<div class="card">
+  <h2>⚠️ Risks &amp; Trade-offs</h2>
+
+  <div class="risk-item">
+    <strong>Multi-node cluster reshuffling</strong><br>
+    Contract + distribute_by_config: ALTERs post-CTAS could trigger reshuffling. <em>Mitigated:</em> DISTRIBUTE BY is inline in CTAS even for contract path — only PK needs ALTER.
+  </div>
+
+  <div class="risk-item">
+    <strong>NOT NULL timing change</strong><br>
+    NOT NULL now applied after data load via <code>ALTER TABLE MODIFY COLUMN ... NOT NULL</code>. If data has NULLs, ALTER fails. <em>Actually correct behavior</em> — old pattern never validated against data.
+  </div>
+
+  <div class="risk-item">
+    <strong>Test fixture updates needed</strong><br>
+    <code>exasol_expected_sql</code> in constraint test fixtures hardcodes old pattern. Test-only change.
+  </div>
+
+  <div class="risk-item">
+    <strong>SQL output change</strong> <span class="badge badge-break">BREAKING</span><br>
+    Users/tools parsing emitted SQL will see different pattern. This is a bugfix — new pattern is strictly safer.
+  </div>
+</div>
+
+<!-- Impact -->
+<div class="card">
+  <h2>💥 Impact</h2>
+  <div class="impact-grid">
+    <div>
+      <h3>Macros</h3>
+      <ul>
+        <li><code>adapters.sql</code> — <code>exasol__create_table_as</code></li>
+        <li><code>create_table_helpers.sql</code> — <code>add_constraints</code>, <code>partition_by_conf</code>, <code>distribute_by_conf</code></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Materializations</h3>
+      <ul>
+        <li><code>table.sql</code>, <code>incremental.sql</code>, <code>snapshot.sql</code></li>
+        <li>All call <code>create_table_as</code> — fix applies transparently</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Tests</h3>
+      <ul>
+        <li><code>constraints/fixtures.py</code> — expected SQL update</li>
+        <li>Contract enforcement, table, incremental, snapshot tests</li>
+      </ul>
+    </div>
+    <div>
+      <h3>No Changes To</h3>
+      <ul>
+        <li>Public API / dependencies</li>
+        <li><code>connections.py</code> splitter mechanism</li>
+        <li>View materializations</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Tasks -->
+<div class="card">
+  <h2>📋 Tasks (5 groups, 14 items)</h2>
+
+  <div class="task-group">
+    <div class="task-group-title">1. Restructure <code>create_table_helpers.sql</code> macros</div>
+    <div class="task">☐ 1.1 Refactor <code>partition_by_conf</code> — inline CTAS clause (no trailing semicolon)</div>
+    <div class="task">☐ 1.2 Refactor <code>distribute_by_conf</code> — inline CTAS clause</div>
+    <div class="task">☐ 1.3 Refactor <code>add_constraints</code> — post-creation ALTERs only (remove PARTITION/DISTRIBUTE)</div>
+  </div>
+
+  <div class="task-group">
+    <div class="task-group-title">2. Rewrite <code>exasol__create_table_as</code> macro</div>
+    <div class="task">☐ 2.1 Non-contract path: single atomic CTAS + inline DISTRIBUTE/PARTITION + post ALTERs</div>
+    <div class="task">☐ 2.2 Contract-enforced path: atomic CTAS + ALTER for NOT NULL, PK, FK</div>
+    <div class="task">☐ 2.3 Remove all <code>WITH NO DATA</code> and <code>INSERT INTO</code> patterns</div>
+    <div class="task">☐ 2.4 Remove <code>temporary</code> parameter handling distinction</div>
+  </div>
+
+  <div class="task-group">
+    <div class="task-group-title">3. Update contract test fixtures</div>
+    <div class="task">☐ 3.1 Update <code>exasol_expected_sql</code> to match new pattern</div>
+    <div class="task">☐ 3.2 Verify contract enforcement tests pass</div>
+  </div>
+
+  <div class="task-group">
+    <div class="task-group-title">4. Run existing test suites</div>
+    <div class="task">☐ 4.1 Unit tests</div>
+    <div class="task">☐ 4.2 Contract enforcement functional tests</div>
+    <div class="task">☐ 4.3 Table materialization tests</div>
+    <div class="task">☐ 4.4 Incremental materialization tests</div>
+    <div class="task">☐ 4.5 Snapshot materialization tests</div>
+  </div>
+
+  <div class="task-group">
+    <div class="task-group-title">5. Add atomicity verification test</div>
+    <div class="task">☐ 5.1 Test that rendered SQL has single CTAS (no <code>WITH NO DATA</code> + <code>INSERT</code>)</div>
+  </div>
+</div>
+
+<!-- Specs -->
+<div class="card">
+  <h2>📄 Specs Summary</h2>
+  <h3>New Spec: <code>atomic-ctas</code> (6 requirements, 11 scenarios)</h3>
+  <ul>
+    <li><strong>Atomic CTAS (non-contract)</strong> — single statement, no WITH NO DATA, works for temp relations too</li>
+    <li><strong>Inline DISTRIBUTE BY / PARTITION BY</strong> — no separate ALTERs for distribution</li>
+    <li><strong>Post-creation constraints (contract)</strong> — NOT NULL, PK, FK via ALTER after data load</li>
+    <li><strong>No data loss on interruption</strong> — either new data or previous table preserved</li>
+    <li><strong>Replace table uses atomic CTAS</strong> — get_replace_table_sql delegates to atomic macro</li>
+  </ul>
+
+  <h3>Modified Spec: <code>relation-management</code> (1 scenario changed)</h3>
+  <ul>
+    <li><strong>Replace a table</strong> — now uses single atomic CTAS instead of WITH NO DATA + INSERT</li>
+  </ul>
+</div>
+
+<hr class="separator">
+<p style="text-align:center; color:#8b949e; font-size:0.85rem;">
+  Generated from <code>openspec/changes/atomic-ctas/</code> · dbt-exasol · 2026-04-13
+</p>
+
+</body>
+</html>
