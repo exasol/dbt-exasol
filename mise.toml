@@ -14,6 +14,8 @@ k3d = "latest"
 delta = "latest"
 "github:dlvhdr/diffnav" = "latest"
 "github:max-sixty/worktrunk" = "latest"
+"npm:fission-ai/openspec" = "latest"
+"npm:mariozechner/pi-coding-agent" = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
