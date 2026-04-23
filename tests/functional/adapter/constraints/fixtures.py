@@ -186,14 +186,13 @@ select
 """
 
 exasol_expected_sql = """
-create or replace table <model_identifier> ( 
-    id decimal(18,0) not null, 
-    color char(50), 
-    date_day char(50) 
-    ) ; 
-    |separatemeplease| 
-    insert into <model_identifier> 
-    select id, color, date_day from ( select 'blue' as color, 1 as id, '2019-01-01' as date_day ) as model_subq
+create or replace table <model_identifier> as
+    select cast(id as decimal(18,0)) as id, cast(color as char(50)) as color, cast(date_day as char(50)) as date_day
+    from (
+        select 'blue' as color, 1 as id, '2019-01-01' as date_day
+    ) as model_subq
+|separatemeplease|
+    alter table <model_identifier> modify column id not null;
 """
 
 exasol_model_contract_sql_header_sql = """

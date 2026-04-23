@@ -43,7 +43,6 @@ DBT_SEND_ANONYMOUS_USAGE_STATS = { default = "false", required = "En/Disable usa
 # Fallback to podman machine socket if neither is set
 DOCKER_HOST = "{% if env.DOCKER_HOST %}{{ env.DOCKER_HOST }}{% elif env.DOCKER_SSH_HOST %}ssh://{{ env.DOCKER_SSH_HOST }}{% endif %}"
 DOCKER_BUILDKIT = "{% if env.DOCKER_BUILDKIT %}{{ env.DOCKER_BUILDKIT }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1{% endif %}"
-DOCKER_API_VERSION = "{% if env.DOCKER_API_VERSION %}{{ env.DOCKER_API_VERSION }}{% elif env.DOCKER_SSH_HOST or env.DOCKER_HOST %}1.41{% endif %}"
 
 [hooks]
 enter = ["mise run sync"]

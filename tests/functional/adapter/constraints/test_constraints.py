@@ -214,21 +214,15 @@ class TestExasolModelConstraintsRuntimeEnforcement(BaseModelConstraintsRuntimeEn
     @pytest.fixture(scope="class")
     def expected_sql(self):
         return """
-create or replace table <model_identifier> ( 
-    id decimal(18,0) not null, 
-    color char(50), 
-    date_day char(50), 
-    primary key (id) ) ; 
-    |separatemeplease| 
-    insert into <model_identifier> 
-    select 
-    id, 
-    color, 
-    date_day 
-    from ( 
-        select 1 as id, 
-        'blue' as color, 
-        '2019-01-01' as date_day ) as model_subq
+create or replace table <model_identifier> as
+    select cast(id as decimal(18,0)) as id, cast(color as char(50)) as color, cast(date_day as char(50)) as date_day
+    from (
+        select 1 as id, 'blue' as color, '2019-01-01' as date_day
+    ) as model_subq
+|separatemeplease|
+    alter table <model_identifier> modify column id not null;
+|separatemeplease|
+    alter table <model_identifier> add constraint <model_identifier> primary key(id);
 """
 
 
@@ -243,21 +237,15 @@ class TestExasolConstraintQuotedColumn(BaseConstraintQuotedColumn):
     @pytest.fixture(scope="class")
     def expected_sql(self):
         return """
-        create or replace table <model_identifier> (
-            id decimal(18,0) not null,
-            "from" char(50) not null,
-            date_day char(50)
-        ) ;
-        |separatemeplease|
-        insert into <model_identifier>
-        
-            select id, "from", date_day
-            from (
-                select
-                'blue' as "from",
-                1 as id,
-                '2019-01-01' as date_day
-            ) as model_subq
+create or replace table <model_identifier> as
+    select cast(id as decimal(18,0)) as id, cast("from" as char(50)) as "from", cast(date_day as char(50)) as date_day
+    from (
+        select 'blue' as "from", 1 as id, '2019-01-01' as date_day
+    ) as model_subq
+|separatemeplease|
+    alter table <model_identifier> modify column id not null;
+|separatemeplease|
+    alter table <model_identifier> modify column "from" not null;
         """
 
 

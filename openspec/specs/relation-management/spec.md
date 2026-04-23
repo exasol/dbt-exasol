@@ -41,7 +41,8 @@ The adapter SHALL implement `exasol__get_replace_table_sql` and `exasol__get_rep
 
 #### Scenario: Replace a table
 - **WHEN** `get_replace_table_sql` is called with a table relation and SQL
-- **THEN** the adapter SHALL generate SQL using `CREATE OR REPLACE TABLE` with the provided query, consistent with the existing `exasol__create_table_as` pattern
+- **THEN** the adapter SHALL generate SQL using a single atomic `CREATE OR REPLACE TABLE ... AS <sql>` statement via the `exasol__create_table_as` macro, followed by `ALTER TABLE` statements for DISTRIBUTE BY, PARTITION BY, and PRIMARY KEY if configured (connected via `|SEPARATEMEPLEASE|`)
+- **AND** the generated SQL SHALL NOT use the `WITH NO DATA` + `INSERT INTO` pattern
 
 #### Scenario: Replace a view
 - **WHEN** `get_replace_view_sql` is called with a view relation and SQL
