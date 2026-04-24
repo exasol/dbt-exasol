@@ -6,16 +6,8 @@ gh = "latest"
 usage = "latest"
 docker-cli = "latest"
 opencode = "latest"
-podman = "latest"
-"github:containers/gvisor-tap-vsock" = "latest"
-"ubi:crc-org/vfkit" = "latest"
-k3d = "latest"
-"github:dlvhdr/gh-dash" = "latest"
-delta = "latest"
-"github:dlvhdr/diffnav" = "latest"
 "github:max-sixty/worktrunk" = "latest"
 "npm:fission-ai/openspec" = "latest"
-"npm:mariozechner/pi-coding-agent" = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
