@@ -18,6 +18,7 @@ from exasol.toolbox.nox._shared import (
 )
 from exasol.toolbox.nox.plugin import NoxTasks
 
+
 # Suppress FutureWarning about duplicate session registration.
 # The toolbox registers default sessions via @nox.session at import time;
 # we intentionally override several of them below with project-specific versions.
@@ -31,6 +32,7 @@ from noxconfig import (  # noqa: E402
     start_test_db,
     stop_test_db,
 )
+
 
 # default actions to be run if nothing is explicitly specified with the -s option
 nox.options.sessions = ["format:fix"]
@@ -192,7 +194,7 @@ def _run_integration_tests(session: Session, context) -> None:
 
     # Check if -n flag is already in fwd-args, if not add -n 8 for parallel execution
     has_n_flag = any(arg.startswith("-n") or arg.startswith("--numprocesses") for arg in context["fwd-args"])
-    parallel_args = [] if has_n_flag else ["-n8"]
+    parallel_args = [] if has_n_flag else ["-n4"]
 
     if context["coverage"]:
         command = (
