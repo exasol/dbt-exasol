@@ -7,7 +7,7 @@ usage = "latest"
 docker-cli = "latest"
 opencode = "latest"
 "github:max-sixty/worktrunk" = "latest"
-"npm:fission-ai/openspec" = "latest"
+"npm:@fission-ai/openspec" = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
