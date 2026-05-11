@@ -211,7 +211,7 @@ jobs:
         run: mise run sync
 
       - name: Run integration tests
-        run: mise run nox -- -s test:integration -- --coverage -n8
+        run: mise run nox -- -s test:integration -- --coverage -n4
         env:
           EXASOL_DB_MEM_SIZE: 4GB
 
