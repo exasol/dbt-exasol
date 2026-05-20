@@ -948,7 +948,11 @@ wheels = [
 
 [[package]]
 name = "dbt-exasol"
+<<<<<<< HEAD
 version = "1.10.6"
+=======
+version = "1.11.0"
+>>>>>>> 032d610 (1.11 core upgrades)
 source = { editable = "." }
 dependencies = [
     { name = "dbt-adapters" },
@@ -983,8 +987,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dbt-adapters", specifier = ">=1.10.0" },
-    { name = "dbt-core", specifier = ">=1.10.0" },
+    { name = "dbt-adapters", specifier = ">=1.11.0" },
+    { name = "dbt-core", specifier = ">=1.11.0" },
     { name = "protobuf", specifier = ">=5.0,<7.0" },
     { name = "pyexasol", specifier = ">=2" },
 ]
@@ -992,7 +996,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=22.8,<25.0" },
-    { name = "dbt-tests-adapter", specifier = ">=1.10.0" },
+    { name = "dbt-tests-adapter", specifier = ">=1.11.0" },
     { name = "exasol-integration-test-docker-environment", specifier = ">=4.3.0" },
     { name = "exasol-toolbox", specifier = ">=5.1.0" },
     { name = "exceptiongroup", specifier = ">=1.1.1" },
