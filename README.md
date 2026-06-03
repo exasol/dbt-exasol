@@ -289,6 +289,105 @@ The following database constraints are implemented for Exasol:
 | primary key     | enforced      |
 | foreign key     | enforced      |
 
+## User-Defined Functions (UDFs)
+
+> Supported since dbt-exasol 1.11.x (requires dbt-core 1.11.x)
+
+dbt-exasol supports dbt-core's UDF feature for defining and registering custom functions in Exasol that can be reused outside dbt (BI tools, notebooks).
+
+### Supported UDF Types
+
+| Type | Language | Status | Exasol Mechanism |
+|------|----------|--------|------------------|
+| Scalar | SQL | Supported | CREATE OR REPLACE FUNCTION |
+| Scalar | Python | Supported | CREATE OR REPLACE PYTHON3 SCALAR SCRIPT |
+| Aggregate | SQL | Not supported | Exasol has no SQL aggregate function mechanism |
+| Aggregate | Python | Supported | CREATE OR REPLACE PYTHON3 SET SCRIPT |
+| Table-returning | — | Not supported | Not yet supported in dbt framework |
+
+### Exasol-Specific Limitations
+
+- **No volatility support**: Exasol does not support IMMUTABLE/STABLE/VOLATILE on any UDF type (SQL scalar, Python scalar, or Python aggregate). A warning is emitted if `volatility` is configured on any function.
+- **No default argument values**: Exasol does not support DEFAULT clauses for function arguments.
+- **PYTHON3 only**: Exasol uses a fixed PYTHON3 runtime. The runtime_version config is ignored with a warning.
+- **No PACKAGES clause**: Exasol uses BucketFS for Python libraries, not inline PACKAGES.
+- **Reserved-word argument names in SQL scalar UDFs**: SQL scalar `CREATE FUNCTION` argument identifiers are emitted unquoted (so the function body can reference them unquoted, as Exasol requires). Consequently an argument named after an Exasol reserved word (e.g. `value`) will fail to compile. Rename the argument (e.g. `val`) to work around this. Python scalar/aggregate UDFs are unaffected: their arguments are quoted and accessed via `ctx.<name>`.
+
+### SQL Scalar UDF Example
+
+functions/double_price.sql:
+
+    SELECT price * 2
+
+functions/double_price.yml:
+
+    functions:
+      - name: double_price
+        arguments:
+          - name: price
+            data_type: DOUBLE
+        returns:
+          data_type: DOUBLE
+
+The adapter automatically:
+- Strips the leading SELECT keyword (dbt convention)
+- Wraps the expression in BEGIN RETURN expr; END name;
+- Detects procedural bodies containing BEGIN and inserts them directly
+
+### Python Scalar UDF Example
+
+functions/double_price.py:
+
+    def double_price(price: float) -> float:
+        return price * 2
+
+functions/double_price.yml:
+
+    functions:
+      - name: double_price
+        config:
+          language: python
+          entry_point: double_price
+          runtime_version: "3.12"  # Ignored by Exasol; emits warning
+        arguments:
+          - name: price
+            data_type: DOUBLE
+        returns:
+          data_type: DOUBLE
+
+The adapter generates a run(ctx) bridge that maps Exasol's ctx.price API to dbt's direct-argument convention.
+
+### Python Aggregate UDF Example
+
+functions/sum_squared.py:
+
+    class SumSquared:
+        def __init__(self):
+            self._partial_sum = 0
+
+        def accumulate(self, input_value):
+            self._partial_sum += input_value
+
+        def finish(self):
+            return self._partial_sum ** 2
+
+functions/sum_squared.yml:
+
+    functions:
+      - name: sum_squared
+        config:
+          type: aggregate
+          language: python
+          entry_point: SumSquared
+          runtime_version: "3.11"  # Ignored by Exasol; emits warning
+        arguments:
+          - name: value
+            data_type: DOUBLE
+        returns:
+          data_type: DOUBLE
+
+The adapter generates a ctx.next() iteration bridge. merge() from the dbt convention is never called because Exasol handles distributed aggregation transparently. The `aggregate_state` config is likewise ignored; a warning is emitted if it is set.
+
 ## >=1.5 Incremental model update
 
 Fallback to dbt-core implementation and supporting strategies:
