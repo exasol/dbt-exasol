@@ -948,11 +948,7 @@ wheels = [
 
 [[package]]
 name = "dbt-exasol"
-<<<<<<< HEAD
-version = "1.10.6"
-=======
 version = "1.11.0"
->>>>>>> 032d610 (1.11 core upgrades)
 source = { editable = "." }
 dependencies = [
     { name = "dbt-adapters" },
