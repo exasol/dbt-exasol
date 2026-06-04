@@ -29,6 +29,52 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 | 1.8.x      | 1.8.x    |  3.9-3.12 | 7.x, 8.x          |
 | 1.7.x      | 1.7.x    |  3.8-3.11 | 7.x, 8.x          |
 
+## dbt-core version parity
+
+Parity claim against **dbt-core 1.11** (reference adapter: dbt-snowflake). Each
+supported feature is proven by an upstream `dbt-tests-adapter` subclass in CI; each
+unsupported feature carries a reason. Legend: ✅ Supported · ⚠️ Conditional ·
+❌ (platform) not supported due to an Exasol limitation · ❌ (not yet) not yet
+implemented.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Microbatch incremental strategy | ✅ | `incremental_strategy='microbatch'` |
+| Microbatch concurrency | ❌ (platform) | Batches run sequentially — see footnote 1 |
+| Sample mode (`--sample`) | ✅ | Requires `DBT_EXPERIMENTAL_SAMPLE_MODE` |
+| Empty model (`--empty`) | ✅ | |
+| UDFs (SQL) | ✅ | See "User-Defined Functions" below |
+| UDAFs (Python) | ✅ | Python SET SCRIPT aggregates |
+| Python models | ❌ (platform) | See footnote 2 |
+| Materialized views | ❌ (platform) | See footnote 3 |
+| Snapshots — `hard_deletes` | ✅ | Upstream + Exasol-specific tests |
+| Snapshots — `dbt_valid_to_current` | ✅ | Upstream + Exasol-specific tests |
+| `dbt clone` | ⚠️ | Clone-as-view (no native zero-copy clone) — footnote 4 |
+| Catalog integrations / Iceberg | ❌ (platform) | Parses if unused; errors if a model sets `catalog` — footnote 5 |
+| Unit testing | ✅ | |
+| Single-relation catalog | ✅ | `get_catalog_for_single_relation` |
+| Batched last-modified metadata | ✅ | `EXA_ALL_OBJECTS`, cross-owner sources |
+| `get_columns_in_relation` | ✅ | |
+| `persist_docs` | ✅ | Table/column comments |
+| Grants | ✅ | |
+
+**Why (platform-blocked features):**
+
+1. **Microbatch concurrency** — Exasol uses optimistic transaction-conflict
+   detection at table granularity, so concurrent DELETE+INSERT batches against the
+   same target relation abort each other; batches therefore run sequentially.
+2. **Python models** — Exasol has no general Python execution sandbox outside UDF
+   SCRIPTs, so arbitrary dbt Python models cannot run on the database.
+3. **Materialized views** — Exasol has no materialized-view primitive.
+4. **`dbt clone`** — Exasol has no native zero-copy clone, so clones are
+   materialised as views (the dbt-core default when `can_clone_table` is `False`).
+   Cross-target clones (`dbt clone --target otherschema`) are not yet supported
+   because the connection manager does not register a second deferred-target
+   connection; same-target clone-as-view works.
+5. **Catalog integrations / Iceberg** — Exasol has no external table-format /
+   catalog integration; a `catalogs.yml` parses fine, but a model setting
+   `config(catalog=...)` fails with a clear error.
+
 ## Development Setup
 
 This project uses [mise-en-place](https://mise.jdx.dev/) for managing development tools and environment.

@@ -147,6 +147,9 @@ jobs:
       - name: Type Check
         run: mise run nox -- -s lint:typing
 
+      - name: Deprecation Audit
+        run: mise run nox -- -s lint:deprecations
+
       - name: Unit Tests
         run: mise run nox -- -s test:unit -- --coverage
 

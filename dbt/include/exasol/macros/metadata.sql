@@ -6,7 +6,7 @@
                object_type as table_type,
                last_commit as last_modified,
                {{ current_timestamp() }} as snapshotted_at
-        from sys.exa_user_objects
+        from sys.exa_all_objects
         where (
         {%- for relation in relations -%}
             (upper(root_name) = upper('{{ relation.schema }}') and

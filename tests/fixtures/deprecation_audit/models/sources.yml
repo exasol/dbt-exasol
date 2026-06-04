@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: audit_source
+    schema: "{{ env_var('DBT_SCHEMA', 'public') }}"
+    tables:
+      - name: raw_events
+
+models:
+  - name: audit_model
+    description: "Exercises adapter-owned macros during parse for the deprecation audit."
+    columns:
+      - name: id
+        data_tests:
+          - not_null
