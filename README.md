@@ -318,7 +318,12 @@ For more information about SSL configuration, see the [PyExasol security documen
 
 ## Materialized View & Clone operations
 
-In Exasol materialized views and clone operations are not suported. Default behaviour from dbt-core will fail accordingly.
+Materialized views are not supported in Exasol (no materialized-view primitive); the
+default dbt-core behaviour will fail accordingly.
+
+`dbt clone` is supported as **clone-as-view**: Exasol has no native zero-copy clone,
+so clones are materialised as views (the dbt-core default when `can_clone_table` is
+`False`). See the parity matrix entry for `dbt clone` and footnote 4 for details.
 
 ## Null handling in test_utils null safe handling
 
