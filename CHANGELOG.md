@@ -1,17 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### Fixed
-- **Pooled-connection thread binding** — adapter metadata calls (e.g.
-  `list_relations`) issued on a thread that has no bound connection (outside a
-  `connection_named` block) now acquire a pooled connection on demand instead of
-  raising `InvalidConnectionError: connection never acquired for thread`. This
-  restores the implicit contract that non-pooled adapters satisfy, and unblocks
-  upstream `dbt-tests-adapter` classes that invoke adapter methods directly.
-- **`dbt clone --target otherschema`** — cross-target clone-as-view now works
-  end-to-end; `TestExasolCloneNotPossible` passes against a live Exasol instance.
-
 ## 1.11.0 — dbt-core 1.11 parity
 
 Establishes an explicit, testable parity claim against **dbt-core 1.11** (reference
@@ -22,6 +10,7 @@ feature list and the
 for the underlying contract.
 
 ### Added
+- Support for **User-Defined Functions (UDFs)** and **User-Defined Aggregate Functions (UDAFs)**, including SQL scalar, Python scalar, and Python aggregate functions.
 - Capability declarations for every `dbt.adapters.capability.Capability` value:
   `GetCatalogForSingleRelation` and `TableLastModifiedMetadataBatch` as `Full`,
   `MicrobatchConcurrency` as `Unsupported` (Exasol transaction-conflict semantics).
@@ -42,3 +31,13 @@ for the underlying contract.
   `TableLastModifiedMetadataBatch: Full` claim.
 - Reconciled the runtime version string in `dbt/adapters/exasol/__version__.py`
   (`1.10.6` → `1.11.0`) to match `pyproject.toml`.
+
+### Fixed
+- **Pooled-connection thread binding** — adapter metadata calls (e.g.
+  `list_relations`) issued on a thread that has no bound connection (outside a
+  `connection_named` block) now acquire a pooled connection on demand instead of
+  raising `InvalidConnectionError: connection never acquired for thread`. This
+  restores the implicit contract that non-pooled adapters satisfy, and unblocks
+  upstream `dbt-tests-adapter` classes that invoke adapter methods directly.
+- **`dbt clone --target otherschema`** — cross-target clone-as-view now works
+  end-to-end; `TestExasolCloneNotPossible` passes against a live Exasol instance.
