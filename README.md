@@ -68,9 +68,12 @@ implemented.
 3. **Materialized views** — Exasol has no materialized-view primitive.
 4. **`dbt clone`** — Exasol has no native zero-copy clone, so clones are
    materialised as views (the dbt-core default when `can_clone_table` is `False`).
-   Cross-target clones (`dbt clone --target otherschema`) are not yet supported
-   because the connection manager does not register a second deferred-target
-   connection; same-target clone-as-view works.
+   Cross-target clones (`dbt clone --target otherschema`) work: the connection
+   manager lazily acquires a pooled connection for threads that have no bound
+   connection, so post-clone metadata calls succeed.
+   Same-source-and-target zero-copy semantics are N/A: `BaseCloneSameSourceAndTarget`
+   asserts the "skipping clone" log line emitted only on the `can_clone_table=True`
+   path, which Exasol never takes.
 5. **Catalog integrations / Iceberg** — Exasol has no external table-format /
    catalog integration; a `catalogs.yml` parses fine, but a model setting
    `config(catalog=...)` fails with a clear error.
