@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **Pooled-connection thread binding** — adapter metadata calls (e.g.
+  `list_relations`) issued on a thread that has no bound connection (outside a
+  `connection_named` block) now acquire a pooled connection on demand instead of
+  raising `InvalidConnectionError: connection never acquired for thread`. This
+  restores the implicit contract that non-pooled adapters satisfy, and unblocks
+  upstream `dbt-tests-adapter` classes that invoke adapter methods directly.
+- **`dbt clone --target otherschema`** — cross-target clone-as-view now works
+  end-to-end; `TestExasolCloneNotPossible` passes against a live Exasol instance.
+
 ## 1.11.0 — dbt-core 1.11 parity
 
 Establishes an explicit, testable parity claim against **dbt-core 1.11** (reference
