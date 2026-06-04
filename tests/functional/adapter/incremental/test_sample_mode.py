@@ -3,6 +3,11 @@
 Sample mode (--sample flag) runs dbt in "small-data" mode by building only
 the N most recent time-based slices of models. This requires microbatch
 support to be fully functional.
+
+NOTE: Intentional duplication. The discoverable upstream parity marker lives at
+`tests/functional/adapter/sample_mode/test_sample_mode.py` (a plain
+`BaseSampleModeTest` subclass). This file additionally carries the Exasol-specific
+microbatch-driven `--sample` scenarios below. Keep both in sync.
 """
 
 import os

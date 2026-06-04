@@ -2,7 +2,7 @@
 
 ## Why
 
-dbt-exasol declares `version = "1.11.0"` and depends on `dbt-core>=1.11.0` / `dbt-adapters>=1.11.0`, but the adapter has never made an explicit, testable claim of "1.11 parity". Several 1.11-era features are *functionally* present (microbatch, sample mode, snapshot `hard_deletes`, snapshot `dbt_valid_to_current`, UDFs/UDAFs in flight) yet are not advertised through the capability matrix, not covered by the upstream `dbt-tests-adapter` 1.11 test classes, and not documented as supported. Other 1.11 framework hooks (single-relation catalog, batched last-modified metadata, catalog integrations) are stubbed or absent. The result is that users, the dbt-labs compatibility matrix, and contributors cannot tell which 1.11 features actually work on Exasol — and where the gaps are, they aren't explained.
+dbt-exasol's `pyproject.toml` declares `version = "1.11.0"` and depends on `dbt-core>=1.11.0` / `dbt-adapters>=1.11.0`, but the runtime version string in `dbt/adapters/exasol/__version__.py` still reads `1.10.6` (so `dbt --version` disagrees with the package metadata), and the adapter has never made an explicit, testable claim of "1.11 parity". This change also reconciles `__version__.py` to `1.11.0`. Several 1.11-era features are *functionally* present (microbatch, sample mode, snapshot `hard_deletes`, snapshot `dbt_valid_to_current`, UDFs/UDAFs in flight) yet are not advertised through the capability matrix, not covered by the upstream `dbt-tests-adapter` 1.11 test classes, and not documented as supported. Other 1.11 framework hooks (single-relation catalog, batched last-modified metadata, catalog integrations) are stubbed or absent. The result is that users, the dbt-labs compatibility matrix, and contributors cannot tell which 1.11 features actually work on Exasol — and where the gaps are, they aren't explained.
 
 This change establishes a single, auditable parity claim against dbt-core 1.11 (taking dbt-snowflake as the feature-completeness reference) by (a) implementing the small framework hooks that are missing, (b) subclassing the relevant upstream tests so the claim is provable, and (c) documenting features that are intentionally non-applicable to Exasol with a stated reason.
 
@@ -10,7 +10,7 @@ This change establishes a single, auditable parity claim against dbt-core 1.11 (
 
 ### Adapter capability declarations
 - Declare `Capability.GetCatalogForSingleRelation` as `Support.Full` after implementing `ExasolAdapter.get_catalog_for_single_relation()` against `EXA_ALL_COLUMNS` / `EXA_ALL_OBJECTS`.
-- Declare `Capability.TableLastModifiedMetadataBatch` as `Support.Full` (we already declare `TableLastModifiedMetadata: Full`; the batched variant uses the same underlying `EXA_ALL_OBJECTS` query with an `IN` predicate).
+- Declare `Capability.TableLastModifiedMetadataBatch` as `Support.Full` (we already declare `TableLastModifiedMetadata: Full`; the existing `exasol__get_relation_last_modified` macro already loops over multiple relations, so the batched path works today). As part of this change the macro is switched from `SYS.EXA_USER_OBJECTS` (current-user-owned objects only) to `SYS.EXA_ALL_OBJECTS` so cross-owner sources resolve and the `Full` claim is honest.
 - Declare `Capability.MicrobatchConcurrency` explicitly as `Support.Unsupported` with an inline comment explaining Exasol's transaction-conflict semantics on shared-table DELETE+INSERT (see design.md).
 - Add empty `_behavior_flags` scaffolding (returns `[]`) so future per-adapter behavior flags have a documented home.
 

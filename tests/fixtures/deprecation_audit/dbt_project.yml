@@ -1,0 +1,16 @@
+name: deprecation_audit
+version: "1.0.0"
+config-version: 2
+
+profile: deprecation_audit
+
+model-paths: ["models"]
+snapshot-paths: ["snapshots"]
+
+models:
+  deprecation_audit:
+    +materialized: view
+
+snapshots:
+  deprecation_audit:
+    +target_schema: "{{ env_var('DBT_SCHEMA', 'public') }}"

@@ -56,8 +56,8 @@ description = "Run code and security linters"
 run = "uv run nox -s lint:code lint:security"
 
 [tasks.check]
-description = "Run all checks (format, lint, type)"
-run = "uv run nox -s format:check lint:code lint:security lint:typing"
+description = "Run all checks (format, lint, type, deprecations)"
+run = "uv run nox -s format:check lint:code lint:security lint:typing lint:deprecations"
 
 [tasks.test]
 description = "Run all tests with coverage"

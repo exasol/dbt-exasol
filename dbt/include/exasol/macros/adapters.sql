@@ -62,7 +62,22 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
     {{ return(load_result('check_schema_exists').table) }}
 {% endmacro %}
 
+{% macro exasol__assert_no_catalog_integration() -%}
+    {#- Exasol has no catalog integration (Iceberg / external table formats). A
+        project's catalogs.yml may exist, but a model that actively sets
+        config(catalog=...) must fail with a clear, Exasol-specific error rather
+        than silently ignoring the request. -#}
+    {%- if config.get('catalog') or config.get('catalog_name') -%}
+        {%- do exceptions.raise_compiler_error(
+            'Exasol does not support catalog integrations (e.g. Iceberg / external '
+            ~ 'table formats). Remove the `catalog` config from this model to run it '
+            ~ 'on Exasol.'
+        ) -%}
+    {%- endif -%}
+{%- endmacro %}
+
 {% macro exasol__create_view_as(relation, sql) -%}
+    {{ exasol__assert_no_catalog_integration() }}
     {%- set contract_config = config.get('contract') -%}
     {%- if contract_config.enforced -%}
         {{ get_assert_columns_equivalent(sql) }}
@@ -92,6 +107,7 @@ AS
 {% endmacro %}
 
 {% macro exasol__create_table_as(temporary, relation, sql) -%}
+    {{ exasol__assert_no_catalog_integration() }}
     {%- set contract_config = config.get('contract') -%}
 
     {%- set partition_by_config = config.get('partition_by_config') -%}

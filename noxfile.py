@@ -238,6 +238,33 @@ def coverage(session: Session) -> None:
     session.run("coverage", "report", "-m", "--fail-under=85")
 
 
+@nox.session(name="lint:deprecations", python=False)  # type: ignore[no-redef]
+def lint_deprecations(session: Session) -> None:
+    """Fail on any dbt-core deprecation triggered by adapter-owned macros/fixtures.
+
+    Runs `dbt parse` against the adapter-owned fixture project under
+    tests/fixtures/deprecation_audit/ with `warn-error: true`, so any
+    `dbt.deprecations.*Deprecation` event (e.g. MissingPlusPrefixDeprecation,
+    CustomKeyInConfigDeprecation) becomes a hard error. `dbt parse` is offline and
+    does not require a live database connection.
+    """
+    fixture_dir = PROJECT_CONFIG.root_path / "tests" / "fixtures" / "deprecation_audit"
+    env = {
+        "DBT_WARN_ERROR": "true",
+        "DBT_PROFILES_DIR": str(fixture_dir),
+    }
+    session.run(
+        "dbt",
+        "parse",
+        "--project-dir",
+        str(fixture_dir),
+        "--profiles-dir",
+        str(fixture_dir),
+        env=env,
+        external=True,
+    )
+
+
 @nox.session(name="project:check", python=False)  # type: ignore[no-redef]
 def project_check(session: Session) -> None:
     """Runs all available checks on the project"""
@@ -249,6 +276,7 @@ def project_check(session: Session) -> None:
     _code_format(session, Mode.Check, py_files)
     _pylint(session, py_files)
     _type_check(session, py_files)
+    lint_deprecations(session)
     _run_unit_tests(session, context)
     _run_integration_tests(session, context)
     session.run("coverage", "report", "-m", "--fail-under=85")

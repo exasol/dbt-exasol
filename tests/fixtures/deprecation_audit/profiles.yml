@@ -1,0 +1,11 @@
+deprecation_audit:
+  target: dev
+  outputs:
+    dev:
+      type: exasol
+      threads: 1
+      dsn: "{{ env_var('DBT_DSN', 'localhost:8563') }}"
+      user: "{{ env_var('DBT_USER', 'sys') }}"
+      password: "{{ env_var('DBT_PASS', 'exasol') }}"
+      dbname: "{{ env_var('DBT_DATABASE', 'DB') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'public') }}"

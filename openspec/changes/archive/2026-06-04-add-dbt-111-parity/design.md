@@ -2,12 +2,13 @@
 
 `dbt-exasol` already runs against `dbt-core 1.11.9` and `dbt-adapters 1.23.0`, and prior phases (`phase-1.10-phase1/2/3`) brought in microbatch and sample mode. What never happened is a **systematic audit** against the 1.11 reference adapter (dbt-snowflake) plus an **explicit public claim** of which 1.11 features Exasol supports.
 
-The de-risking spike behind this proposal established four findings:
+The de-risking spike behind this proposal established five findings:
 
 1. Most "1.11 features" are functionally present but invisible (no capability declared, no upstream test subclassed, no doc).
-2. `get_catalog_for_single_relation` is the one concrete code gap — currently `raise NotImplementedError`.
+2. `get_catalog_for_single_relation` is the one concrete code gap — currently `raise NotImplementedError`. It will be implemented as a thin delegation to the existing `exasol__get_catalog_relations` macro (single-element relation list) to avoid duplicating filter logic.
 3. `MicrobatchConcurrency` is the one place where Exasol's platform model materially differs from Snowflake's: declaring it would be unsafe.
 4. Hard deprecations in 1.11 are still warnings by default, but become errors under `warn-error: true` — adapter-owned macros must be clean.
+5. The runtime version string (`__version__.py` = `1.10.6`) lags `pyproject.toml` (`1.11.0`); it must be reconciled to `1.11.0` for the parity claim to be coherent. Separately, the batched last-modified macro already loops over relations but reads `SYS.EXA_USER_OBJECTS` (current-user objects only); it will move to `SYS.EXA_ALL_OBJECTS` so the `TableLastModifiedMetadataBatch: Full` claim holds for cross-owner sources.
 
 This design covers the architectural choices that flow from those findings. Line-by-line implementation belongs in tasks.md.
 
@@ -116,7 +117,7 @@ No user-facing migration. The change is additive at the adapter level:
 
 1. Land `add-udf-function-support` first (already complete per task list).
 2. Land this change.
-3. Bump `__version__.py` patch version on release.
+3. Reconcile `__version__.py` `VERSION` to `1.11.0` (matching `pyproject.toml`) as part of this change; bump the patch version on subsequent releases.
 4. Update README parity matrix.
 5. Future minor-version work (`add-dbt-112-parity`, etc.) follows the same template: spike → declare → subclass → document.
 
