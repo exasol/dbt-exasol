@@ -64,7 +64,7 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
 
 {% macro exasol__assert_no_catalog_integration() -%}
     {#- Exasol has no catalog integration (Iceberg / external table formats). A
-        project's catalogs.yml may exist, but a model that actively sets
+        catalogs.yml may exist in this project, but a model that actively sets
         config(catalog=...) must fail with a clear, Exasol-specific error rather
         than silently ignoring the request. -#}
     {%- if config.get('catalog') or config.get('catalog_name') -%}
