@@ -1,7 +1,8 @@
 # quality Specification
 
 ## Purpose
-TBD - created by archiving change fix-code-quality-issues. Update Purpose after archive.
+
+Defines the code-quality standards enforced on the dbt-exasol codebase. Covers exception handling (no bare `except`), unused-import hygiene, SQL formatting (`sqlfluff`), empty-input guards, and unit-test coverage for adapter internals (`ExasolColumn`, `ExasolAdapter`).
 ## Requirements
 ### Requirement: Specific Exception Catching
 The adapter SHALL NOT use bare `except:` clauses which catch `SystemExit` and `KeyboardInterrupt`. It SHALL catch specific exceptions when validating configuration or connection parameters.

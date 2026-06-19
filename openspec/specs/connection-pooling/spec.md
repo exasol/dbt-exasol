@@ -1,7 +1,8 @@
 # connection-pooling Specification
 
 ## Purpose
-TBD - created by archiving change add-connection-pooling. Update Purpose after archive.
+
+Defines the thread-safe connection-pooling mechanism in `ExasolConnectionManager`. Covers pool key generation, per-credential pool sizing, connection acquisition and release, lazy binding for unbound threads, and safe pool cleanup.
 ## Requirements
 ### Requirement: Global Connection Pool with Locking
 

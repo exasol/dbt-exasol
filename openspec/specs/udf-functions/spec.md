@@ -1,7 +1,8 @@
 # udf-functions Specification
 
 ## Purpose
-TBD - created by archiving change add-udf-function-support. Update Purpose after archive.
+
+Defines how dbt-exasol implements dbt-core v1.11's User-Defined Functions (UDFs) and User-Defined Aggregate Functions (UDAFs) on Exasol. Covers SQL scalar functions via `CREATE FUNCTION`, Python scalar functions via `CREATE PYTHON3 SCALAR SCRIPT`, Python aggregate functions via `CREATE PYTHON3 SET SCRIPT`, cross-type cleanup, and platform-specific limitations (no volatility, no default arguments, no SQL aggregates).
 
 ## Requirements
 

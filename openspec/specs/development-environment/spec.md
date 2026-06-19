@@ -1,7 +1,8 @@
 # development-environment Specification
 
 ## Purpose
-TBD - created by archiving change replace-devbox-with-mise. Update Purpose after archive.
+
+Defines the standardized development environment for dbt-exasol contributors. Covers mise-en-place tool management (`uv`, `gh`, `bun`), environment variable loading (`test.env`, `.env`), required variables for dbt connections and tests, and mise task definitions for testing, linting, and database lifecycle.
 ## Requirements
 ### Requirement: Tool Management
 The development environment SHALL be managed by `mise-en-place`.

@@ -1,7 +1,8 @@
 # quoting Specification
 
 ## Purpose
-TBD - created by archiving change fix-quoting-regression-72. Update Purpose after archive.
+
+Defines identifier quoting behavior in dbt-exasol. Covers how the adapter respects `quoting` configuration from sources, models, and `dbt_project.yml`, and how `ExasolRelation` renders quoted or unquoted schema and identifier components.
 ## Requirements
 ### Requirement: Respect Source and Model Quoting Configuration
 The adapter MUST respect `quoting` configurations defined in sources and models.
