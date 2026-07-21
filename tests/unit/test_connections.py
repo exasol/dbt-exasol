@@ -860,9 +860,11 @@ class TestCursorFetchMethods(unittest.TestCase):
     """Test ExasolCursor fetch methods with edge cases."""
 
     def test_fetchone_with_no_statement(self):
-        """Test fetchone raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchone raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchone()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 
@@ -878,9 +880,11 @@ class TestCursorFetchMethods(unittest.TestCase):
         self.assertEqual(result, [1, "test"])
 
     def test_fetchmany_with_no_statement(self):
-        """Test fetchmany raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchmany raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchmany()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 
@@ -906,9 +910,11 @@ class TestCursorFetchMethods(unittest.TestCase):
         mock_stmt.fetchmany.assert_called_once_with(5)
 
     def test_fetchall_with_no_statement(self):
-        """Test fetchall raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchall raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchall()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 

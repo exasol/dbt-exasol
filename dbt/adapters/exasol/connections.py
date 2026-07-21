@@ -612,7 +612,7 @@ class ExasolCursor:
 
     def fetchone(self):
         if self.stmt is None:
-            raise RuntimeError(_UNSET_STATEMENT_ERROR)
+            raise dbt_common.exceptions.DbtRuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchone()
 
     def fetchmany(self, size=None):
@@ -620,12 +620,12 @@ class ExasolCursor:
             size = self.array_size
 
         if self.stmt is None:
-            raise RuntimeError(_UNSET_STATEMENT_ERROR)
+            raise dbt_common.exceptions.DbtRuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchmany(size)
 
     def fetchall(self):
         if self.stmt is None:
-            raise RuntimeError(_UNSET_STATEMENT_ERROR)
+            raise dbt_common.exceptions.DbtRuntimeError(_UNSET_STATEMENT_ERROR)
         return self.stmt.fetchall()
 
     @property

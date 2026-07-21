@@ -22,11 +22,14 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 ## Version Compatibility
 
-| dbt-exasol | dbt-core | Python    | Exasol            |
-|------------|----------|-----------|-------------------|
-| 1.10.x     | 1.10.x   | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
-| 1.8.x      | 1.8.x    |  3.9-3.12 | 7.x, 8.x          |
-| 1.7.x      | 1.7.x    |  3.8-3.11 | 7.x, 8.x          |
+| dbt-exasol | dbt-core              | Python    | Exasol            |
+|------------|-----------------------|-----------|-------------------|
+| 1.12.x     | 1.12.x                | 3.10-3.14 | 7.x, 8.x, ≥2025.x |
+| 1.8.x      | 1.8.x                 |  3.9-3.12 | 7.x, 8.x          |
+| 1.7.x      | 1.7.x                 |  3.8-3.11 | 7.x, 8.x          |
+
+> **dbt-core 1.12 note:** dbt-core 1.12.0 stable is released. The `>=1.12.0,<1.13`
+> dependency range ensures a stable 1.12 line installation.
 
 ## Development Setup
 
@@ -265,6 +268,16 @@ outputs:
 ```
 
 For more information about SSL configuration, see the [PyExasol security documentation](https://exasol.github.io/pyexasol/master/user_guide/configuration/security.html).
+
+## dbt seed --empty support (dbt-core 1.12)
+
+`dbt seed --empty` creates the seed table with the inferred schema and zero rows. Exasol correctly
+preserves numeric column types (decimal columns are created as `float`, not `integer`) when the
+seed table is materialized with no rows.
+
+**Known limitation:** running `dbt seed --empty` followed immediately by a plain (non-`--full-refresh`)
+`dbt seed` on a CSV that contains decimal columns has not been fully validated. If you need to reload
+data after an empty seed, prefer `dbt seed --full-refresh` which recreates the table from scratch.
 
 ## Materialized View & Clone operations
 

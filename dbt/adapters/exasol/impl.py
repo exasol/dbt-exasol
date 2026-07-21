@@ -105,6 +105,13 @@ class ExasolAdapter(SQLAdapter):
 
     @classmethod
     def convert_number_type(cls, agate_table: agate.Table, col_idx: int) -> str:
+        # When the table has no rows (e.g. produced by `dbt seed --empty`),
+        # agate.MaxPrecision returns 0 for every column, which would incorrectly
+        # downgrade decimal columns to `integer`.  Fall back to `float` (the
+        # wider, lossless numeric type) so that the DDL column type is correct
+        # even when the CSV data isn't loaded yet.
+        if len(agate_table.rows) == 0:
+            return "float"
         decimals = agate_table.aggregate(agate.MaxPrecision(col_idx))
         return "float" if decimals else "integer"
 

@@ -143,6 +143,7 @@ class TestConvertNumberType(unittest.TestCase):
         # Create a mock agate table with decimal values
         mock_table = Mock(spec=agate.Table)
         mock_table.aggregate.return_value = 2  # Has decimals
+        mock_table.rows = [1]  # Non-empty
 
         result = ExasolAdapter.convert_number_type(mock_table, 0)
 
@@ -153,9 +154,52 @@ class TestConvertNumberType(unittest.TestCase):
         """Test convert_number_type returns 'integer' when no decimals."""
         mock_table = Mock(spec=agate.Table)
         mock_table.aggregate.return_value = 0  # No decimals
+        mock_table.rows = [1]  # Non-empty
 
         result = ExasolAdapter.convert_number_type(mock_table, 0)
 
+        self.assertEqual(result, "integer")
+
+    # --- task 2.2: zero-row (--empty) path ---
+
+    def test_convert_number_type_zero_row_table_returns_float(self):
+        """Task 2.2: zero-row agate Number column must not degrade to integer.
+
+        When ``dbt seed --empty`` is used dbt-core calls ``table.limit(0)``,
+        producing an agate table with the inferred column types but no data
+        rows.  ``agate.MaxPrecision`` returns 0 for every column on such a
+        table, which would wrongly emit ``integer`` for decimal columns.  The
+        hardened implementation must return ``float`` in this case.
+        """
+        table = agate.Table(
+            [],
+            column_names=["amount"],
+            column_types=[agate.Number()],
+        )
+        self.assertEqual(len(table.rows), 0)
+        result = ExasolAdapter.convert_number_type(table, 0)
+        self.assertEqual(result, "float")
+
+    # --- task 2.3: populated path is unchanged ---
+
+    def test_convert_number_type_populated_decimal_returns_float(self):
+        """Task 2.3: populated table with decimal values must return 'float'."""
+        table = agate.Table(
+            [["1.5"], ["2.75"]],
+            column_names=["amount"],
+            column_types=[agate.Number()],
+        )
+        result = ExasolAdapter.convert_number_type(table, 0)
+        self.assertEqual(result, "float")
+
+    def test_convert_number_type_populated_integer_returns_integer(self):
+        """Task 2.3: populated table with whole-number values must return 'integer'."""
+        table = agate.Table(
+            [["1"], ["2"], ["3"]],
+            column_names=["count"],
+            column_types=[agate.Number()],
+        )
+        result = ExasolAdapter.convert_number_type(table, 0)
         self.assertEqual(result, "integer")
 
 
