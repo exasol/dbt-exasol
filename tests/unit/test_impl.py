@@ -861,9 +861,9 @@ class TestBuildCatalogRelation(unittest.TestCase):
 class TestVersion(unittest.TestCase):
     """Test the adapter version reflects the dbt-core minor parity claim."""
 
-    def test_version_is_1_11(self):
-        """Adapter version starts with 1.11. (catches forgotten version bumps)."""
-        self.assertTrue(exasol_version.startswith("1.11."))
+    def test_version_is_1_12(self):
+        """Adapter version starts with 1.12. (catches forgotten version bumps)."""
+        self.assertTrue(exasol_version.startswith("1.12."))
 
 
 if __name__ == "__main__":

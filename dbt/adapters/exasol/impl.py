@@ -119,6 +119,7 @@ class ExasolAdapter(SQLAdapter):
             # batches must therefore run sequentially. See design.md decision D3 and
             # openspec/changes/add-dbt-111-parity/spike-notes.md.
             Capability.MicrobatchConcurrency: CapabilitySupport(support=Support.Unsupported),
+            Capability.CatalogsV2: CapabilitySupport(support=Support.Unsupported),
         }
     )
 
