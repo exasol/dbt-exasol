@@ -7,7 +7,7 @@
 - Run unit tests: `uv run nox -s test:unit` (or `mise run test:unit`)
 - Run integration tests: `uv run nox -s test:integration` (or `mise run test:integration`)
 - Run single test: `pytest test/integration/adapter/test_basic.py::TestClass::test_method -n0`
-- Run with tox: `tox` (tests across Python 3.10-3.13)
+- Run with tox: `tox` (tests across Python 3.11-3.14)
 - Format: `uv run nox -s format:fix` (or `mise run format`)
 - Check format: `uv run nox -s format:check` (or `mise run format-check`)
 - Lint: `uv run nox -s lint:code lint:security` (or `mise run lint`)

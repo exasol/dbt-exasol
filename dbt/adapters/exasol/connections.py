@@ -11,10 +11,10 @@ import os
 import ssl
 
 # Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
-import sys
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import agate  # type: ignore[import-untyped]
@@ -28,21 +28,6 @@ from dbt.adapters.contracts.connection import (
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.sql import SQLConnectionManager  # type: ignore
 from pyexasol import ExaConnection
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        """
-        Backport of StrEnum for Python < 3.11.
-
-        StrEnum members are strings and can be used in string contexts.
-        This shim provides compatibility with the built-in StrEnum
-        available in Python 3.11+.
-        """
-
 
 ROW_SEPARATOR_DEFAULT = "LF" if os.linesep == "\n" else "CRLF"
 TIMESTAMP_FORMAT_DEFAULT = "YYYY-MM-DDTHH:MI:SS.FF6"

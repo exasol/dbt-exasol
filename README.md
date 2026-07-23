@@ -24,7 +24,7 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 | dbt-exasol | dbt-core              | Python    | Exasol            |
 |------------|-----------------------|-----------|-------------------|
-| 1.12.x     | 1.12.x                | 3.10-3.14 | 7.x, 8.x, ≥2025.x |
+| 1.12.x     | 1.12.x                | 3.11-3.14 | 7.x, 8.x, ≥2025.x |
 | 1.11.x     | 1.11.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
 | 1.10.x     | 1.10.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
 | 1.8.x      | 1.8.x                 |  3.9-3.12 | 7.x, 8.x          |
@@ -574,7 +574,7 @@ This project uses GitHub Actions for continuous integration and deployment:
 
 - **CI Workflow**: Runs on pull requests, pushes to main/master, scheduled nightly, and manual dispatch
   - **Smart Integration Testing**: Only runs integration tests when relevant files change (on PRs)
-  - **Python Matrix**: Tests across Python 3.10, 3.11, 3.12, and 3.13
+  - **Python Matrix**: Tests across Python 3.11, 3.12, 3.13, and 3.14
   - **Checks Job** (runs for all Python versions):
     - Format checking (`nox -s format:check`)
     - Linting (`nox -s lint:code`)

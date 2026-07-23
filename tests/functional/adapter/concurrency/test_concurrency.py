@@ -1,5 +1,3 @@
-import re
-
 from dbt.tests.adapter.concurrency.test_concurrency import (
     BaseConcurrency,
     seeds__update_csv,
@@ -9,7 +7,6 @@ from dbt.tests.util import (
     check_table_does_not_exist,
     rm_file,
     run_dbt,
-    run_dbt_and_capture,
     write_file,
 )
 
@@ -39,7 +36,9 @@ class TestConcurrencyExasol(BaseConcurrency):
         check_table_does_not_exist(project.adapter, "skip")
 
         from collections import Counter
+
         from dbt.artifacts.schemas.results import RunStatus
+
         result_statuses = Counter([result.status for result in results])
         expected_statuses = {
             RunStatus.Success: 5,
