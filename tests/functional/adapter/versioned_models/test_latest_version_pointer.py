@@ -34,6 +34,9 @@ version: 2
 models:
   - name: versioned_greeting
     latest_version: 1
+    config:
+      latest_version_pointer:
+        enabled: true
     versions:
       - v: 1
 """

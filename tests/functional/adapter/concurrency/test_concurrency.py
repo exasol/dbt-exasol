@@ -29,7 +29,7 @@ class TestConcurrencyExasol(BaseConcurrency):
         rm_file(project.project_root, "seeds", "seed.csv")
         write_file(seeds__update_csv, project.project_root, "seeds", "seed.csv")
 
-        results, output = run_dbt_and_capture(["run"], expect_pass=False)
+        results = run_dbt(["run"], expect_pass=False)
         assert len(results) == 7
         check_relations_equal(project.adapter, ["seed", "view_model"])
         check_relations_equal(project.adapter, ["seed", "dep"])
@@ -38,6 +38,12 @@ class TestConcurrencyExasol(BaseConcurrency):
         check_table_does_not_exist(project.adapter, "invalid")
         check_table_does_not_exist(project.adapter, "skip")
 
-        # Exasol appends NO-OP counts in the run summary, so allow that variant too.
-        summary_pattern = r"PASS=5\s+WARN=0\s+ERROR=1\s+SKIP=1\s+(NO-OP=\d+\s+)?TOTAL=7"
-        assert re.search(summary_pattern, output), output
+        from collections import Counter
+        from dbt.artifacts.schemas.results import RunStatus
+        result_statuses = Counter([result.status for result in results])
+        expected_statuses = {
+            RunStatus.Success: 5,
+            RunStatus.Error: 1,
+            RunStatus.Skipped: 1,
+        }
+        assert result_statuses == expected_statuses

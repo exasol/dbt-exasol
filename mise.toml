@@ -8,12 +8,16 @@ docker-cli = "latest"
 opencode = "latest"
 "github:max-sixty/worktrunk" = "latest"
 "npm:@fission-ai/openspec" = "latest"
+colima = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
 _.file = [".env"]
 _.path = ["./.venv/bin"]
 VIRTUAL_ENV = "{{config_root}}/.venv"
+
+# Silence macOS fork() crashes from NSCharacterSet races in Python libs (e.g. luigi workers)
+OBJC_DISABLE_INITIALIZE_FORK_SAFETY = "YES"
 
 # Required environment variables (mise will error if missing)
 DBT_DSN = { required = "Database connection string (e.g., 'localhost/nocertcheck:8563')" }
