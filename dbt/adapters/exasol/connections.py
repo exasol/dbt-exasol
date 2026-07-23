@@ -171,6 +171,31 @@ class ExasolConnectionManager(SQLConnectionManager):
                 atexit.register(cls.cleanup_pool)
                 cls._atexit_registered = True
 
+    def get_thread_connection(self):
+        """Return the connection bound to the current thread, acquiring one on demand.
+
+        When the current thread has no bound connection (i.e. the caller is
+        outside a ``connection_named`` / ``acquire_connection`` block),
+        ``set_connection_name`` is called to create a ``Connection`` backed by
+        a ``LazyHandle``.  The first actual query will then open the handle via
+        the existing ``open()`` → ``_try_get_pooled_connection`` path, pulling
+        from the pool just like any explicitly-acquired connection.
+
+        This restores the implicit "a thread can always reach a connection"
+        contract that non-pooled adapters (e.g. dbt-postgres) satisfy by
+        default, so upstream ``dbt-tests-adapter`` classes and any caller that
+        invokes adapter metadata methods (e.g. ``list_relations``) outside an
+        explicit ``connection_named`` block work without raising
+        ``InvalidConnectionError``.
+
+        The lazily-acquired connection is registered in ``thread_connections``
+        so the existing ``release()`` / ``cleanup_all()`` / ``cleanup_pool()``
+        paths return it to the pool — no additional leak surface.
+        """
+        if self.get_if_exists() is None:
+            self.set_connection_name()
+        return super().get_thread_connection()
+
     @contextmanager
     def exception_handler(self, sql):
         try:

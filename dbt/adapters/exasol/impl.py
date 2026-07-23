@@ -18,12 +18,22 @@ from dbt.adapters.capability import (
     CapabilitySupport,
     Support,
 )
+from dbt.adapters.catalogs import CatalogIntegration
 from dbt.adapters.contracts.connection import AdapterResponse
 from dbt.adapters.contracts.relation import RelationConfig
 from dbt.adapters.sql import SQLAdapter
+from dbt_common.behavior_flags import BehaviorFlag
 from dbt_common.contracts.constraints import ConstraintType
-from dbt_common.contracts.metadata import CatalogTable
-from dbt_common.exceptions import CompilationError
+from dbt_common.contracts.metadata import (
+    CatalogTable,
+    ColumnMetadata,
+    StatsDict,
+    TableMetadata,
+)
+from dbt_common.exceptions import (
+    CompilationError,
+    DbtRuntimeError,
+)
 from dbt_common.utils import filter_null_values
 
 from dbt.adapters.exasol.column import ExasolColumn
@@ -32,6 +42,27 @@ from dbt.adapters.exasol.relation import ExasolRelation
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 PYTHON_MODEL_NOT_SUPPORTED = "Python models are not supported on Exasol"
+CATALOG_INTEGRATION_NOT_SUPPORTED = (
+    "Exasol does not support catalog integrations (e.g. Iceberg / external table "
+    "formats). Remove the `catalog` config from this model to run it on Exasol."
+)
+
+
+class ExasolNoOpCatalogIntegration(CatalogIntegration):
+    """Placeholder catalog integration so a project's ``catalogs.yml`` can parse.
+
+    Exasol has no external table-format / catalog integration. Registering this
+    no-op (instead of leaving ``CATALOG_INTEGRATIONS = []``) lets a project that
+    declares a ``catalogs.yml`` parse and run as long as no model actually uses a
+    catalog. The moment a model resolves a relation against this integration,
+    ``build_relation`` raises a clear, Exasol-specific error.
+    """
+
+    catalog_type = "built_in"
+    allows_writes = True
+
+    def build_relation(self, config: RelationConfig) -> Any:
+        raise DbtRuntimeError(CATALOG_INTEGRATION_NOT_SUPPORTED)
 
 
 class ExasolConfig(
@@ -66,12 +97,44 @@ class ExasolAdapter(SQLAdapter):
         ConstraintType.foreign_key: ConstraintSupport.ENFORCED,
     }
 
+    # Catalog integrations (Iceberg / external table formats) are not supported by
+    # Exasol. We register a single no-op integration so a project's `catalogs.yml`
+    # parses and runs when unused; any model that actively resolves a catalog fails
+    # with a clear error (see `build_catalog_relation` and
+    # `ExasolNoOpCatalogIntegration.build_relation`).
+    CATALOG_INTEGRATIONS = [ExasolNoOpCatalogIntegration]
+
+    # Every value of `dbt.adapters.capability.Capability` is declared explicitly so
+    # no capability is left implicitly `Unknown` (see the dbt-core-version-parity
+    # spec). A unit test asserts this dict covers the full enum.
     _capabilities = CapabilityDict(
         {
             Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
             Capability.TableLastModifiedMetadata: CapabilitySupport(support=Support.Full),
+            Capability.TableLastModifiedMetadataBatch: CapabilitySupport(support=Support.Full),
+            Capability.GetCatalogForSingleRelation: CapabilitySupport(support=Support.Full),
+            # Exasol uses optimistic transaction-conflict detection at table
+            # granularity: concurrent DELETE+INSERT batches against the same target
+            # relation abort each other with "transaction conflict". Microbatch
+            # batches must therefore run sequentially. See design.md decision D3 and
+            # openspec/changes/add-dbt-111-parity/spike-notes.md.
+            Capability.MicrobatchConcurrency: CapabilitySupport(support=Support.Unsupported),
         }
     )
+
+    @property
+    def _behavior_flags(self) -> list[BehaviorFlag]:
+        """Platform-specific behavior flags for Exasol.
+
+        Behavior flags are how dbt-labs ships opt-in behaviour changes (e.g.
+        Snowflake's ``enable_iceberg_materializations``). Exasol needs none today,
+        so this returns an empty list. To add one, append a ``BehaviorFlag``
+        ``{"name": ..., "default": ..., "description": ...}`` dict here; dbt-core
+        merges these with ``DEFAULT_BASE_BEHAVIOR_FLAGS``.
+
+        See ``dbt.adapters.base.impl.BaseAdapter._behavior_flags``.
+        """
+        return []
 
     @classmethod
     def date_function(cls):
@@ -275,6 +338,83 @@ class ExasolAdapter(SQLAdapter):
         """Python models are not supported on Exasol."""
         raise NotImplementedError(PYTHON_MODEL_NOT_SUPPORTED)
 
+    def build_catalog_relation(self, config: RelationConfig) -> Any:
+        """Reject models that actively request a catalog integration.
+
+        Exasol has no external table-format / catalog integration (Iceberg, etc.).
+        A project may still declare a ``catalogs.yml`` and parse/run fine — only a
+        model that sets ``config(catalog=...)`` reaches here. We raise a clear
+        ``DbtRuntimeError`` instead of letting the base implementation surface a
+        ``DbtCatalogIntegrationNotFoundError`` that doesn't mention the platform.
+        """
+        if config.config and (config.config.get("catalog_name") or config.config.get("catalog")):
+            raise DbtRuntimeError(CATALOG_INTEGRATION_NOT_SUPPORTED)
+        return None  # pylint: disable=useless-return  # explicit: no catalog relation
+
     def get_catalog_for_single_relation(self, relation: BaseRelation) -> CatalogTable | None:
-        """Get catalog information for a single relation."""
-        raise NotImplementedError("`get_catalog_for_single_relation` is not implemented for this adapter")
+        """Get catalog metadata (table + columns) for a single relation.
+
+        Delegates to the ``get_catalog_for_single_relation`` macro, which reuses the
+        relation-filtered ``exasol__get_catalog_relations`` where-clause logic so the
+        column shape matches the full-schema ``get_catalog`` path. Returns ``None``
+        when the relation does not exist (zero rows) so dbt-core's caller can handle
+        the absence gracefully.
+        """
+        from typing import cast
+
+        from dbt_common.clients.agate_helper import table_from_rows
+
+        table = cast(
+            agate.Table,
+            self.execute_macro(
+                "get_catalog_for_single_relation",
+                kwargs={"relation": relation},
+            ),
+        )
+
+        if table is None or len(table) == 0:
+            return None
+
+        # The macro already scopes results to this single relation, so we do NOT
+        # re-filter by schema (the inherited _catalog_filter_table would drop every
+        # row whenever the catalog's literal 'DB' table_database disagrees with the
+        # relation's database). We only coerce the metadata columns to text, matching
+        # the full-schema catalog path.
+        filtered = table_from_rows(
+            table.rows,
+            table.column_names,
+            text_only_columns=[
+                "table_database",
+                "table_schema",
+                "table_name",
+                "table_type",
+                "table_comment",
+                "table_owner",
+                "column_name",
+                "column_type",
+                "column_comment",
+            ],
+        )
+
+        first = filtered.rows[0]
+        table_metadata = TableMetadata(
+            type=_expect_row_value("table_type", first),
+            database=_expect_row_value("table_database", first),
+            schema=_expect_row_value("table_schema", first),
+            name=_expect_row_value("table_name", first),
+            comment=_expect_row_value("table_comment", first),
+            owner=_expect_row_value("table_owner", first),
+        )
+
+        columns: dict[str, ColumnMetadata] = {}
+        for row in filtered.rows:
+            column_name = _expect_row_value("column_name", row)
+            columns[column_name] = ColumnMetadata(
+                type=_expect_row_value("column_type", row),
+                index=int(_expect_row_value("column_index", row)),
+                name=column_name,
+                comment=_expect_row_value("column_comment", row),
+            )
+
+        stats: StatsDict = {}
+        return CatalogTable(metadata=table_metadata, columns=columns, stats=stats)

@@ -147,6 +147,9 @@ jobs:
       - name: Type Check
         run: mise run nox -- -s lint:typing
 
+      - name: Deprecation Audit
+        run: mise run nox -- -s lint:deprecations
+
       - name: Unit Tests
         run: mise run nox -- -s test:unit -- --coverage
 
@@ -209,6 +212,21 @@ jobs:
 
       - name: Install dependencies
         run: mise run sync
+
+      # Exasol script-language UDFs (Python/R/Java) sandbox the exaudfclient
+      # subprocess in an unprivileged user namespace via `nschroot`. On Ubuntu
+      # 24.04+ runners the kernel default `kernel.apparmor_restrict_unprivileged_userns=1`
+      # forces that namespace into a restricted AppArmor profile, killing the
+      # subprocess on its first IPC recv -> "VM error: Internal error: VM crashed".
+      # SQL UDFs are unaffected. Disabling the restriction on the host VM fixes it.
+      # The guard makes this a no-op on older runner images lacking the sysctl.
+      - name: Allow unprivileged user namespaces (Exasol script-language UDFs)
+        run: |
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          else
+            echo "sysctl kernel.apparmor_restrict_unprivileged_userns not present; nothing to do"
+          fi
 
       - name: Run integration tests
         run: mise run nox -- -s test:integration -- --coverage -n4

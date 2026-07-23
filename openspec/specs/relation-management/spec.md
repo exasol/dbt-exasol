@@ -1,7 +1,8 @@
 # relation-management Specification
 
 ## Purpose
-TBD - created by archiving change update-relation-rename-replace. Update Purpose after archive.
+
+Defines the relation-management capabilities of dbt-exasol: which relation types can be renamed and replaced, and the Exasol-specific macros that implement `RENAME`, `CREATE OR REPLACE`, and `DROP` for tables and views.
 ## Requirements
 ### Requirement: Renameable Relations Declaration
 The `ExasolRelation` class SHALL declare `renameable_relations` as a frozenset containing `RelationType.View` and `RelationType.Table`, enabling the `can_be_renamed` property to return `True` for tables and views.

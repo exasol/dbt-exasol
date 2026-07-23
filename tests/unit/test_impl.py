@@ -4,9 +4,17 @@ import unittest
 from unittest.mock import Mock
 
 import agate
-from dbt_common.exceptions import CompilationError
+from dbt.adapters.capability import (
+    Capability,
+    Support,
+)
+from dbt_common.exceptions import (
+    CompilationError,
+    DbtRuntimeError,
+)
 
 from dbt.adapters.exasol import ExasolAdapter
+from dbt.adapters.exasol.__version__ import version as exasol_version
 
 
 class TestIsValidIdentifier(unittest.TestCase):
@@ -722,17 +730,140 @@ class TestPythonModelNotSupported(unittest.TestCase):
         self.assertIn("Python models are not supported", str(context.exception))
 
 
+# Column shape produced by exasol__get_catalog_results_sql (and therefore by the
+# single-relation macro, since it delegates to exasol__get_catalog_relations).
+_CATALOG_COLUMNS = [
+    "table_owner",
+    "table_type",
+    "table_comment",
+    "table_database",
+    "table_schema",
+    "table_name",
+    "column_name",
+    "column_index",
+    "column_type",
+    "column_comment",
+]
+
+
+def _catalog_table(rows):
+    return agate.Table(rows, column_names=_CATALOG_COLUMNS)
+
+
 class TestGetCatalogForSingleRelation(unittest.TestCase):
     """Test get_catalog_for_single_relation method."""
 
-    def test_get_catalog_for_single_relation_not_implemented(self):
-        """Test get_catalog_for_single_relation raises NotImplementedError."""
+    def _adapter_with_macro_result(self, table):
+        adapter = Mock(spec=ExasolAdapter)
+        adapter.execute_macro = Mock(return_value=table)
+        # Use the real classmethod filter so the test exercises the same
+        # post-processing as the full-schema get_catalog path.
+        adapter._catalog_filter_table = ExasolAdapter._catalog_filter_table
+        adapter.get_catalog_for_single_relation = lambda relation: ExasolAdapter.get_catalog_for_single_relation(
+            adapter, relation
+        )
+        return adapter
+
+    def test_returns_catalog_table_with_columns(self):
+        """Single-relation path returns a populated CatalogTable."""
+        table = _catalog_table(
+            [
+                ["OWNER", "TABLE", "a table", "DB", "MYSCHEMA", "MYTABLE", "ID", 1, "INTEGER", ""],
+                ["OWNER", "TABLE", "a table", "DB", "MYSCHEMA", "MYTABLE", "NAME", 2, "VARCHAR", ""],
+            ]
+        )
+        adapter = self._adapter_with_macro_result(table)
+        relation = Mock(database="DB", schema="MYSCHEMA", identifier="MYTABLE")
+
+        result = adapter.get_catalog_for_single_relation(relation)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result.metadata.name, "MYTABLE")
+        self.assertEqual(result.metadata.schema, "MYSCHEMA")
+        self.assertEqual(result.metadata.type, "TABLE")
+        self.assertEqual(set(result.columns.keys()), {"ID", "NAME"})
+        self.assertEqual(result.columns["ID"].index, 1)
+        self.assertEqual(result.columns["NAME"].type, "VARCHAR")
+        adapter.execute_macro.assert_called_once_with("get_catalog_for_single_relation", kwargs={"relation": relation})
+
+    def test_column_shape_matches_full_schema_path(self):
+        """Macro output column names match the full-schema catalog result columns."""
+        table = _catalog_table([["OWNER", "VIEW", "", "DB", "MYSCHEMA", "MYVIEW", "COL", 1, "INTEGER", ""]])
+        adapter = self._adapter_with_macro_result(table)
+        relation = Mock(database="DB", schema="MYSCHEMA", identifier="MYVIEW")
+
+        result = adapter.get_catalog_for_single_relation(relation)
+
+        # The CatalogTable is built from the same column set get_catalog produces.
+        self.assertEqual(list(table.column_names), _CATALOG_COLUMNS)
+        self.assertEqual(result.metadata.type, "VIEW")
+
+    def test_returns_none_for_missing_relation(self):
+        """Zero rows -> None (not an exception)."""
+        table = _catalog_table([])
+        adapter = self._adapter_with_macro_result(table)
+        relation = Mock(database="DB", schema="MYSCHEMA", identifier="GONE")
+
+        self.assertIsNone(adapter.get_catalog_for_single_relation(relation))
+
+
+class TestCapabilities(unittest.TestCase):
+    """Test that every Capability enum value is declared (parity spec)."""
+
+    def test_all_capabilities_declared(self):
+        """Every Capability enum value has an explicit entry; none left Unknown."""
+        declared = {key for key in ExasolAdapter._capabilities}
+        self.assertEqual(declared, set(Capability))
+
+    def test_microbatch_concurrency_unsupported(self):
+        """MicrobatchConcurrency is explicitly Unsupported."""
+        cap = ExasolAdapter._capabilities[Capability.MicrobatchConcurrency]
+        self.assertEqual(cap.support, Support.Unsupported)
+
+    def test_single_relation_and_batch_full(self):
+        """GetCatalogForSingleRelation and TableLastModifiedMetadataBatch are Full."""
+        caps = ExasolAdapter._capabilities
+        self.assertEqual(caps[Capability.GetCatalogForSingleRelation].support, Support.Full)
+        self.assertEqual(caps[Capability.TableLastModifiedMetadataBatch].support, Support.Full)
+
+
+class TestBehaviorFlags(unittest.TestCase):
+    """Test _behavior_flags scaffolding."""
+
+    def test_behavior_flags_empty(self):
+        """_behavior_flags returns [] and has a docstring."""
         adapter = ExasolAdapter(Mock(), Mock())
+        self.assertEqual(adapter._behavior_flags, [])
+        self.assertIsNotNone(ExasolAdapter._behavior_flags.fget.__doc__)
 
-        with self.assertRaises(NotImplementedError) as context:
-            adapter.get_catalog_for_single_relation(Mock())
 
-        self.assertIn("is not implemented for this adapter", str(context.exception))
+class TestBuildCatalogRelation(unittest.TestCase):
+    """Test catalog-integration rejection."""
+
+    def test_no_catalog_returns_none(self):
+        """A model without a catalog config returns None (no error)."""
+        adapter = ExasolAdapter(Mock(), Mock())
+        config = Mock()
+        config.config = {}
+        self.assertIsNone(adapter.build_catalog_relation(config))
+
+    def test_catalog_config_raises_clear_error(self):
+        """A model setting config(catalog=...) raises a clear Exasol error."""
+        adapter = ExasolAdapter(Mock(), Mock())
+        config = Mock()
+        config.config = {"catalog": "some_iceberg_catalog"}
+        with self.assertRaises(DbtRuntimeError) as context:
+            adapter.build_catalog_relation(config)
+        self.assertIn("Exasol", str(context.exception))
+        self.assertIn("catalog", str(context.exception).lower())
+
+
+class TestVersion(unittest.TestCase):
+    """Test the adapter version reflects the dbt-core minor parity claim."""
+
+    def test_version_is_1_11(self):
+        """Adapter version starts with 1.11. (catches forgotten version bumps)."""
+        self.assertTrue(exasol_version.startswith("1.11."))
 
 
 if __name__ == "__main__":
