@@ -25,6 +25,8 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 | dbt-exasol | dbt-core              | Python    | Exasol            |
 |------------|-----------------------|-----------|-------------------|
 | 1.12.x     | 1.12.x                | 3.10-3.14 | 7.x, 8.x, ≥2025.x |
+| 1.11.x     | 1.11.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
+| 1.10.x     | 1.10.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
 | 1.8.x      | 1.8.x                 |  3.9-3.12 | 7.x, 8.x          |
 | 1.7.x      | 1.7.x                 |  3.8-3.11 | 7.x, 8.x          |
 
@@ -33,7 +35,7 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 ## dbt-core version parity
 
-Parity claim against **dbt-core 1.11** (reference adapter: dbt-snowflake). Each
+Parity claim against **dbt-core 1.12** (reference adapter: dbt-snowflake). Each
 supported feature is proven by an upstream `dbt-tests-adapter` subclass in CI; each
 unsupported feature carries a reason. Legend: ✅ Supported · ⚠️ Conditional ·
 ❌ (platform) not supported due to an Exasol limitation · ❌ (not yet) not yet
@@ -58,6 +60,7 @@ implemented.
 | Batched last-modified metadata | ✅ | `EXA_ALL_OBJECTS`, cross-owner sources |
 | `get_columns_in_relation` | ✅ | |
 | `persist_docs` | ✅ | Table/column comments |
+| `latest_version_pointer` | ✅ | dbt-core 1.12 automatically creates a pointer view for versioned models |
 | Grants | ✅ | |
 
 **Why (platform-blocked features):**
@@ -396,6 +399,7 @@ functions/double_price.yml:
           data_type: DOUBLE
 
 The adapter automatically:
+
 - Strips the leading SELECT keyword (dbt convention)
 - Wraps the expression in BEGIN RETURN expr; END name;
 - Detects procedural bodies containing BEGIN and inserts them directly
