@@ -41,7 +41,9 @@ dev = [
   "black>=22.8,<27.0",
   "dbt-tests-adapter>=1.20.0",
   "exasol-integration-test-docker-environment>=4.3.0",
-  "exasol-toolbox>=5.1.0",
+  # Pinned <7: toolbox 10.x removed `_version` from exasol.toolbox.nox._shared
+  # which noxfile.py imports; migration to the new API is a follow-up task.
+  "exasol-toolbox>=5.1.0,<7",
   "exceptiongroup>=1.1.1",
   "freezegun>=1.2.2",
   "ipykernel>=6.25.0",
