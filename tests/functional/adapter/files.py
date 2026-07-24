@@ -26,9 +26,7 @@ ID,NAME,SOME_DATE
 10,Nora,1976-03-01 16:51:39
 """.lstrip()
 
-seeds_added_csv = (
-    seeds_base_csv
-    + """
+seeds_added_csv = seeds_base_csv + """
 11,Mateo,2014-09-07 17:04:27
 12,Julian,2000-02-04 11:48:30
 13,Gabriel,2001-07-10 07:32:52
@@ -40,7 +38,6 @@ seeds_added_csv = (
 19,Jayden,2009-06-06 07:12:49
 20,Luke,2003-12-05 21:42:18
 """.lstrip()
-)
 
 seeds_newcolumns_csv = """
 id,name,some_date,last_initial

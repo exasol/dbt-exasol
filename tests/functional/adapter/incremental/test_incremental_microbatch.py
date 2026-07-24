@@ -104,12 +104,10 @@ class TestMicrobatchLookback:
         )
 
         # Insert new data for day 3
-        project.run_sql(
-            """
+        project.run_sql("""
             insert into {schema}.input_model (id, event_time)
             values (99, TIMESTAMP '2020-01-03 12:00:00')
-        """
-        )
+        """)
 
         # Second run - only select microbatch model to avoid rebuilding input
         run_dbt(

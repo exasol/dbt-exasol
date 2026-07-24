@@ -148,12 +148,10 @@ class TestSeedMixedQuoting:
 
     @pytest.fixture(scope="class")
     def seeds(self):
-        return {
-            "mixed_cols.csv": """id,name,value,description,order
+        return {"mixed_cols.csv": """id,name,value,description,order
 1,Product A,active,desc1,100
 2,Product B,pending,desc2,200
-"""
-        }
+"""}
 
     def test_seed_mixed_columns(self, project):
         """Test that only keyword columns are quoted."""
@@ -192,12 +190,10 @@ class TestSeedKeywordsUppercase:
 
     @pytest.fixture(scope="class")
     def seeds(self):
-        return {
-            "uppercase_keywords.csv": """ID,VALUE,ORDER,FROM
+        return {"uppercase_keywords.csv": """ID,VALUE,ORDER,FROM
 1,active,100,source1
 2,pending,101,source2
-"""
-        }
+"""}
 
     def test_seed_uppercase_keywords(self, project):
         """Test that uppercase keyword columns are properly quoted."""
