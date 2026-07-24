@@ -38,7 +38,7 @@ packages = ["dbt"]
 
 [dependency-groups]
 dev = [
-  "black>=22.8,<25.0",
+  "black>=22.8,<27.0",
   "dbt-tests-adapter>=1.20.0",
   "exasol-integration-test-docker-environment>=4.3.0",
   "exasol-toolbox>=5.1.0",
