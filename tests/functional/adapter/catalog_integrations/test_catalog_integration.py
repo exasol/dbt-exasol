@@ -79,5 +79,6 @@ class TestCatalogIntegrationRequested(BaseCatalogIntegrationValidation):
         class _Cfg:
             config = {"catalog": "my_catalog"}
 
+        cfg = _Cfg()
         with pytest.raises(DbtRuntimeError, match="Exasol"):
-            project.adapter.build_catalog_relation(_Cfg())
+            project.adapter.build_catalog_relation(cfg)

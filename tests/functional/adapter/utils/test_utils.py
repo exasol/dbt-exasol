@@ -42,17 +42,17 @@ class TestAnyValueExasol(BaseAnyValue):
         }
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Not supported on Exasol")
 class TestArrayAppendExasol(BaseArrayAppend):
     pass
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Not supported on Exasol")
 class TestArrayConcatExasol(BaseArrayConcat):
     pass
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Not supported on Exasol")
 class TestArrayConstructExasol(BaseArrayConstruct):
     pass
 
@@ -98,7 +98,7 @@ class TestConcatExasol(BaseConcat):
 
 
 # Use either BaseCurrentTimestampAware or BaseCurrentTimestampNaive but not both
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Not supported on Exasol")
 class TestCurrentTimestampExasol(BaseCurrentTimestampNaive):
     pass
 

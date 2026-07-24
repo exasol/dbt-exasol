@@ -327,7 +327,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], True)
+        self.assertTrue(call_args[1]["encryption"])
         self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED})
 
     @patch("dbt.adapters.exasol.connections.connect")
@@ -353,7 +353,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], True)
+        self.assertTrue(call_args[1]["encryption"])
         self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_NONE})
 
     @patch("dbt.adapters.exasol.connections.connect")
@@ -378,7 +378,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], False)
+        self.assertFalse(call_args[1]["encryption"])
         self.assertIsNone(call_args[1]["websocket_sslopt"])
 
     def test_open_already_open(self):
@@ -669,7 +669,7 @@ class TestConnectFunction(unittest.TestCase):
 
         connect(dsn="test:8563", user="sys", password="exasol")
         mock_exa_connection.assert_called_once()
-        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], False)
+        self.assertFalse(mock_exa_connection.call_args[1]["autocommit"])
 
     @patch("dbt.adapters.exasol.connections.ExasolConnection")
     def test_connect_explicit_autocommit(self, mock_exa_connection):
@@ -678,7 +678,7 @@ class TestConnectFunction(unittest.TestCase):
 
         connect(dsn="test:8563", user="sys", password="exasol", autocommit=True)
         mock_exa_connection.assert_called_once()
-        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], True)
+        self.assertTrue(mock_exa_connection.call_args[1]["autocommit"])
 
 
 class TestExasolConnectionCursor(unittest.TestCase):

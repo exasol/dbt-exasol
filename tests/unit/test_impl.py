@@ -1,7 +1,10 @@
 """Unit tests for ExasolAdapter methods."""
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 import agate
 from dbt.adapters.capability import (
@@ -435,60 +438,60 @@ class TestShouldIdentifierBeQuoted(unittest.TestCase):
 
     def test_should_identifier_be_quoted_keyword(self):
         """Test should_identifier_be_quoted returns True for keywords."""
-        ExasolAdapter._exasol_keywords = ["SELECT", "FROM", "WHERE"]
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=["SELECT", "FROM", "WHERE"]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "select")
-        self.assertTrue(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "select")
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_invalid_identifier(self):
         """Test should_identifier_be_quoted returns True for invalid identifiers."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "123invalid")
-        self.assertTrue(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "123invalid")
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_with_model_column_dict_quote_true(self):
         """Test should_identifier_be_quoted with model column dict."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        models_column_dict = {"col1": {"quote": True}}
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
-        self.assertTrue(result)
+            models_column_dict = {"col1": {"quote": True}}
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_with_quoted_column_in_dict(self):
         """Test should_identifier_be_quoted checks quoted identifier in dict."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
-        adapter.quote = lambda x: f'"{x}"'
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+            adapter.quote = lambda x: f'"{x}"'
 
-        models_column_dict = {'"col1"': {"quote": True}}
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
-        self.assertTrue(result)
+            models_column_dict = {'"col1"': {"quote": True}}
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_returns_false_for_valid_non_keyword(self):
         """Test should_identifier_be_quoted returns False for valid non-keyword."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "regular_column")
-        self.assertFalse(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "regular_column")
+            self.assertFalse(result)
 
 
 class TestCheckAndQuoteIdentifier(unittest.TestCase):
