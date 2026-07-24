@@ -108,10 +108,10 @@ def artifacts_copy(session: Session) -> None:
         *[str(f) for f in coverage_files],
     )
 
-    # Copy lint and security artifacts from Python 3.10 (they're identical across versions)
-    lint_txt = artifacts_path / "lint-python3.10" / ".lint.txt"
-    lint_json = artifacts_path / "lint-python3.10" / ".lint.json"
-    security_json = artifacts_path / "security-python3.10" / ".security.json"
+    # Copy lint and security artifacts from Python 3.11 (they're identical across versions)
+    lint_txt = artifacts_path / "lint-python3.11" / ".lint.txt"
+    lint_json = artifacts_path / "lint-python3.11" / ".lint.json"
+    security_json = artifacts_path / "security-python3.11" / ".security.json"
 
     for artifact_file in [lint_txt, lint_json, security_json]:
         if artifact_file.exists():

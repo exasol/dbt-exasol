@@ -29,7 +29,7 @@ class TestDebugInvliadProjectExasol(BaseDebug):
         assert "The profile 'test' does not have a target named 'NONE'." in out
 
         _, out = run_dbt_and_capture(["debug", "--connection", "--profiles-dir", "NONE"], expect_pass=False)
-        assert "Using profiles dir at NONE"
+        assert "Using profiles dir at NONE" in out
         assert "1 check failed" in out
         assert "dbt looked for a profiles.yml file in NONE" in out
 

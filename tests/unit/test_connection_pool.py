@@ -559,35 +559,34 @@ class TestConnectionPool(unittest.TestCase):
     @patch("atexit.register")
     def test_ensure_atexit_handler_registers_once(self, mock_atexit_register):
         """_ensure_atexit_handler registers cleanup_pool exactly once."""
-        ExasolConnectionManager._atexit_registered = False
+        with patch.object(ExasolConnectionManager, "_atexit_registered", new=False):
+            ExasolConnectionManager._ensure_atexit_handler()
+            ExasolConnectionManager._ensure_atexit_handler()
+            ExasolConnectionManager._ensure_atexit_handler()
 
-        ExasolConnectionManager._ensure_atexit_handler()
-        ExasolConnectionManager._ensure_atexit_handler()
-        ExasolConnectionManager._ensure_atexit_handler()
-
-        mock_atexit_register.assert_called_once_with(ExasolConnectionManager.cleanup_pool)
-        self.assertTrue(ExasolConnectionManager._atexit_registered)
+            mock_atexit_register.assert_called_once_with(ExasolConnectionManager.cleanup_pool)
+            self.assertTrue(ExasolConnectionManager._atexit_registered)
 
     @patch("atexit.register")
     def test_atexit_handler_registered_exactly_once_under_race(self, mock_atexit_register):
         """atexit handler is registered exactly once when N threads race first open()."""
-        ExasolConnectionManager._atexit_registered = False
-        errors = []
+        with patch.object(ExasolConnectionManager, "_atexit_registered", new=False):
+            errors = []
 
-        def register():
-            try:
-                ExasolConnectionManager._ensure_atexit_handler()
-            except Exception as exc:
-                errors.append(exc)
+            def register():
+                try:
+                    ExasolConnectionManager._ensure_atexit_handler()
+                except Exception as exc:
+                    errors.append(exc)
 
-        threads = [threading.Thread(target=register) for _ in range(20)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+            threads = [threading.Thread(target=register) for _ in range(20)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
-        self.assertEqual(len(errors), 0)
-        mock_atexit_register.assert_called_once_with(ExasolConnectionManager.cleanup_pool)
+            self.assertEqual(len(errors), 0)
+            mock_atexit_register.assert_called_once_with(ExasolConnectionManager.cleanup_pool)
 
     @patch.object(ExasolConnectionManager, "_ensure_atexit_handler")
     @patch.object(ExasolConnectionManager, "retry_connection")

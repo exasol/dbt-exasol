@@ -61,7 +61,7 @@ class TestExample:
         result_statuses = sorted(r.status for r in results)
         assert result_statuses == ["fail", "pass"]
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="Expect a failing test")
     def test_build(self, project):
         """Expect a failing test"""
         # do it all

@@ -7,7 +7,7 @@ from dbt.tests.util import run_dbt
 
 
 class TestSimpleCopyBaseExasol(SimpleCopyBase):
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="Exasol does not support materialized views")
     def test_simple_copy_with_materialized_views(self, project):
         pass
 

@@ -8,12 +8,16 @@ docker-cli = "latest"
 opencode = "latest"
 "github:max-sixty/worktrunk" = "latest"
 "npm:@fission-ai/openspec" = "latest"
+colima = "latest"
 
 [env]
 # Load test.env as defaults, then .env for local overrides
 _.file = [".env"]
 _.path = ["./.venv/bin"]
 VIRTUAL_ENV = "{{config_root}}/.venv"
+
+# Silence macOS fork() crashes from NSCharacterSet races in Python libs (e.g. luigi workers)
+OBJC_DISABLE_INITIALIZE_FORK_SAFETY = "YES"
 
 # Required environment variables (mise will error if missing)
 DBT_DSN = { required = "Database connection string (e.g., 'localhost/nocertcheck:8563')" }
@@ -25,10 +29,10 @@ DBT_TEST_USER_3 = { required = "Test role 3 name" }
 EXASOL_RELEASE = { required = "Exasol major version (e.g., '8')" }
 
 # Connection pooling configuration
-DBT_CONN_POOL_SIZE = { default = "32", required = "Number of connections to pre-initialize in the pool" }
+DBT_CONN_POOL_SIZE = "32"
 
 # Disable dbt telemetry for faster test runs
-DBT_SEND_ANONYMOUS_USAGE_STATS = { default = "false", required = "En/Disable usage statistics" }
+DBT_SEND_ANONYMOUS_USAGE_STATS = "false"
 
 # Docker SSH tunnel configuration
 # Uses DOCKER_HOST from .env if set, otherwise constructs from DOCKER_SSH_HOST if available
