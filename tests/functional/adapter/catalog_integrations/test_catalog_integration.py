@@ -70,9 +70,8 @@ class TestCatalogIntegrationRequested(BaseCatalogIntegrationValidation):
         return {"catalog_model.sql": catalog_model_sql}
 
     def test_requested_catalog_fails_clearly(self, project):
-        result = run_dbt(["run"], expect_pass=False)
-        message = str(result.results[0].message) if result.results else ""
-        assert "Exasol" in message or any("Exasol" in str(r.message) for r in result.results)
+        with pytest.raises(DbtRuntimeError, match="Exasol"):
+            run_dbt(["run"])
 
     def test_build_catalog_relation_raises(self, project):
         """Direct unit-style assertion against the adapter override."""
@@ -80,5 +79,6 @@ class TestCatalogIntegrationRequested(BaseCatalogIntegrationValidation):
         class _Cfg:
             config = {"catalog": "my_catalog"}
 
+        cfg = _Cfg()
         with pytest.raises(DbtRuntimeError, match="Exasol"):
-            project.adapter.build_catalog_relation(_Cfg())
+            project.adapter.build_catalog_relation(cfg)

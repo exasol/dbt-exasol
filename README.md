@@ -22,16 +22,20 @@ Please see the dbt documentation on **[Exasol setup](https://docs.getdbt.com/ref
 
 ## Version Compatibility
 
-| dbt-exasol | dbt-core | Python    | Exasol            |
-|------------|----------|-----------|-------------------|
-| 1.11.x     | 1.11.x   | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
-| 1.10.x     | 1.10.x   | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
-| 1.8.x      | 1.8.x    |  3.9-3.12 | 7.x, 8.x          |
-| 1.7.x      | 1.7.x    |  3.8-3.11 | 7.x, 8.x          |
+| dbt-exasol | dbt-core              | Python    | Exasol            |
+|------------|-----------------------|-----------|-------------------|
+| 1.12.x     | 1.12.x                | 3.11-3.14 | 7.x, 8.x, ≥2025.x |
+| 1.11.x     | 1.11.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
+| 1.10.x     | 1.10.x                | 3.10-3.13 | 7.x, 8.x, ≥2025.x |
+| 1.8.x      | 1.8.x                 |  3.9-3.12 | 7.x, 8.x          |
+| 1.7.x      | 1.7.x                 |  3.8-3.11 | 7.x, 8.x          |
+
+> **dbt-core 1.12 note:** dbt-core 1.12.0 stable is released. The `>=1.12.0,<1.13`
+> dependency range ensures a stable 1.12 line installation.
 
 ## dbt-core version parity
 
-Parity claim against **dbt-core 1.11** (reference adapter: dbt-snowflake). Each
+Parity claim against **dbt-core 1.12** (reference adapter: dbt-snowflake). Each
 supported feature is proven by an upstream `dbt-tests-adapter` subclass in CI; each
 unsupported feature carries a reason. Legend: ✅ Supported · ⚠️ Conditional ·
 ❌ (platform) not supported due to an Exasol limitation · ❌ (not yet) not yet
@@ -56,6 +60,7 @@ implemented.
 | Batched last-modified metadata | ✅ | `EXA_ALL_OBJECTS`, cross-owner sources |
 | `get_columns_in_relation` | ✅ | |
 | `persist_docs` | ✅ | Table/column comments |
+| `latest_version_pointer` | ✅ | dbt-core 1.12 automatically creates a pointer view for versioned models |
 | Grants | ✅ | |
 
 **Why (platform-blocked features):**
@@ -316,6 +321,16 @@ outputs:
 
 For more information about SSL configuration, see the [PyExasol security documentation](https://exasol.github.io/pyexasol/master/user_guide/configuration/security.html).
 
+## dbt seed --empty support (dbt-core 1.12)
+
+`dbt seed --empty` creates the seed table with the inferred schema and zero rows. Exasol correctly
+preserves numeric column types (decimal columns are created as `float`, not `integer`) when the
+seed table is materialized with no rows.
+
+**Known limitation:** running `dbt seed --empty` followed immediately by a plain (non-`--full-refresh`)
+`dbt seed` on a CSV that contains decimal columns has not been fully validated. If you need to reload
+data after an empty seed, prefer `dbt seed --full-refresh` which recreates the table from scratch.
+
 ## Materialized View & Clone operations
 
 Materialized views are not supported in Exasol (no materialized-view primitive); the
@@ -384,6 +399,7 @@ functions/double_price.yml:
           data_type: DOUBLE
 
 The adapter automatically:
+
 - Strips the leading SELECT keyword (dbt convention)
 - Wraps the expression in BEGIN RETURN expr; END name;
 - Detects procedural bodies containing BEGIN and inserts them directly
@@ -558,7 +574,7 @@ This project uses GitHub Actions for continuous integration and deployment:
 
 - **CI Workflow**: Runs on pull requests, pushes to main/master, scheduled nightly, and manual dispatch
   - **Smart Integration Testing**: Only runs integration tests when relevant files change (on PRs)
-  - **Python Matrix**: Tests across Python 3.10, 3.11, 3.12, and 3.13
+  - **Python Matrix**: Tests across Python 3.11, 3.12, 3.13, and 3.14
   - **Checks Job** (runs for all Python versions):
     - Format checking (`nox -s format:check`)
     - Linting (`nox -s lint:code`)

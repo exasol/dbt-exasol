@@ -327,7 +327,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], True)
+        self.assertTrue(call_args[1]["encryption"])
         self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_REQUIRED})
 
     @patch("dbt.adapters.exasol.connections.connect")
@@ -353,7 +353,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], True)
+        self.assertTrue(call_args[1]["encryption"])
         self.assertEqual(call_args[1]["websocket_sslopt"], {"cert_reqs": ssl.CERT_NONE})
 
     @patch("dbt.adapters.exasol.connections.connect")
@@ -378,7 +378,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         call_args = mock_connect.call_args
-        self.assertEqual(call_args[1]["encryption"], False)
+        self.assertFalse(call_args[1]["encryption"])
         self.assertIsNone(call_args[1]["websocket_sslopt"])
 
     def test_open_already_open(self):
@@ -669,7 +669,7 @@ class TestConnectFunction(unittest.TestCase):
 
         connect(dsn="test:8563", user="sys", password="exasol")
         mock_exa_connection.assert_called_once()
-        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], False)
+        self.assertFalse(mock_exa_connection.call_args[1]["autocommit"])
 
     @patch("dbt.adapters.exasol.connections.ExasolConnection")
     def test_connect_explicit_autocommit(self, mock_exa_connection):
@@ -678,7 +678,7 @@ class TestConnectFunction(unittest.TestCase):
 
         connect(dsn="test:8563", user="sys", password="exasol", autocommit=True)
         mock_exa_connection.assert_called_once()
-        self.assertEqual(mock_exa_connection.call_args[1]["autocommit"], True)
+        self.assertTrue(mock_exa_connection.call_args[1]["autocommit"])
 
 
 class TestExasolConnectionCursor(unittest.TestCase):
@@ -860,9 +860,11 @@ class TestCursorFetchMethods(unittest.TestCase):
     """Test ExasolCursor fetch methods with edge cases."""
 
     def test_fetchone_with_no_statement(self):
-        """Test fetchone raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchone raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchone()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 
@@ -878,9 +880,11 @@ class TestCursorFetchMethods(unittest.TestCase):
         self.assertEqual(result, [1, "test"])
 
     def test_fetchmany_with_no_statement(self):
-        """Test fetchmany raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchmany raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchmany()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 
@@ -906,9 +910,11 @@ class TestCursorFetchMethods(unittest.TestCase):
         mock_stmt.fetchmany.assert_called_once_with(5)
 
     def test_fetchall_with_no_statement(self):
-        """Test fetchall raises RuntimeError when stmt is None."""
+        """Task 3.2: fetchall raises DbtRuntimeError when stmt is None."""
+        from dbt_common.exceptions import DbtRuntimeError
+
         cursor = ExasolCursor(Mock())
-        with self.assertRaises(RuntimeError) as context:
+        with self.assertRaises(DbtRuntimeError) as context:
             cursor.fetchall()
         self.assertIn("Cannot fetch on unset statement", str(context.exception))
 

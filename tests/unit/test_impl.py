@@ -1,7 +1,10 @@
 """Unit tests for ExasolAdapter methods."""
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import (
+    Mock,
+    patch,
+)
 
 import agate
 from dbt.adapters.capability import (
@@ -151,6 +154,7 @@ class TestConvertNumberType(unittest.TestCase):
         # Create a mock agate table with decimal values
         mock_table = Mock(spec=agate.Table)
         mock_table.aggregate.return_value = 2  # Has decimals
+        mock_table.rows = [1]  # Non-empty
 
         result = ExasolAdapter.convert_number_type(mock_table, 0)
 
@@ -161,9 +165,52 @@ class TestConvertNumberType(unittest.TestCase):
         """Test convert_number_type returns 'integer' when no decimals."""
         mock_table = Mock(spec=agate.Table)
         mock_table.aggregate.return_value = 0  # No decimals
+        mock_table.rows = [1]  # Non-empty
 
         result = ExasolAdapter.convert_number_type(mock_table, 0)
 
+        self.assertEqual(result, "integer")
+
+    # --- task 2.2: zero-row (--empty) path ---
+
+    def test_convert_number_type_zero_row_table_returns_float(self):
+        """Task 2.2: zero-row agate Number column must not degrade to integer.
+
+        When ``dbt seed --empty`` is used dbt-core calls ``table.limit(0)``,
+        producing an agate table with the inferred column types but no data
+        rows.  ``agate.MaxPrecision`` returns 0 for every column on such a
+        table, which would wrongly emit ``integer`` for decimal columns.  The
+        hardened implementation must return ``float`` in this case.
+        """
+        table = agate.Table(
+            [],
+            column_names=["amount"],
+            column_types=[agate.Number()],
+        )
+        self.assertEqual(len(table.rows), 0)
+        result = ExasolAdapter.convert_number_type(table, 0)
+        self.assertEqual(result, "float")
+
+    # --- task 2.3: populated path is unchanged ---
+
+    def test_convert_number_type_populated_decimal_returns_float(self):
+        """Task 2.3: populated table with decimal values must return 'float'."""
+        table = agate.Table(
+            [["1.5"], ["2.75"]],
+            column_names=["amount"],
+            column_types=[agate.Number()],
+        )
+        result = ExasolAdapter.convert_number_type(table, 0)
+        self.assertEqual(result, "float")
+
+    def test_convert_number_type_populated_integer_returns_integer(self):
+        """Task 2.3: populated table with whole-number values must return 'integer'."""
+        table = agate.Table(
+            [["1"], ["2"], ["3"]],
+            column_names=["count"],
+            column_types=[agate.Number()],
+        )
+        result = ExasolAdapter.convert_number_type(table, 0)
         self.assertEqual(result, "integer")
 
 
@@ -391,60 +438,60 @@ class TestShouldIdentifierBeQuoted(unittest.TestCase):
 
     def test_should_identifier_be_quoted_keyword(self):
         """Test should_identifier_be_quoted returns True for keywords."""
-        ExasolAdapter._exasol_keywords = ["SELECT", "FROM", "WHERE"]
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=["SELECT", "FROM", "WHERE"]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "select")
-        self.assertTrue(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "select")
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_invalid_identifier(self):
         """Test should_identifier_be_quoted returns True for invalid identifiers."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "123invalid")
-        self.assertTrue(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "123invalid")
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_with_model_column_dict_quote_true(self):
         """Test should_identifier_be_quoted with model column dict."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        models_column_dict = {"col1": {"quote": True}}
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
-        self.assertTrue(result)
+            models_column_dict = {"col1": {"quote": True}}
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_with_quoted_column_in_dict(self):
         """Test should_identifier_be_quoted checks quoted identifier in dict."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
-        adapter.quote = lambda x: f'"{x}"'
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+            adapter.quote = lambda x: f'"{x}"'
 
-        models_column_dict = {'"col1"': {"quote": True}}
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
-        self.assertTrue(result)
+            models_column_dict = {'"col1"': {"quote": True}}
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "col1", models_column_dict)
+            self.assertTrue(result)
 
     def test_should_identifier_be_quoted_returns_false_for_valid_non_keyword(self):
         """Test should_identifier_be_quoted returns False for valid non-keyword."""
-        ExasolAdapter._exasol_keywords = []
-        adapter = Mock()
-        adapter.connections = Mock()
-        adapter.connections.get_thread_connection = Mock()
-        adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
+        with patch.object(ExasolAdapter, "_exasol_keywords", new=[]):
+            adapter = Mock()
+            adapter.connections = Mock()
+            adapter.connections.get_thread_connection = Mock()
+            adapter.is_valid_identifier = ExasolAdapter.is_valid_identifier
 
-        result = ExasolAdapter.should_identifier_be_quoted(adapter, "regular_column")
-        self.assertFalse(result)
+            result = ExasolAdapter.should_identifier_be_quoted(adapter, "regular_column")
+            self.assertFalse(result)
 
 
 class TestCheckAndQuoteIdentifier(unittest.TestCase):
@@ -817,9 +864,15 @@ class TestBuildCatalogRelation(unittest.TestCase):
 class TestVersion(unittest.TestCase):
     """Test the adapter version reflects the dbt-core minor parity claim."""
 
-    def test_version_is_1_11(self):
-        """Adapter version starts with 1.11. (catches forgotten version bumps)."""
-        self.assertTrue(exasol_version.startswith("1.11."))
+    def test_version_is_1_12(self):
+        """Adapter version starts with 1.12. (catches forgotten version bumps)."""
+        self.assertTrue(exasol_version.startswith("1.12."))
+
+    def test_version_module_matches_package_version(self):
+        """Legacy version.py must stay in sync with __version__.py."""
+        from dbt.adapters.exasol.version import VERSION as legacy_version
+
+        self.assertEqual(legacy_version, exasol_version)
 
 
 if __name__ == "__main__":
