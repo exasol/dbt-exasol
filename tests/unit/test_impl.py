@@ -868,6 +868,12 @@ class TestVersion(unittest.TestCase):
         """Adapter version starts with 1.12. (catches forgotten version bumps)."""
         self.assertTrue(exasol_version.startswith("1.12."))
 
+    def test_version_module_matches_package_version(self):
+        """Legacy version.py must stay in sync with __version__.py."""
+        from dbt.adapters.exasol.version import VERSION as legacy_version
+
+        self.assertEqual(legacy_version, exasol_version)
+
 
 if __name__ == "__main__":
     unittest.main()

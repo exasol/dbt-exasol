@@ -70,14 +70,12 @@ omit = [
   "dbt/__init__.py",
   "dbt/adapters/__init__.py",
   "dbt/adapters/exasol/__init__.py",
-  "dbt/adapters/exasol/__version__.py",
-  "dbt/adapters/exasol/version.py",
   "dbt/include/__init__.py",
   "dbt/include/exasol/__init__.py",
 ]
 
 [tool.coverage.report]
-omit = ["*/__init__.py", "*/__version__.py", "*/version.py"]
+omit = ["*/__init__.py"]
 
 [tool.coverage.xml]
 output = "ci-coverage.xml"
