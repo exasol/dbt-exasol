@@ -183,11 +183,9 @@ class TestSnapshotReservedKeywords:
         run_dbt(["snapshot"])
 
         # Update record with field_id=1
-        project.run_sql(
-            """UPDATE {schema}.source_reserved_keywords
+        project.run_sql("""UPDATE {schema}.source_reserved_keywords
                SET "user" = 'alice_updated', "date" = '2020-01-15'
-               WHERE field_id = 1"""
-        )
+               WHERE field_id = 1""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -249,11 +247,9 @@ class TestSnapshotReservedKeywordsCheck:
         run_dbt(["snapshot"])
 
         # Update the 'time' column (a reserved keyword)
-        project.run_sql(
-            """UPDATE {schema}.source_reserved_keywords
+        project.run_sql("""UPDATE {schema}.source_reserved_keywords
                SET "time" = TO_TIMESTAMP('2020-01-15T10:00:00.000000', 'YYYY-MM-DDTHH:MI:SS.FF6')
-               WHERE field_id = 1"""
-        )
+               WHERE field_id = 1""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -295,10 +291,8 @@ class TestSnapshotReservedKeywordsWithNewRecord:
         assert results[0] == 5, f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
 
         # Delete record with field_id=1
-        project.run_sql(
-            """DELETE FROM {schema}.source_reserved_keywords
-               WHERE field_id = 1"""
-        )
+        project.run_sql("""DELETE FROM {schema}.source_reserved_keywords
+               WHERE field_id = 1""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -355,11 +349,9 @@ class TestSnapshotMixedColumnTypes:
         run_dbt(["snapshot"])
 
         # Update the reserved keyword column
-        project.run_sql(
-            """UPDATE {schema}.source_mixed_columns
+        project.run_sql("""UPDATE {schema}.source_mixed_columns
                SET "time" = TO_TIMESTAMP('2020-01-15T10:00:00.000000', 'YYYY-MM-DDTHH:MI:SS.FF6')
-               WHERE ID = 1"""
-        )
+               WHERE ID = 1""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -435,11 +427,9 @@ class TestSnapshotQuotedUppercaseIdentifier:
         run_dbt(["snapshot"])
 
         # Update the source column that feeds EXPLICIT_TIME
-        project.run_sql(
-            """UPDATE {schema}.source_mixed_columns
+        project.run_sql("""UPDATE {schema}.source_mixed_columns
                SET "time" = TO_TIMESTAMP('2020-01-15T10:00:00.000000', 'YYYY-MM-DDTHH:MI:SS.FF6')
-               WHERE ID = 1"""
-        )
+               WHERE ID = 1""")
 
         # Run snapshot again
         run_dbt(["snapshot"])

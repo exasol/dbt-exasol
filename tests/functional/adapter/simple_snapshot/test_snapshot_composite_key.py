@@ -117,11 +117,9 @@ class TestSnapshotCompositeKey:
         run_dbt(["snapshot"])
 
         # Update record (NA, PROD001)
-        project.run_sql(
-            """UPDATE {schema}.seed_composite
+        project.run_sql("""UPDATE {schema}.seed_composite
                SET sales = 110, some_date = '2020-01-15T00:00:00.000000'
-               WHERE region = 'NA' AND product_id = 'PROD001'"""
-        )
+               WHERE region = 'NA' AND product_id = 'PROD001'""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -169,16 +167,12 @@ class TestSnapshotCompositeKey:
         run_dbt(["snapshot"])
 
         # Update two records
-        project.run_sql(
-            """UPDATE {schema}.seed_composite
+        project.run_sql("""UPDATE {schema}.seed_composite
                SET sales = 110, some_date = '2020-01-15T00:00:00.000000'
-               WHERE region = 'NA' AND product_id = 'PROD001'"""
-        )
-        project.run_sql(
-            """UPDATE {schema}.seed_composite
+               WHERE region = 'NA' AND product_id = 'PROD001'""")
+        project.run_sql("""UPDATE {schema}.seed_composite
                SET sales = 160, some_date = '2020-01-15T00:00:00.000000'
-               WHERE region = 'EU' AND product_id = 'PROD001'"""
-        )
+               WHERE region = 'EU' AND product_id = 'PROD001'""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -214,10 +208,8 @@ class TestSnapshotCompositeKeyWithInvalidate:
         run_dbt(["snapshot"])
 
         # Delete record (NA, PROD001)
-        project.run_sql(
-            """DELETE FROM {schema}.seed_composite
-               WHERE region = 'NA' AND product_id = 'PROD001'"""
-        )
+        project.run_sql("""DELETE FROM {schema}.seed_composite
+               WHERE region = 'NA' AND product_id = 'PROD001'""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -267,10 +259,8 @@ class TestSnapshotCompositeKeyWithNewRecord:
         assert results[0] == 5, f"Expected 5 records with dbt_is_deleted='False', got {results[0]}"
 
         # Delete record (NA, PROD001)
-        project.run_sql(
-            """DELETE FROM {schema}.seed_composite
-               WHERE region = 'NA' AND product_id = 'PROD001'"""
-        )
+        project.run_sql("""DELETE FROM {schema}.seed_composite
+               WHERE region = 'NA' AND product_id = 'PROD001'""")
 
         # Run snapshot again
         run_dbt(["snapshot"])
@@ -322,11 +312,9 @@ class TestSnapshotTripleKey:
         assert results[0] == 5, f"Expected 5 current records, got {results[0]}"
 
         # Update a record - since sales is part of the key, this creates a new key
-        project.run_sql(
-            """UPDATE {schema}.seed_composite
+        project.run_sql("""UPDATE {schema}.seed_composite
                SET some_date = '2020-01-15T00:00:00.000000'
-               WHERE region = 'NA' AND product_id = 'PROD001'"""
-        )
+               WHERE region = 'NA' AND product_id = 'PROD001'""")
 
         run_dbt(["snapshot"])
 

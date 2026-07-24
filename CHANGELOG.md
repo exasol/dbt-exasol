@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.12.0 — dbt-core 1.12 support
+
+Supports **dbt-core 1.12** and adopts its new adapter-facing features. See the
+[dbt-core version parity matrix](README.md#dbt-core-version-parity) for the full
+feature list.
+
+### Added
+- Support for **dbt-core 1.12** (`dbt-core>=1.12.0,<1.13`, `dbt-adapters>=1.24.5`).
+- Empty-seed support: `dbt seed --empty` and `dbt build --empty` create correctly
+  typed empty tables; covered by the upstream `BaseTestEmptySeedFlag` suite.
+  Known limitation: an `--empty` seed followed immediately by a plain
+  (non-`--full-refresh`) `seed` on a CSV with decimal columns is not fully
+  validated — use `dbt seed --full-refresh` to reload (see README).
+- Functional coverage for `latest_version_pointer`: versioned models
+  automatically get a pointer view named after the base model (dbt-core 1.12).
+- `Capability.CatalogsV2` declared as `Unsupported`.
+- Python 3.14 support; Python support window is now **3.11–3.14**
+  (3.10 dropped).
+
+### Changed
+- `ExasolCursor.fetchone`/`fetchmany`/`fetchall` now raise
+  `dbt_common.exceptions.DbtRuntimeError` instead of a raw `RuntimeError` when
+  called on an unset statement, aligning with dbt-core 1.12 exception handling.
+- `convert_number_type` returns `float` for zero-row agate tables (e.g. empty
+  seeds) instead of letting `agate.MaxPrecision` degrade decimal columns to
+  `integer`.
+
+### Fixed
+- Column comments (`persist_docs`) are now applied only to columns that
+  actually exist in the relation, using `validate_doc_columns`; stale model
+  column definitions no longer break comment propagation.
+
 ## 1.11.0 — dbt-core 1.11 parity
 
 Establishes an explicit, testable parity claim against **dbt-core 1.11** (reference
