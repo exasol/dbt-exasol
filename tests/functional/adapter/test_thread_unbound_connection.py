@@ -22,7 +22,8 @@ class TestThreadUnboundConnection:
     """Adapter metadata calls succeed without an explicit connection_named block."""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"simple_model.sql": simple_model_sql}
 
     def test_list_relations_outside_connection_named(self, project):

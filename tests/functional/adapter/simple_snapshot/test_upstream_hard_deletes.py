@@ -41,13 +41,16 @@ alter table {schema}.src_customers add column dummy_column VARCHAR(50) default '
 
 class TestExasolSnapshotEphemeralHardDeletes(BaseSnapshotEphemeralHardDeletes):
     @pytest.fixture(scope="class")
-    def source_create_sql(self):
+    @classmethod
+    def source_create_sql(cls):
         return _source_create_sql
 
     @pytest.fixture(scope="class")
-    def source_insert_sql(self):
+    @classmethod
+    def source_insert_sql(cls):
         return _source_insert_sql
 
     @pytest.fixture(scope="class")
-    def source_alter_sql(self):
+    @classmethod
+    def source_alter_sql(cls):
         return _source_alter_sql

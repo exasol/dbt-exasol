@@ -32,7 +32,8 @@ class TestTypeStringExasol(BaseTypeString):
 
 class TestTypeTimestampExasol(BaseTypeTimestamp):
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,

@@ -47,11 +47,13 @@ class TestCatalogIntegrationUnused(BaseCatalogIntegrationValidation):
     """(a) catalogs.yml present, no model uses it -> run succeeds."""
 
     @pytest.fixture(scope="class")
-    def catalogs(self):
+    @classmethod
+    def catalogs(cls):
         return _CATALOGS_YML
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"plain_model.sql": plain_model_sql}
 
     def test_unused_catalog_runs(self, project):
@@ -62,11 +64,13 @@ class TestCatalogIntegrationRequested(BaseCatalogIntegrationValidation):
     """(b) a model requests a catalog -> clear DbtRuntimeError mentioning Exasol."""
 
     @pytest.fixture(scope="class")
-    def catalogs(self):
+    @classmethod
+    def catalogs(cls):
         return _CATALOGS_YML
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"catalog_model.sql": catalog_model_sql}
 
     def test_requested_catalog_fails_clearly(self, project):

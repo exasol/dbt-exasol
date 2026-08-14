@@ -43,7 +43,8 @@ class TestSeedWithKeywords:
     """Test that seeds with SQL keyword columns work correctly."""
 
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -56,11 +57,13 @@ class TestSeedWithKeywords:
         }
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"keywords_seed.csv": seeds__keywords_csv}
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "test_keywords.sql": models__test_keywords_sql,
             "schema.yml": seeds__schema_yml,
@@ -97,7 +100,8 @@ class TestSeedKeywordsAutoDetect:
     """Test automatic keyword detection without explicit quote config."""
 
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -110,7 +114,8 @@ class TestSeedKeywordsAutoDetect:
         }
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"auto_keywords.csv": seeds__keywords_csv}
 
     def test_seed_auto_quote_keywords(self, project):
@@ -134,7 +139,8 @@ class TestSeedMixedQuoting:
     """Test seeds with mixed keyword and regular columns."""
 
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -147,7 +153,8 @@ class TestSeedMixedQuoting:
         }
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"mixed_cols.csv": """id,name,value,description,order
 1,Product A,active,desc1,100
 2,Product B,pending,desc2,200
@@ -176,7 +183,8 @@ class TestSeedKeywordsUppercase:
     """Test seeds with uppercase SQL keyword column names."""
 
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -189,7 +197,8 @@ class TestSeedKeywordsUppercase:
         }
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"uppercase_keywords.csv": """ID,VALUE,ORDER,FROM
 1,active,100,source1
 2,pending,101,source2

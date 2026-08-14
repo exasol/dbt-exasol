@@ -66,7 +66,8 @@ class ExasolColumnEqualSetup:
 
 class TestExasolTableConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseTableConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model_wrong_order.sql": my_model_wrong_order_sql,
             "my_model_wrong_name.sql": my_model_wrong_name_sql,
@@ -87,7 +88,8 @@ class TestExasolTableConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseTableCo
 
 class TestExasolViewConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseViewConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model_wrong_order.sql": my_model_view_wrong_order_sql,
             "my_model_wrong_name.sql": my_model_view_wrong_name_sql,
@@ -108,7 +110,8 @@ class TestExasolViewConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseViewCons
 
 class TestExasolIncrementalConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseIncrementalConstraintsColumnsEqual):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model_wrong_order.sql": my_model_incremental_wrong_order_sql,
             "my_model_wrong_name.sql": my_model_incremental_wrong_name_sql,
@@ -129,27 +132,31 @@ class TestExasolIncrementalConstraintsColumnsEqual(ExasolColumnEqualSetup, BaseI
 
 class TestExasolTableConstraintsRuntimeDdlEnforcement(BaseConstraintsRuntimeDdlEnforcement):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_wrong_order_sql,
             "constraints_schema.yml": exasol_model_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_sql(self):
+    @classmethod
+    def expected_sql(cls):
         return exasol_expected_sql
 
 
 class TestExasolTableConstraintsRollback(BaseConstraintsRollback):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_sql,
             "constraints_schema.yml": exasol_model_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_error_messages(self):
+    @classmethod
+    def expected_error_messages(cls):
         return ["constraint violation - not null"]
 
     # Exasol constraint failures generate their own error messages which have to be handled differently than in the standard tests
@@ -167,27 +174,31 @@ class TestExasolTableConstraintsRollback(BaseConstraintsRollback):
 
 class TestExasolIncrementalConstraintsRuntimeDdlEnforcement(BaseIncrementalConstraintsRuntimeDdlEnforcement):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_incremental_wrong_order_sql,
             "constraints_schema.yml": exasol_model_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_sql(self):
+    @classmethod
+    def expected_sql(cls):
         return exasol_expected_sql
 
 
 class TestExasolIncrementalConstraintsRollback(BaseIncrementalConstraintsRollback):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_incremental_model_sql,
             "constraints_schema.yml": exasol_model_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_error_messages(self):
+    @classmethod
+    def expected_error_messages(cls):
         return ["constraint violation - not null"]
 
     # Exasol constraint failures generate their own error messages which have to be handled differently than in the standard tests
@@ -205,14 +216,16 @@ class TestExasolIncrementalConstraintsRollback(BaseIncrementalConstraintsRollbac
 
 class TestExasolModelConstraintsRuntimeEnforcement(BaseModelConstraintsRuntimeEnforcement):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_sql,
             "constraints_schema.yml": exasol_constrained_model_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_sql(self):
+    @classmethod
+    def expected_sql(cls):
         return """
 create or replace table <model_identifier> as
     select cast(id as decimal(18,0)) as id, cast(color as char(50)) as color, cast(date_day as char(50)) as date_day
@@ -228,14 +241,16 @@ create or replace table <model_identifier> as
 
 class TestExasolConstraintQuotedColumn(BaseConstraintQuotedColumn):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_with_quoted_column_name_sql,
             "constraints_schema.yml": exasol_quoted_column_schema_yml,
         }
 
     @pytest.fixture(scope="class")
-    def expected_sql(self):
+    @classmethod
+    def expected_sql(cls):
         return """
 create or replace table <model_identifier> as
     select cast(id as decimal(18,0)) as id, cast("from" as char(50)) as "from", cast(date_day as char(50)) as date_day
@@ -251,7 +266,8 @@ create or replace table <model_identifier> as
 
 class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model_contract_sql_header.sql": exasol_model_contract_sql_header_sql,
             "constraints_schema.yml": exasol_model_contract_header_schema_yml,
@@ -260,7 +276,8 @@ class BaseExasolTableContractSqlHeader(BaseContractSqlHeader):
 
 class BaseExasolIncrementalContractSqlHeader(BaseContractSqlHeader):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model_contract_sql_header.sql": exasol_model_incremental_contract_sql_header,
             "constraints_schema.yml": exasol_model_contract_header_schema_yml,

@@ -55,11 +55,13 @@ class TestSnapshotHardDeletesInvalidate:
     """Test hard_deletes='invalidate' mode - marks deleted records with dbt_valid_to timestamp"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed.csv": seeds__seed_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_invalidate.sql": snapshots__snapshot_invalidate_sql}
 
     def test_snapshot_hard_deletes_invalidate(self, project):
@@ -102,11 +104,13 @@ class TestSnapshotHardDeletesNewRecord:
     """Test hard_deletes='new_record' mode - creates new record with dbt_is_deleted='True'"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed.csv": seeds__seed_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_new_record.sql": snapshots__snapshot_new_record_sql}
 
     def test_snapshot_hard_deletes_new_record(self, project):

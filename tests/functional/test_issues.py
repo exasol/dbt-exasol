@@ -38,7 +38,8 @@ id,name,some_date
 
 class TestViewModelSemicolon:
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"view_model.sql": base_view_sql}
 
     def test_view(self, project):
@@ -49,7 +50,8 @@ class TestViewModelSemicolon:
 
 class TestCustomTimestampFormat:
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"ts_space.csv": seeds_tsspace_csv}
 
     def test_custom_ts_format(self, project):

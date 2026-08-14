@@ -83,11 +83,13 @@ class TestSnapshotCompositeKey:
     """Test basic composite unique_key functionality"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed_composite.csv": seeds__seed_composite_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_composite.sql": snapshots__snapshot_composite_sql}
 
     def test_snapshot_composite_key_initial(self, project):
@@ -192,11 +194,13 @@ class TestSnapshotCompositeKeyWithInvalidate:
     """Test composite unique_key with hard_deletes='invalidate'"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed_composite.csv": seeds__seed_composite_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_composite_invalidate.sql": snapshots__snapshot_composite_invalidate_sql}
 
     def test_snapshot_composite_key_delete_invalidate(self, project):
@@ -235,11 +239,13 @@ class TestSnapshotCompositeKeyWithNewRecord:
     """Test composite unique_key with hard_deletes='new_record'"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed_composite.csv": seeds__seed_composite_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_composite_new_record.sql": snapshots__snapshot_composite_new_record_sql}
 
     def test_snapshot_composite_key_delete_new_record(self, project):
@@ -286,11 +292,13 @@ class TestSnapshotTripleKey:
     """Test snapshot with 3-column composite unique_key"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed_composite.csv": seeds__seed_composite_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_triple_key.sql": snapshots__snapshot_triple_key_sql}
 
     def test_snapshot_triple_key_works(self, project):

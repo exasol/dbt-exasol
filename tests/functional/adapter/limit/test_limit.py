@@ -31,7 +31,8 @@ class TestShowLimitExasol(BaseShowLimit):
 
 class TestShowSqlHeaderExasol(BaseShowSqlHeader):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "sql_header.sql": exasol__sql_header,
         }

@@ -23,19 +23,22 @@ class TestExample:
 
     # configuration in dbt_project.yml
     @pytest.fixture(scope="class")
-    def project_config_update(self):
+    @classmethod
+    def project_config_update(cls):
         return {"name": "example", "models": {"+materialized": "view"}}
 
     # everything that goes in the "seeds" directory
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {
             "my_seed.csv": my_seed_csv,
         }
 
     # everything that goes in the "models" directory
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "my_model.sql": my_model_sql,
             "my_model.yml": my_model_yml,

@@ -12,8 +12,9 @@ select cast('999999999999999999999999999999999999' as {{ type_bigint() }}) as bi
 
 class BaseTypeBigInt(BaseDataTypeMacro):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "expected.sql": models__expected_sql,
-            "actual.sql": self.interpolate_macro_namespace(models__actual_sql, "type_bigint"),
+            "actual.sql": models__actual_sql,
         }

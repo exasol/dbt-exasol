@@ -10,7 +10,8 @@ from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
 
 class TestExasolViewComment(BaseGenericTests):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "view_model.sql": """
                 {{config(

@@ -16,16 +16,19 @@ select current_timestamp() as curr_timestamp,
 
 class TestCurrentTimestampsExasol(BaseCurrentTimestamps):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"get_current_timestamp.sql": _MODEL_CURRENT_TIMESTAMP}
 
     # any adapters that don't want to check can set expected schema to None
     @pytest.fixture(scope="class")
-    def expected_sql(self):
+    @classmethod
+    def expected_sql(cls):
         return _MODEL_EXPECTED_SQL
 
     @pytest.fixture(scope="class")
-    def expected_schema(self):
+    @classmethod
+    def expected_schema(cls):
         return {
             "CURR_TIMESTAMP": "TIMESTAMP",
             "CURRENT_TIMESTAMP_IN_UTC_BACKCOMPAT": "TIMESTAMP",

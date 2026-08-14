@@ -133,7 +133,8 @@ class _PythonUDFValidationTest:
 
 class TestExasolUDFsBasic(UDFsBasic):
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "price_for_xlarge.sql": files.MY_UDF_SQL,
             "price_for_xlarge.yml": EXASOL_MY_UDF_YML,
@@ -158,7 +159,8 @@ class TestExasolErrorForUnsupportedType(ErrorForUnsupportedType):
 
 class TestExasolPythonUDF(ExasolPythonScalarScriptEventMixin, PythonUDFSupported):
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "price_for_xlarge.py": files.MY_UDF_PYTHON,
             "price_for_xlarge.yml": EXASOL_MY_UDF_PYTHON_YML,
@@ -177,7 +179,8 @@ class TestExasolSqlUDFDefaultArg(SqlUDFDefaultArgSupport):
     expect_default_arg_support = False
 
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "price_for_xlarge.sql": files.MY_UDF_SQL,
             "price_for_xlarge.yml": EXASOL_MY_UDF_WITH_DEFAULT_ARG_YML,
@@ -188,7 +191,8 @@ class TestExasolPythonUDFDefaultArg(ExasolPythonScalarScriptEventMixin, PythonUD
     expect_default_arg_support = False
 
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "price_for_xlarge.py": files.MY_UDF_PYTHON,
             "price_for_xlarge.yml": EXASOL_MY_UDF_PYTHON_WITH_DEFAULT_ARG_YML,
@@ -201,7 +205,8 @@ class TestExasolPythonUDFVolatility(
     PythonUDFVolatilitySupport,
 ):
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "price_for_xlarge.py": files.MY_UDF_PYTHON,
             "price_for_xlarge.yml": EXASOL_MY_UDF_PYTHON_YML,

@@ -10,13 +10,15 @@ class TestIncrementalPredicatesDeleteInsertExasol(BaseIncrementalPredicates):
 
 class TestPredicatesDeleteInsertExasol(BaseIncrementalPredicates):
     @pytest.fixture(scope="class")
-    def project_config_update(self):
+    @classmethod
+    def project_config_update(cls):
         return {"models": {"+predicates": ["id != 2"], "+incremental_strategy": "delete+insert"}}
 
 
 class TestIncrementalPredicatesMergeExasol(BaseIncrementalPredicates):
     @pytest.fixture(scope="class")
-    def project_config_update(self):
+    @classmethod
+    def project_config_update(cls):
         return {
             "models": {
                 "+incremental_predicates": ["dbt_internal_dest.id != 2"],
@@ -27,7 +29,8 @@ class TestIncrementalPredicatesMergeExasol(BaseIncrementalPredicates):
 
 class TestPredicatesMergeExasol(BaseIncrementalPredicates):
     @pytest.fixture(scope="class")
-    def project_config_update(self):
+    @classmethod
+    def project_config_update(cls):
         return {
             "models": {
                 "+predicates": ["dbt_internal_dest.id != 2"],

@@ -309,7 +309,8 @@ values ('CA','Los Angeles','Los Angeles','2022-02-01');
 
 class TestIncrementalUniqueKey(BaseIncrementalUniqueKey):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "trinary_unique_key_list.sql": models__trinary_unique_key_list_sql,
             "nontyped_trinary_unique_key_list.sql": models__nontyped_trinary_unique_key_list_sql,
@@ -328,7 +329,8 @@ class TestIncrementalUniqueKey(BaseIncrementalUniqueKey):
         }
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {
             "duplicate_insert.sql": seeds__duplicate_insert_sql,
             "seed.csv": seeds__seed_csv,

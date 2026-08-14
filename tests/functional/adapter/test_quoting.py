@@ -76,11 +76,13 @@ class TestQuotingSourceConfiguration:
     """Test that quoting configuration in sources is respected."""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed_order.csv": seeds__seed_order_csv}
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "sources.yml": sources__schema_yml,
             "schema.yml": models__schema_yml,
@@ -90,7 +92,8 @@ class TestQuotingSourceConfiguration:
         }
 
     @pytest.fixture(scope="class")
-    def project_config_update(self, unique_schema):
+    @classmethod
+    def project_config_update(cls, unique_schema):
         return {
             "vars": {
                 "test_schema": unique_schema,
@@ -98,7 +101,8 @@ class TestQuotingSourceConfiguration:
         }
 
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,

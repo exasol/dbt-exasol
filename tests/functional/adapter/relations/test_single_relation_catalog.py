@@ -15,7 +15,8 @@ select
 
 class TestSingleRelationCatalog:
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"my_model.sql": my_model_sql}
 
     def test_get_catalog_for_single_relation(self, project):

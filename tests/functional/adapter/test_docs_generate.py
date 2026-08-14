@@ -382,7 +382,8 @@ def run_and_generate(project, args=None):
 
 class BaseGenerateProject:
     @pytest.fixture(scope="class", autouse=True)
-    def setup(self, project):
+    @classmethod
+    def setup(cls, project):
         alternate_schema_name = project.test_schema + "_test"
         project.create_test_schema(schema_name=alternate_schema_name)
         os.environ["DBT_ENV_CUSTOM_ENV_env_key"] = "env_value"
@@ -393,11 +394,13 @@ class BaseGenerateProject:
         del os.environ["DBT_ENV_CUSTOM_ENV_env_key"]
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"schema.yml": seed__schema_yml, "seed.csv": seed__seed_csv}
 
     @pytest.fixture(scope="class")
-    def macros(self):
+    @classmethod
+    def macros(cls):
         return {
             "schema.yml": macros__schema_yml,
             "macro.md": macros__macro_md,
@@ -405,11 +408,13 @@ class BaseGenerateProject:
         }
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_seed.sql": snapshot__snapshot_seed_sql}
 
     @pytest.fixture(scope="class")
-    def project_config_update(self, unique_schema):
+    @classmethod
+    def project_config_update(cls, unique_schema):
         alternate_schema = unique_schema + "_test"
         return {
             "asset-paths": ["assets", "invalid-asset-paths"],
@@ -426,7 +431,8 @@ class BaseGenerateProject:
 
 class BaseDocsGenerate(BaseGenerateProject):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "schema.yml": models__schema_yml,
             "second_model.sql": models__second_model_sql,
@@ -435,7 +441,8 @@ class BaseDocsGenerate(BaseGenerateProject):
         }
 
     @pytest.fixture(scope="class")
-    def expected_catalog(self, project, unique_schema):
+    @classmethod
+    def expected_catalog(cls, project, unique_schema):
         return base_expected_catalog(
             project,
             role=unique_schema.upper(),
@@ -468,7 +475,8 @@ class BaseDocsGenerate(BaseGenerateProject):
 
 class BaseDocsGenReferences(BaseGenerateProject):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "schema.yml": ref_models__schema_yml,
             "sources.yml": ref_sources__schema_yml,
@@ -479,7 +487,8 @@ class BaseDocsGenReferences(BaseGenerateProject):
         }
 
     @pytest.fixture(scope="class")
-    def expected_catalog(self, project, unique_schema):
+    @classmethod
+    def expected_catalog(cls, project, unique_schema):
         return expected_references_catalog(
             project,
             role=unique_schema.upper(),

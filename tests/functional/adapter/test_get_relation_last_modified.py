@@ -31,7 +31,8 @@ sources:
 
 class TestGetRelationLastModified:
     @pytest.fixture(scope="class", autouse=True)
-    def set_env_vars(self, project):
+    @classmethod
+    def set_env_vars(cls, project):
         os.environ["DBT_GET_LAST_RELATION_TEST_SCHEMA_A"] = project.test_schema
         os.environ["DBT_GET_LAST_RELATION_TEST_SCHEMA_B"] = f"{project.test_schema}_b"
         yield
@@ -39,11 +40,13 @@ class TestGetRelationLastModified:
         del os.environ["DBT_GET_LAST_RELATION_TEST_SCHEMA_B"]
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"schema.yml": freshness_via_metadata_schema_yml}
 
     @pytest.fixture(scope="class")
-    def custom_schemas(self, project, set_env_vars):
+    @classmethod
+    def custom_schemas(cls, project, set_env_vars):
         schemas = [
             os.environ["DBT_GET_LAST_RELATION_TEST_SCHEMA_A"],
             os.environ["DBT_GET_LAST_RELATION_TEST_SCHEMA_B"],

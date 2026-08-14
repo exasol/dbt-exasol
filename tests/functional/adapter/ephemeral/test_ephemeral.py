@@ -26,7 +26,8 @@ class TestEphemeralNestedExasol(BaseEphemeral):
 
 class TestEphemeralErrorHandling(BaseEphemeral):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "dependent.sql": ephemeral_errors__dependent_sql,
             "base": {

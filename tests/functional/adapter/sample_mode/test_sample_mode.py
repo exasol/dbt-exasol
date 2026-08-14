@@ -28,5 +28,6 @@ class TestExasolSampleMode(BaseSampleModeTest):
     """Upstream sample-mode parity proof (see module docstring cross-reference)."""
 
     @pytest.fixture(scope="class")
-    def input_model_sql(self) -> str:
+    @classmethod
+    def input_model_sql(cls) -> str:
         return _base_input_model_sql

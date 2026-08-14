@@ -41,7 +41,8 @@ class TestEmptySeedFlag(BaseTestEmptySeedFlag):
     """
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"raw_seed.csv": _EXASOL_SEED_CSV}
 
 
@@ -67,11 +68,13 @@ class TestEmptySeedThenPlainSeedDecimal:
     """Regression: --empty followed by plain seed on a decimal column."""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"decimal_seed.csv": _DECIMAL_SEED_CSV}
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {}
 
     def assert_row_count(self, project, relation_name: str, expected: int):

@@ -88,10 +88,6 @@ def initialize_connection_pool():
     # Initialize pool
     ExasolConnectionManager.initialize_pool(credentials, pool_size)
 
-    yield
-
-    # Cleanup is handled by cleanup_connection_pool fixture
-
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_connection_pool():
