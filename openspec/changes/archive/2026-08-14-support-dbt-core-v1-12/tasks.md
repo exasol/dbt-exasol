@@ -21,7 +21,7 @@
 ## 4. Empty-seed adapter test coverage
 
 - [x] 4.1 Add `tests/functional/adapter/empty/test_empty.py` defining `class TestEmptySeedFlag(BaseTestEmptySeedFlag): pass` (import `BaseTestEmptySeedFlag` from `dbt.tests.adapter.empty.test_empty`)
-- [ ] 4.2 Run the empty-seed suite against the Exasol docker DB (`nox -s start:db` then the integration session) and confirm all four cases pass: zero-row create, type preservation via full-refresh, full load without `--empty`, and `build --empty`
+- [x] 4.2 Run the empty-seed suite against the Exasol docker DB (`nox -s start:db` then the integration session) and confirm all four cases pass: zero-row create, type preservation via full-refresh, full load without `--empty`, and `build --empty`
 - [x] 4.3 (Optional, per design Open Question) Add a regression test for the `--empty` → plain (non-`--full-refresh`) `seed` sequence on a decimal column; if it cannot pass without deeper changes, mark it `xfail` and document the limitation
 
 ## 5. latest_version_pointer coverage
@@ -32,7 +32,7 @@
 ## 6. Full validation
 
 - [x] 6.1 Run `uv run nox -s test:unit`
-- [ ] 6.2 Run `uv run nox -s test:integration` against the Exasol docker DB
+- [x] 6.2 Run `uv run nox -s test:integration` against the Exasol docker DB
 - [x] 6.3 Run `uv run nox -s format:check lint:code lint:security lint:typing` and fix any findings
-- [ ] 6.4 Confirm a CI run resolves and installs `dbt-core` 1.12 the same way as local (deterministic via committed `uv.lock`)
+- [x] 6.4 Confirm a CI run resolves and installs `dbt-core` 1.12 the same way as local (deterministic via committed `uv.lock`)
 - [x] 6.5 Update README / supported-version docs to state dbt-core 1.12 support and note the `--empty` empty→plain-seed decimal edge as a known limitation
