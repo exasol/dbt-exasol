@@ -5,7 +5,8 @@ from dbt.tests.util import run_dbt
 
 class TestSimpleBigSeedBatchedExasol(SeedConfigBase):
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         seed_data = ["seed_id"]
         seed_data.extend([str(i) for i in range(20_000)])
         return {"big_batched_seed.csv": "\n".join(seed_data)}

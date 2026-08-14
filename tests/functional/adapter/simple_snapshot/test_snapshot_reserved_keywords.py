@@ -149,11 +149,13 @@ class TestSnapshotReservedKeywords:
     """Test snapshots with reserved keywords in column names"""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_reserved_keywords.sql": models__source_reserved_keywords_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_reserved_keywords.sql": snapshots__snapshot_reserved_keywords_sql}
 
     def test_snapshot_reserved_keywords_initial(self, project):
@@ -219,11 +221,13 @@ class TestSnapshotReservedKeywordsCheck:
     """Test check strategy with reserved keywords in check_cols"""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_reserved_keywords.sql": models__source_reserved_keywords_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_reserved_check.sql": snapshots__snapshot_reserved_check_sql}
 
     def test_snapshot_reserved_check_initial(self, project):
@@ -267,11 +271,13 @@ class TestSnapshotReservedKeywordsWithNewRecord:
     """Test reserved keywords with hard_deletes='new_record'"""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_reserved_keywords.sql": models__source_reserved_keywords_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_reserved_new_record.sql": snapshots__snapshot_reserved_new_record_sql}
 
     def test_snapshot_reserved_delete_new_record(self, project):
@@ -321,11 +327,13 @@ class TestSnapshotMixedColumnTypes:
     """
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_mixed_columns.sql": models__source_mixed_columns_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_mixed_columns.sql": snapshots__snapshot_mixed_columns_sql}
 
     def test_snapshot_mixed_columns_initial(self, project):
@@ -372,11 +380,13 @@ class TestSnapshotUppercaseReservedKeyword:
     """
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_mixed_columns.sql": models__source_mixed_columns_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_uppercase_reserved.sql": snapshots__snapshot_uppercase_reserved_sql}
 
     def test_snapshot_uppercase_reserved_initial(self, project):
@@ -399,11 +409,13 @@ class TestSnapshotQuotedUppercaseIdentifier:
     """
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"source_mixed_columns.sql": models__source_mixed_columns_sql}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_quoted_uppercase.sql": snapshots__snapshot_quoted_uppercase_sql}
 
     def test_snapshot_quoted_uppercase_initial(self, project):

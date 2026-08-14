@@ -59,7 +59,8 @@ seeds:
 
 class TestSimpleSeedColumnOverride(BaseSimpleSeedColumnOverride):
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -72,11 +73,13 @@ class TestSimpleSeedColumnOverride(BaseSimpleSeedColumnOverride):
         }
 
     @pytest.fixture(scope="class")
-    def schema(self):
+    @classmethod
+    def schema(cls):
         return "simple_seed"
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"models-exasol.yml": _SCHEMA_YML}
 
     @staticmethod

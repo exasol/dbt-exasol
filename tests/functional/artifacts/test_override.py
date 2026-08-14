@@ -16,11 +16,13 @@ fail_macros__failure_sql = """
 
 class TestDocsGenerateOverride:
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"model.sql": model_sql}
 
     @pytest.fixture(scope="class")
-    def macros(self):
+    @classmethod
+    def macros(cls):
         return {"failure.sql": fail_macros__failure_sql}
 
     def test_override_used(

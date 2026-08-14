@@ -22,7 +22,8 @@ where {{ field }} != '{{ value }}'
 
 class TestAliasesExasol(BaseAliases):
     @pytest.fixture(scope="class")
-    def macros(self):
+    @classmethod
+    def macros(cls):
         return {
             "exasol_cast.sql": MACROS__EXASOL_CAST_SQL,
             "expect_value.sql": MACROS__EXPECT_VALUE_SQL,

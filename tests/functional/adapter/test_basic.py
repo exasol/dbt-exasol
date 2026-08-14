@@ -73,7 +73,8 @@ class TestValidateConnectionExasol(BaseValidateConnection):
 
 class TestDocsGenerateExasol(BaseDocsGenerate):
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,
@@ -88,7 +89,8 @@ class TestDocsGenerateExasol(BaseDocsGenerate):
 
 class TestDocsGenReferencesExasol(BaseDocsGenReferences):
     @pytest.fixture(scope="class")
-    def dbt_profile_target(self):
+    @classmethod
+    def dbt_profile_target(cls):
         return {
             "type": "exasol",
             "threads": 8,

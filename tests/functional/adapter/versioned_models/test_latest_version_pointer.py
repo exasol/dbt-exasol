@@ -57,7 +57,8 @@ class TestLatestVersionPointer:
     """
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "versioned_greeting_v1.sql": _MODEL_V1_SQL,
             "schema.yml": _SCHEMA_YML,

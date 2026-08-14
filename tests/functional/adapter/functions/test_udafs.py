@@ -73,7 +73,8 @@ class ExasolPythonSetScriptEventMixin:
         return event.data.node_info.node_name == self.function_name and self.script_marker in event.data.sql
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"basic_model.sql": EXASOL_BASIC_MODEL_SQL}
 
 
@@ -116,7 +117,8 @@ class TestExasolAggregateSQLError(BasicSQLUDAF):
 
 class TestExasolAggregatePython(ExasolPythonSetScriptEventMixin, BasicPythonUDAF):
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "sum_squared.py": files.SUM_SQUARED_UDAF_PYTHON,
             "sum_squared.yml": EXASOL_SUM_SQUARED_UDAF_PYTHON_YML,
@@ -146,7 +148,8 @@ class TestExasolAggregatePythonDefaultArg(ExasolPythonSetScriptEventMixin, Pytho
     expect_default_arg_support = False
 
     @pytest.fixture(scope="class")
-    def functions(self):
+    @classmethod
+    def functions(cls):
         return {
             "sum_squared.py": files.SUM_SQUARED_UDAF_PYTHON,
             "sum_squared.yml": EXASOL_SUM_SQUARED_UDAF_PYTHON_WITH_DEFAULT_ARG_YML,

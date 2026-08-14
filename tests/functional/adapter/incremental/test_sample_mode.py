@@ -48,7 +48,8 @@ class TestSampleModeTwoDays:
     """Test --sample flag with 2 days of batches."""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "input_model.sql": _input_model_sql,
             "microbatch_model.sql": _microbatch_model_sql,
@@ -76,7 +77,8 @@ class TestSampleModeOneDay:
     """Test --sample flag with 1 day of batches."""
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "input_model.sql": _input_model_sql,
             "microbatch_model.sql": _microbatch_model_sql,
@@ -115,6 +117,7 @@ class TestExasolSampleMode(BaseSampleModeTest):
     """Inherit standard sample mode tests from dbt-tests-adapter."""
 
     @pytest.fixture(scope="class")
-    def input_model_sql(self) -> str:
+    @classmethod
+    def input_model_sql(cls) -> str:
         """Override input model with Exasol-compatible timestamp format."""
         return _base_input_model_sql

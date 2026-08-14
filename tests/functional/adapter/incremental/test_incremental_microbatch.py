@@ -19,12 +19,14 @@ class TestMicrobatchExasol(BaseMicrobatch):
     """Test that microbatch strategy works with Exasol adapter."""
 
     @pytest.fixture(scope="class")
-    def input_model_sql(self) -> str:
+    @classmethod
+    def input_model_sql(cls) -> str:
         """Override input model with Exasol-compatible timestamp format."""
         return _input_model_sql
 
     @pytest.fixture(scope="class")
-    def insert_two_rows_sql(self, project) -> str:
+    @classmethod
+    def insert_two_rows_sql(cls, project) -> str:
         """Override insert SQL with Exasol-compatible timestamp format."""
         test_schema_relation = project.adapter.Relation.create(database=project.database, schema=project.test_schema)
         return f"insert into {test_schema_relation}.input_model (id, event_time) values (4, TIMESTAMP '2020-01-04 00:00:00'), (5, TIMESTAMP '2020-01-05 00:00:00')"
@@ -64,7 +66,8 @@ class TestMicrobatchLookback:
     """
 
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {
             "input_model.sql": _lookback_input_model_sql,
             "microbatch_model.sql": _microbatch_with_lookback_sql,

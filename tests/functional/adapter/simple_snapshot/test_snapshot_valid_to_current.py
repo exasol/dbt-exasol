@@ -72,11 +72,13 @@ class TestSnapshotValidToCurrent:
     """Test dbt_valid_to_current configuration - uses future timestamp instead of NULL"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed.csv": seeds__seed_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_valid_to_current.sql": snapshots__snapshot_valid_to_current_sql}
 
     def test_snapshot_valid_to_current_initial(self, project):
@@ -148,11 +150,13 @@ class TestSnapshotValidToCurrentWithInvalidate:
     """Test dbt_valid_to_current combined with hard_deletes='invalidate'"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed.csv": seeds__seed_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_valid_to_current_invalidate.sql": snapshots__snapshot_valid_to_current_invalidate_sql}
 
     def test_snapshot_valid_to_current_with_invalidate(self, project):
@@ -199,11 +203,13 @@ class TestSnapshotValidToCurrentWithNewRecord:
     """Test dbt_valid_to_current combined with hard_deletes='new_record'"""
 
     @pytest.fixture(scope="class")
-    def seeds(self):
+    @classmethod
+    def seeds(cls):
         return {"seed.csv": seeds__seed_csv}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot_valid_to_current_new_record.sql": snapshots__snapshot_valid_to_current_new_record_sql}
 
     def test_snapshot_valid_to_current_with_new_record(self, project):

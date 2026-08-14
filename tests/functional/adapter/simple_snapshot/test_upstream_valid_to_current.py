@@ -47,17 +47,21 @@ snapshots:
 
 class TestExasolSnapshotNewRecordDbtValidToCurrent(BaseSnapshotNewRecordDbtValidToCurrent):
     @pytest.fixture(scope="class")
-    def models(self):
+    @classmethod
+    def models(cls):
         return {"snapshots.yml": _snapshots_yml}
 
     @pytest.fixture(scope="class")
-    def snapshots(self):
+    @classmethod
+    def snapshots(cls):
         return {"snapshot.sql": _snapshot_actual_sql}
 
     @pytest.fixture(scope="class")
-    def seed_new_record_mode_statements(self):
+    @classmethod
+    def seed_new_record_mode_statements(cls):
         return _seed_new_record_mode_statements
 
     @pytest.fixture(scope="class")
-    def delete_sql(self):
+    @classmethod
+    def delete_sql(cls):
         return _delete_sql

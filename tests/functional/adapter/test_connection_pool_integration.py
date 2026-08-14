@@ -10,15 +10,15 @@ key can be pooled, where N is the effective pool size (defaults to threads).
 import os
 
 import pytest
-from dbt.adapters.contracts.connection import Connection
 
+from dbt.adapters.contracts.connection import Connection
 from dbt.adapters.exasol.connections import (
     ExasolConnectionManager,
     ExasolCredentials,
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def pool_credentials():
     """Create credentials for pool tests."""
     return ExasolCredentials(
@@ -34,10 +34,6 @@ def pool_credentials():
 @pytest.fixture(autouse=True)
 def clean_pool():
     """Ensure pool is clean before and after each test."""
-    ExasolConnectionManager.cleanup_pool()
-    ExasolConnectionManager._pool_sizes.clear()
-    ExasolConnectionManager._atexit_registered = False
-    yield
     ExasolConnectionManager.cleanup_pool()
     ExasolConnectionManager._pool_sizes.clear()
     ExasolConnectionManager._atexit_registered = False
