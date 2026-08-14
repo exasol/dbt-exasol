@@ -10,8 +10,8 @@ key can be pooled, where N is the effective pool size (defaults to threads).
 import os
 
 import pytest
-
 from dbt.adapters.contracts.connection import Connection
+
 from dbt.adapters.exasol.connections import (
     ExasolConnectionManager,
     ExasolCredentials,

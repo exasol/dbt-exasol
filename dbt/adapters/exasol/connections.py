@@ -14,7 +14,10 @@ import ssl
 # Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import (
+    dataclass,
+    field,
+)
 from enum import StrEnum
 from typing import (
     Any,
