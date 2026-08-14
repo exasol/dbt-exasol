@@ -14,7 +14,7 @@ import ssl
 # Python 3.11+ has StrEnum built-in, use shim for 3.9/3.10
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import (
     Any,
@@ -149,7 +149,7 @@ class ExasolCredentials(Credentials):
     """Profile parameters for Exasol in dbt profiles.yml"""
 
     dsn: str
-    database: str
+    database: str = field(default="DB", kw_only=True)
     schema: str
     # One of user+pass, access_token, or refresh_token needs to be specified in profiles.yml
     user: str = ""

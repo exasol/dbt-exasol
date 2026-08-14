@@ -216,8 +216,9 @@ dbt-exasol:
       dsn: HOST:PORT
       user: USERNAME
       password: PASSWORD
-      dbname: db
       schema: SCHEMA
+      encryption: true
+      validate_server_certificate: false  # Required for Exasol Personal (self-signed cert)
 ```
 
 ## Optional login credentials using OpenID for Exasol SaaS
@@ -232,6 +233,7 @@ OpenID login through access_token or refresh_token instead of user+password
   <li><strong>query_timeout</strong>: defaults to pyexasol default</li>
   <li><strong>compression</strong>: default: False</li>
   <li><strong>encryption</strong>: default: True</li>
+  <li><strong>database</strong> (aliased as <code>dbname</code>): default: <code>DB</code>. Required by dbt-core as a profile field, but not used by Exasol (Exasol has no multi-database concept). Any string value is accepted.</li>
   <li><strong>validate_server_certificate</strong>: default: True (requires valid SSL certificate when encryption=True)</li>
   <li><strong>protocol_version</strong>: default: v3</li>
   <li><strong>row_separator</strong>: default: auto-detected per seed CSV file (<code>LF</code>, <code>CRLF</code> or <code>CR</code>). Set this only to force one separator for every seed import. Detection exists because the value must match the bytes in the CSV file, which is unrelated to the OS running dbt (git <code>core.autocrlf</code>, Windows-authored seeds on Linux CI). A mismatch fails silently: a CRLF file imported as <code>LF</code> appends a stray <code>\r</code> to the last column of every row, and an LF file imported as <code>CRLF</code> loads zero rows while still reporting success. Files with mixed line endings cannot be handled by any single value and emit a warning.</li>
