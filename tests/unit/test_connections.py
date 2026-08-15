@@ -8,6 +8,7 @@ from unittest.mock import (
 )
 
 import pyexasol
+from dbt_common.exceptions import DbtRuntimeError
 
 from dbt.adapters.exasol.connections import (
     ExasolConnection,
@@ -15,6 +16,7 @@ from dbt.adapters.exasol.connections import (
     ExasolCredentials,
     ExasolCursor,
     ProtocolVersionType,
+    _split_relation_path,
 )
 
 
@@ -163,6 +165,36 @@ class TestGetResultFromCursor(unittest.TestCase):
         self.assertEqual(len(result), 0)
 
 
+class TestSplitRelationPath(unittest.TestCase):
+    """Test _split_relation_path, which parses the 0CSV| seed target (issue #223)."""
+
+    def test_unquoted_components_are_upper_cased(self):
+        """Exasol folds unquoted identifiers to upper case; the seed target must match."""
+        self.assertEqual(_split_relation_path("my_schema.my_seed"), ("MY_SCHEMA", "MY_SEED"))
+
+    def test_quoted_components_keep_exact_case(self):
+        """Quoted identifiers are case-sensitive and must be passed through verbatim."""
+        self.assertEqual(_split_relation_path('"my_schema"."my_seed"'), ("my_schema", "my_seed"))
+
+    def test_mixed_quoting(self):
+        """Only the quoted component keeps its case (quoting: {identifier: true})."""
+        self.assertEqual(_split_relation_path('MY_SCHEMA."my_seed"'), ("MY_SCHEMA", "my_seed"))
+
+    def test_escaped_inner_quote(self):
+        """A doubled quote inside a quoted identifier collapses to one quote."""
+        self.assertEqual(_split_relation_path('"a""b"."c"'), ('a"b', "c"))
+
+    def test_dot_inside_quoted_component_is_not_a_separator(self):
+        """A dot inside quotes belongs to the identifier, not the path."""
+        self.assertEqual(_split_relation_path('"my.schema"."t"'), ("my.schema", "t"))
+
+    def test_malformed_paths_raise(self):
+        """Anything that is not exactly schema.identifier is a hard error."""
+        for bad in ("justone", '"unterminated.x', "a.b.c", ".x", "x."):
+            with self.subTest(path=bad), self.assertRaises(DbtRuntimeError):
+                _split_relation_path(bad)
+
+
 class TestExasolCursorExecute(unittest.TestCase):
     """Test ExasolCursor.execute method."""
 
@@ -183,7 +215,12 @@ class TestExasolCursorExecute(unittest.TestCase):
         self.assertEqual(result, self.cursor)
 
     def test_execute_csv_import(self):
-        """Test execute with CSV import (0CSV| prefix)."""
+        """Test execute with CSV import (0CSV| prefix).
+
+        Unquoted components are upper-cased to match Exasol's folding of
+        unquoted identifiers, so the IMPORT target resolves to the object the
+        seed's CREATE TABLE actually created.
+        """
         mock_agate_table = Mock()
         mock_agate_table.original_abspath = "/path/to/file.csv"
         self.mock_connection.row_separator = "LF"
@@ -192,10 +229,24 @@ class TestExasolCursorExecute(unittest.TestCase):
 
         self.mock_connection.import_from_file.assert_called_once_with(
             "/path/to/file.csv",
-            ("schema", "table"),
+            ("SCHEMA", "TABLE"),
             import_params={"skip": 1, "row_separator": "LF"},
         )
         self.assertEqual(result, self.cursor)
+
+    def test_execute_csv_import_quoted_relation(self):
+        """Quoted components keep their exact case (issue #223)."""
+        mock_agate_table = Mock()
+        mock_agate_table.original_abspath = "/path/to/file.csv"
+        self.mock_connection.row_separator = "LF"
+
+        self.cursor.execute('0CSV|"my_schema"."my_seed"', mock_agate_table)
+
+        self.mock_connection.import_from_file.assert_called_once_with(
+            "/path/to/file.csv",
+            ("my_schema", "my_seed"),
+            import_params={"skip": 1, "row_separator": "LF"},
+        )
 
     def test_execute_multiple_statements(self):
         """Test execute with multiple statements separated by |SEPARATEMEPLEASE|."""

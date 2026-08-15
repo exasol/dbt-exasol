@@ -15,8 +15,8 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
     {% call statement('list_relations_without_caching', fetch_result=True) -%}
     select
       'db' as [database],
-      lower(table_name) as [name],
-      lower(table_schema) as [schema],
+      table_name as [name],
+      table_schema as [schema],
   	  lower(table_type) as table_type
     from (
 		select table_name,table_schema,'table' as table_type from sys.exa_all_tables
@@ -49,7 +49,7 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
 
 {% macro exasol__drop_relation(relation) -%}
     {% call statement('drop_relation', fetch_result=True) -%}
-        drop {{ relation.type }} if exists {{ relation.schema }}.{{ relation.identifier }}
+        drop {{ relation.type }} if exists {{ relation }}
     {%- endcall %}
 {% endmacro %}
 
@@ -82,7 +82,7 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
     {%- if contract_config.enforced -%}
         {{ get_assert_columns_equivalent(sql) }}
     {%- endif %}
-CREATE OR REPLACE VIEW {{ relation.schema }}.{{ relation.identifier }} 
+CREATE OR REPLACE VIEW {{ relation }} 
     {{- persist_view_column_docs(relation, sql) }}
 AS 
 (
@@ -116,23 +116,23 @@ AS
 
     {%- if contract_config.enforced -%}
         {{- get_assert_columns_equivalent(sql) }}
-        CREATE OR REPLACE TABLE {{ relation.schema }}.{{ relation.identifier }} AS
+        CREATE OR REPLACE TABLE {{ relation }} AS
             {{ get_select_subquery(sql) }}
         {% for col_name in model['columns'] %}
             {%- set col = model['columns'][col_name] -%}
             {%- if col.get('constraints') -%}
                 {%- for constraint in col['constraints'] -%}
                     {%- if constraint.type == 'not_null' -%}|SEPARATEMEPLEASE|
-    ALTER TABLE {{ relation.schema }}.{{ relation.identifier }} MODIFY COLUMN {{ adapter.quote(col['name']) if col.get('quote') else col['name'] }} NOT NULL;{% endif %}{% endfor %}
+    ALTER TABLE {{ relation }} MODIFY COLUMN {{ adapter.quote(col['name']) if col.get('quote') else col['name'] }} NOT NULL;{% endif %}{% endfor %}
             {%- endif %}
         {% endfor %}
         {% if model.get('constraints') -%}
                 {%- for constraint in model['constraints'] -%}
                     {%- if constraint.type == 'primary_key' -%}|SEPARATEMEPLEASE|
-    ALTER TABLE {{ relation.schema }}.{{ relation.identifier }} ADD CONSTRAINT {{ relation|replace('.','_') }}__pk PRIMARY KEY({{ constraint.columns|join(', ') }});{% endif %}{% endfor %}
+    ALTER TABLE {{ relation }} ADD CONSTRAINT {{ exasol__constraint_name_prefix(relation) }}__pk PRIMARY KEY({{ constraint.columns|join(', ') }});{% endif %}{% endfor %}
         {%- endif -%}
     {%- else -%}
-        CREATE OR REPLACE TABLE {{ relation.schema }}.{{ relation.identifier }} AS
+        CREATE OR REPLACE TABLE {{ relation }} AS
             {{ sql }}
     {%- endif -%}
     {{ add_constraints(relation, partition_by_config, distribute_by_config, primary_key_config) }}
@@ -140,7 +140,7 @@ AS
 
 {% macro exasol__truncate_relation(relation) -%}
     {% call statement('truncate_relation') -%}
-        truncate table {{ relation | replace('"', '') }}
+        truncate table {{ relation }}
     {%- endcall %}
 {% endmacro %}
 

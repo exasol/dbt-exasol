@@ -2,8 +2,8 @@
     {%- set insert_cols_csv = insert_cols | join(', ') -%}
     {%- set dbt_valid_to_current = config.get('dbt_valid_to_current') -%}
 
-    merge into {{ target | upper }} as DBT_INTERNAL_DEST
-    using {{ source |upper }} as DBT_INTERNAL_SOURCE
+    merge into {{ target }} as DBT_INTERNAL_DEST
+    using {{ source }} as DBT_INTERNAL_SOURCE
     on DBT_INTERNAL_SOURCE.dbt_scd_id = DBT_INTERNAL_DEST.dbt_scd_id
 
     when matched
