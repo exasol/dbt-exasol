@@ -358,6 +358,58 @@ The following database constraints are implemented for Exasol:
 | primary key     | enforced      |
 | foreign key     | enforced      |
 
+## Quoting and case sensitivity
+
+Exasol folds **unquoted** identifiers to uppercase, so an unquoted `stg_orders`
+resolves to the physical object `STG_ORDERS`. The dbt-exasol default (no
+`quoting:` config) relies on this: DDL and `ref()` both render unquoted, and
+Exasol folds them to the same object.
+
+To opt into case-sensitive identifiers, set the top-level `quoting:` config in
+`dbt_project.yml`:
+
+```yaml
+quoting:
+  identifier: true
+```
+
+With `quoting: {identifier: true}`, model identifiers render quoted
+(`"stg_orders"`), and Exasol preserves their case. The adapter applies the same
+policy consistently across DDL (`CREATE TABLE`/`VIEW`, `DROP`, `TRUNCATE`,
+`RENAME`), snapshots, seeds, and relation lookups, so a model's materialization
+targets the same physical object as `ref()`.
+
+**Supported**
+
+- `quoting: {identifier: true}` for models, seeds, snapshots, and incremental
+  models (including `--full-refresh`).
+- Source quoting set **per source** — project-level `quoting:` does not apply
+  to sources (dbt-core behavior):
+
+  ```yaml
+  sources:
+    - name: raw
+      quoting:
+        identifier: true
+      tables:
+        - name: orders
+  ```
+
+**Unsupported**
+
+- `quoting: {schema: true}` — not supported; it breaks schema creation
+  independently of identifiers.
+
+**Enabling quoting on an existing project.** Objects created before
+`quoting: {identifier: true}` was enabled were folded to uppercase (e.g.
+`STG_ORDERS`) and will not match their now-quoted lower-case names. Run
+`dbt run --full-refresh` to recreate them under the new quoting, or declare the
+objects with the exact quoted case you intend to reference.
+
+The undocumented `identifier: '"orders"'` workaround for case-sensitive
+sources is no longer needed — use source-level `quoting: {identifier: true}`
+instead.
+
 ## User-Defined Functions (UDFs)
 
 > Supported since dbt-exasol 1.11.x (requires dbt-core 1.11.x)

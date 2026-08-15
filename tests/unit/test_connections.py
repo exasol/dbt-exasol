@@ -194,6 +194,12 @@ class TestSplitRelationPath(unittest.TestCase):
             with self.subTest(path=bad), self.assertRaises(DbtRuntimeError):
                 _split_relation_path(bad)
 
+    def test_partially_quoted_components_raise(self):
+        """A component must be fully quoted or fully unquoted, not a mix."""
+        for bad in ('ab"cd".x', 'x."y"z', '"a"b.c', '"a"b"c"'):
+            with self.subTest(path=bad), self.assertRaises(DbtRuntimeError):
+                _split_relation_path(bad)
+
 
 class TestExasolCursorExecute(unittest.TestCase):
     """Test ExasolCursor.execute method."""

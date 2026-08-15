@@ -31,6 +31,18 @@ feature list.
 - Column comments (`persist_docs`) are now applied only to columns that
   actually exist in the relation, using `validate_doc_columns`; stale model
   column definitions no longer break comment propagation.
+- **Quoting is now applied consistently.** DDL (`CREATE TABLE`/`VIEW`, `DROP`,
+  `TRUNCATE`, `RENAME`), snapshots, seeds, and relation lookups now render
+  through the relation's `quote_policy`, matching `ref()` and `source()`.
+  Previously, with `quoting: {identifier: true}`, `ref('model_a')` compiled to
+  `"model_a"` while `CREATE TABLE` created the Exasol-folded `MODEL_A`,
+  producing `object "model_a" not found`; tables, views, incremental models,
+  `--full-refresh`, snapshots, seeds, and enforced contracts now work
+  end-to-end. The undocumented `identifier: '"orders"'` workaround for
+  case-sensitive sources is no longer needed — set source-level
+  `quoting: {identifier: true}` instead (project-level `quoting:` never
+  applies to sources, per dbt-core). `quoting: {schema: true}` remains
+  unsupported.
 
 ## 1.11.0 — dbt-core 1.11 parity
 

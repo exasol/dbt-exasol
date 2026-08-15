@@ -148,15 +148,32 @@ class BaseQuotingConsistency:
 
         run_dir = os.path.join(project.project_root, "target", "run", "test", "models")
         compiled_dir = os.path.join(project.project_root, "target", "compiled", "test", "models")
-        with open(os.path.join(run_dir, "model_a.sql"), encoding="utf-8") as handle:
-            ddl = handle.read()
-        with open(os.path.join(compiled_dir, "model_b.sql"), encoding="utf-8") as handle:
-            ref_body = handle.read()
 
-        # Only `identifier` is quoted in these fixtures, so the schema stays bare.
-        rendered = f'{project.test_schema}."model_a"' if self.quoted else f"{project.test_schema}.model_a"
-        assert rendered in ddl, f"DDL did not contain {rendered}: {ddl}"
-        assert rendered in ref_body, f"ref() did not contain {rendered}: {ref_body}"
+        def expected(schema, identifier):
+            if self.quoted:
+                return f'{schema}."{identifier}"'
+            return f"{schema}.{identifier}"
+
+        def read(path):
+            with open(path, encoding="utf-8") as handle:
+                return handle.read()
+
+        # Table DDL vs the ref() body that selects from it -- the core invariant.
+        table_ddl = read(os.path.join(run_dir, "model_a.sql"))
+        ref_body = read(os.path.join(compiled_dir, "model_b.sql"))
+        model_a = expected(project.test_schema, "model_a")
+        assert model_a in table_ddl, f"DDL did not contain {model_a}: {table_ddl}"
+        assert model_a in ref_body, f"ref() did not contain {model_a}: {ref_body}"
+
+        # View DDL must follow the same policy.
+        view_ddl = read(os.path.join(run_dir, "model_view.sql"))
+        model_view = expected(project.test_schema, "model_view")
+        assert model_view in view_ddl, f"view DDL did not contain {model_view}: {view_ddl}"
+
+        # source() must render the seed object with source-level quoting.
+        source_body = read(os.path.join(compiled_dir, "model_from_source.sql"))
+        my_seed = expected(project.test_schema, "my_seed")
+        assert my_seed in source_body, f"source() did not contain {my_seed}: {source_body}"
 
 
 class TestDefaultQuotingPolicy(BaseQuotingConsistency):

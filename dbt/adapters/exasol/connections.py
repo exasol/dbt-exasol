@@ -15,7 +15,10 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import (
+    Any,
+    NoReturn,
+)
 
 import agate  # type: ignore[import-untyped]
 import dbt_common.exceptions
@@ -568,45 +571,82 @@ def _split_relation_path(table_path: str) -> tuple[str, str]:
         Tuple of (schema, identifier), each ready to hand to pyexasol.
 
     Raises:
-        DbtRuntimeError: If the path does not contain exactly two components.
+        DbtRuntimeError: If the path is not exactly two well-formed components
+            (each fully quoted or fully unquoted).
     """
-    parts: list[str] = []
+
+    def _malformed() -> NoReturn:
+        raise dbt_common.exceptions.DbtRuntimeError(
+            f"Could not parse seed target relation '{table_path}' into schema and identifier"
+        )
+
+    def _normalize(raw: str) -> str:
+        """Normalize one component, rejecting partially-quoted input.
+
+        A component must be fully quoted (``"foo"``) or fully unquoted
+        (``foo``). Quoted components keep their exact case and unwrap escaped
+        quotes (``""`` -> ``"``); unquoted components are upper-cased to mirror
+        Exasol's folding.
+        """
+        if raw == "":
+            _malformed()
+
+        if raw.startswith('"'):
+            if len(raw) < 2 or not raw.endswith('"'):
+                _malformed()
+            inner = raw[1:-1]
+            normalized = ""
+            index = 0
+            while index < len(inner):
+                char = inner[index]
+                if char == '"':
+                    if inner[index + 1 : index + 2] == '"':
+                        normalized += '"'
+                        index += 2
+                        continue
+                    _malformed()
+                normalized += char
+                index += 1
+            return normalized
+
+        if '"' in raw:
+            _malformed()
+
+        return raw.upper()
+
+    raw_components: list[str] = []
     current = ""
-    was_quoted = False
     in_quotes = False
     index = 0
-
-    def flush() -> None:
-        # Unquoted identifiers are folded to upper case by Exasol; quoted ones
-        # keep the exact case they were rendered with.
-        parts.append(current if was_quoted else current.upper())
 
     while index < len(table_path):
         char = table_path[index]
         if char == '"':
             # A doubled quote inside a quoted component is an escaped quote.
             if in_quotes and table_path[index + 1 : index + 2] == '"':
-                current += '"'
+                current += '""'
                 index += 2
                 continue
             in_quotes = not in_quotes
-            was_quoted = True
+            current += char
             index += 1
             continue
         if char == "." and not in_quotes:
-            flush()
+            raw_components.append(current)
             current = ""
-            was_quoted = False
             index += 1
             continue
         current += char
         index += 1
-    flush()
 
-    if in_quotes or len(parts) != 2 or not all(parts):
-        raise dbt_common.exceptions.DbtRuntimeError(
-            f"Could not parse seed target relation '{table_path}' into schema and identifier"
-        )
+    if in_quotes:
+        _malformed()
+    raw_components.append(current)
+
+    parts = [_normalize(raw) for raw in raw_components]
+
+    if len(parts) != 2 or not all(parts):
+        _malformed()
 
     return parts[0], parts[1]
 
