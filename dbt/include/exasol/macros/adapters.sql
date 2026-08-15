@@ -246,15 +246,35 @@ AS
 
 {% macro exasol__get_empty_subquery_sql(select_sql, select_sql_header=None) %}
     {#- Same contract as dbt-core's default__get_empty_subquery_sql (optional
-       header + zero-row guarantee via `where false` / `limit 0`), except the
-       subquery alias is `dbt_sbq_tmp` instead of `__dbt_sbq`: Exasol rejects
-       unquoted identifiers starting with `_` (see
-       ExasolRelation._render_subquery_alias). This macro backs dbt's unit-test
-       materialization (`get_empty_subquery_sql(sql)` in the `unit` materialization),
-       which only needs column names/types from the result -- without the zero-row
-       filter it would execute the full model query on every unit test run. #}
+       header + zero-row guarantee via `where false` / `limit 0`), with two
+       Exasol-specific deviations:
+
+       1. The subquery alias is `dbt_sbq_tmp` instead of `__dbt_sbq`: Exasol
+          rejects unquoted identifiers starting with `_` (see
+          ExasolRelation._render_subquery_alias).
+       2. A statement-style `sql_header` is emitted as its OWN statement.
+          Exasol accepts exactly one statement per request, so concatenating
+          `alter session set ...;` with the following `select` raises
+          `syntax error, unexpected SELECT_, expecting END_OF_INPUT_`.
+          `|SEPARATEMEPLEASE|` makes ExasolCursor.execute submit the header and
+          the select separately on the same connection, so session settings
+          still apply to the select.
+
+       Headers that are a syntactic prefix of the query rather than a standalone
+       statement (e.g. a leading `with ... as (...)` CTE) must stay inline. They
+       are told apart by the trailing semicolon of a complete statement.
+
+       This macro backs dbt's unit-test materialization
+       (`get_empty_subquery_sql(sql)` in the `unit` materialization) and model
+       contract enforcement (`assert_columns_equivalent`), which only need column
+       names/types from the result -- without the zero-row filter they would
+       execute the full model query. #}
     {%- if select_sql_header is not none -%}
     {{ select_sql_header }}
+    {#- A statement-style header gets the sentinel; a query-prefix header only
+       needs a separator token so it cannot be glued onto the `select`. -#}
+    {%- if (select_sql_header | trim).endswith(';') -%}|SEPARATEMEPLEASE|{{ '\n' }}{%- else %}
+    {% endif -%}
     {%- endif -%}
     select * from (
         {{ select_sql }}
