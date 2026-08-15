@@ -53,5 +53,5 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 CHANGELOG: record the quoting consistency fix, note that `identifier: '"orders"'` in source YAML is no longer needed (use source-level `quoting: {identifier: true}`), and state that `quoting: {schema: true}` is unsupported.
-- [ ] 9.2 README: document supported `quoting:` configuration and the Exasol case-folding behavior users need to understand when enabling it.
+- [x] 9.1 CHANGELOG: record the quoting consistency fix, note that `identifier: '"orders"'` in source YAML is no longer needed (use source-level `quoting: {identifier: true}`), and state that `quoting: {schema: true}` is unsupported.
+- [x] 9.2 README: document supported `quoting:` configuration and the Exasol case-folding behavior users need to understand when enabling it.
