@@ -67,6 +67,15 @@ feature list.
   dropping it. The filter is restored; the Exasol-specific subquery alias
   (`dbt_sbq_tmp`, required because Exasol rejects unquoted identifiers
   starting with `_`) is unchanged.
+- **A contracted or unit-tested model with a statement-style `sql_header` no
+  longer fails to build.** Exasol accepts exactly one statement per request, so
+  emitting a header such as `alter session set TIME_ZONE = '...';` immediately
+  in front of the metadata-only `select` (as dbt-core's default does) raised
+  `syntax error, unexpected SELECT_, expecting END_OF_INPUT_`. A header that is
+  a complete statement is now submitted separately on the same connection, so
+  the session setting still applies to the following query. Headers that are
+  only a query prefix — most notably a leading `with ... as (...)` CTE — remain
+  inline and are no longer concatenated directly onto the `select` keyword.
 
 ## 1.11.0 — dbt-core 1.11 parity
 
