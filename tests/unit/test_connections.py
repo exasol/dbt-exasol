@@ -1,7 +1,9 @@
 """Unit tests for ExasolConnectionManager and ExasolCursor."""
 
 import ssl
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import (
     Mock,
     patch,
@@ -11,11 +13,13 @@ import pyexasol
 from dbt_common.exceptions import DbtRuntimeError
 
 from dbt.adapters.exasol.connections import (
+    ROW_SEPARATOR_DEFAULT,
     ExasolConnection,
     ExasolConnectionManager,
     ExasolCredentials,
     ExasolCursor,
     ProtocolVersionType,
+    _detect_row_separator,
     _split_relation_path,
 )
 
@@ -985,6 +989,118 @@ class TestCursorFetchMethods(unittest.TestCase):
         result = cursor.fetchall()
         mock_stmt.fetchall.assert_called_once()
         self.assertEqual(len(result), 2)
+
+
+class TestDetectRowSeparator(unittest.TestCase):
+    """Test _detect_row_separator, which keeps seed IMPORT from silently
+    corrupting (CRLF file read as LF) or dropping (LF file read as CRLF) rows.
+    """
+
+    def _write(self, data: bytes) -> str:
+        path = Path(self._tmpdir.name) / "seed.csv"
+        path.write_bytes(data)
+        return str(path)
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmpdir.cleanup)
+
+    def test_detects_lf(self):
+        """Unix line endings are detected as LF."""
+        self.assertEqual(_detect_row_separator(self._write(b"id,name\n1,alice\n")), "LF")
+
+    def test_detects_crlf(self):
+        """Windows line endings are detected as CRLF."""
+        self.assertEqual(_detect_row_separator(self._write(b"id,name\r\n1,alice\r\n")), "CRLF")
+
+    def test_detects_cr(self):
+        """Classic-Mac CR-only line endings are detected as CR."""
+        self.assertEqual(_detect_row_separator(self._write(b"id,name\r1,alice\r")), "CR")
+
+    def test_empty_file_uses_fallback(self):
+        """An empty file has no terminator, so the fallback is used."""
+        self.assertEqual(_detect_row_separator(self._write(b""), fallback="CRLF"), "CRLF")
+
+    def test_single_line_without_terminator_uses_fallback(self):
+        """A header-only file without a newline cannot be sniffed."""
+        self.assertEqual(_detect_row_separator(self._write(b"id,name"), fallback="LF"), "LF")
+
+    def test_missing_file_uses_fallback(self):
+        """Detection is best-effort: an unreadable path falls back, not raises."""
+        missing = str(Path(self._tmpdir.name) / "does-not-exist.csv")
+        self.assertEqual(_detect_row_separator(missing, fallback="LF"), "LF")
+
+    def test_default_fallback_is_module_default(self):
+        """Omitting `fallback` uses the OS-derived module default."""
+        self.assertEqual(_detect_row_separator(self._write(b"")), ROW_SEPARATOR_DEFAULT)
+
+    def test_crlf_file_with_lf_inside_quoted_field(self):
+        """The first terminator wins; embedded newlines do not mislead detection."""
+        path = self._write(b'id,name\r\n1,"a\nb"\r\n')
+        self.assertEqual(_detect_row_separator(path), "CRLF")
+
+    def test_mixed_line_endings_warn_and_pick_first(self):
+        """Mixed endings cannot be handled by one separator, so warn."""
+        path = self._write(b"id,name\n1,alice\r\n2,bob\n")
+        with patch("dbt.adapters.exasol.connections.LOGGER") as mock_logger:
+            self.assertEqual(_detect_row_separator(path), "LF")
+        mock_logger.warning.assert_called_once()
+        self.assertIn("mixes line endings", mock_logger.warning.call_args[0][0])
+
+    def test_uniform_line_endings_do_not_warn(self):
+        """A well-formed file must not emit spurious warnings."""
+        path = self._write(b"id,name\r\n1,alice\r\n2,bob\r\n")
+        with patch("dbt.adapters.exasol.connections.LOGGER") as mock_logger:
+            self.assertEqual(_detect_row_separator(path), "CRLF")
+        mock_logger.warning.assert_not_called()
+
+    def test_terminator_beyond_first_chunk(self):
+        """Chunked reads keep going until a terminator is found."""
+        path = self._write(b"x" * 70000 + b"\r\n" + b"1,alice\r\n")
+        self.assertEqual(_detect_row_separator(path), "CRLF")
+
+
+class TestImportRowSeparatorResolution(unittest.TestCase):
+    """Test how ExasolCursor.import_from_file resolves the row separator."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmpdir.cleanup)
+        self.path = Path(self._tmpdir.name) / "seed.csv"
+        self.path.write_bytes(b"id,name\r\n1,alice\r\n")
+        self.agate_table = Mock()
+        self.agate_table.original_abspath = str(self.path)
+
+    def _import(self, configured_separator):
+        connection = Mock(spec=ExasolConnection)
+        connection.row_separator = configured_separator
+        ExasolCursor(connection).import_from_file(self.agate_table, ["SCHEMA", "TABLE"])
+        return connection.import_from_file.call_args[1]["import_params"]["row_separator"]
+
+    def test_detects_when_unconfigured(self):
+        """With no profiles.yml value, the CRLF file is imported as CRLF."""
+        self.assertEqual(self._import(None), "CRLF")
+
+    def test_explicit_value_always_wins(self):
+        """An explicit profiles.yml value overrides detection (back-compat)."""
+        self.assertEqual(self._import("LF"), "LF")
+
+    def test_detects_per_file_not_per_connection(self):
+        """Seeds with different line endings each get the right separator."""
+        lf_path = Path(self._tmpdir.name) / "other.csv"
+        lf_path.write_bytes(b"id,name\n1,alice\n")
+        lf_table = Mock()
+        lf_table.original_abspath = str(lf_path)
+
+        connection = Mock(spec=ExasolConnection)
+        connection.row_separator = None
+        cursor = ExasolCursor(connection)
+
+        cursor.import_from_file(self.agate_table, ["SCHEMA", "TABLE"])
+        cursor.import_from_file(lf_table, ["SCHEMA", "OTHER"])
+
+        separators = [call[1]["import_params"]["row_separator"] for call in connection.import_from_file.call_args_list]
+        self.assertEqual(separators, ["CRLF", "LF"])
 
 
 class TestCursorClose(unittest.TestCase):

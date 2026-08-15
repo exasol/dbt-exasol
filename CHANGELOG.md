@@ -28,6 +28,16 @@ feature list.
   `integer`.
 
 ### Fixed
+- **Seed CSV line endings are now detected per file.** The `IMPORT ... ROW
+  SEPARATOR` used for seeds was derived from the client OS (`os.linesep`), which
+  says nothing about the bytes in the CSV file. Both mismatches failed silently:
+  a CRLF seed built on Linux appended a stray `\r` to the last column of every
+  row, and an LF seed built on Windows loaded zero rows while `dbt seed` reported
+  success. The separator is now sniffed from each seed file, so `LF`, `CRLF` and
+  `CR` seeds — including a mix of them in one project — import correctly. Setting
+  `row_separator` in `profiles.yml` still forces that value for every seed
+  (unchanged behaviour); files with genuinely mixed line endings now emit a
+  warning instead of corrupting rows silently.
 - Column comments (`persist_docs`) are now applied only to columns that
   actually exist in the relation, using `validate_doc_columns`; stale model
   column definitions no longer break comment propagation.
