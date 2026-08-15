@@ -238,6 +238,26 @@ def coverage(session: Session) -> None:
     session.run("coverage", "report", "-m", "--fail-under=85")
 
 
+@nox.session(name="test:coverage-unit", python=False)  # type: ignore[no-redef]
+def coverage_unit(session: Session) -> None:
+    """Runs unit tests and reports code coverage with 90% threshold"""
+    context = _context(session, coverage=True)
+    coverage_file = PROJECT_CONFIG.root_path / ".coverage"
+    coverage_file.unlink(missing_ok=True)
+    _run_unit_tests(session, context)
+    session.run("coverage", "report", "-m", "--fail-under=90")
+
+
+@nox.session(name="test:coverage-integration", python=False)  # type: ignore[no-redef]
+def coverage_integration(session: Session) -> None:
+    """Runs integration tests and reports code coverage with 90% threshold"""
+    context = _context(session, coverage=True)
+    coverage_file = PROJECT_CONFIG.root_path / ".coverage"
+    coverage_file.unlink(missing_ok=True)
+    _run_integration_tests(session, context)
+    session.run("coverage", "report", "-m", "--fail-under=90")
+
+
 @nox.session(name="lint:deprecations", python=False)  # type: ignore[no-redef]
 def lint_deprecations(session: Session) -> None:
     """Fail on any dbt-core deprecation triggered by adapter-owned macros/fixtures.
