@@ -22,12 +22,21 @@
     {{return(distribute_by_string)}}
 {% endmacro %}
 
+{#
+  Build a constraint name from the relation's raw path components rather than its
+  rendered form. The rendered form contains double quotes when `quoting` is
+  enabled, and Exasol rejects an unquoted constraint name that embeds them.
+#}
+{% macro exasol__constraint_name_prefix(relation) -%}
+    {{- (relation.schema ~ '_' ~ relation.identifier) | replace('"', '') -}}
+{%- endmacro %}
+
 {% macro primary_key_conf(primary_key_config, relation) %} 
     {%- if primary_key_config is not none and primary_key_config is string -%}
         {%- set primary_key_config = [primary_key_config] -%}
     {%- endif -%}
     {%- if primary_key_config is not none -%}
-        {%- set primary_key_string = ' add constraint ' ~relation|replace('.','_')~'__pk primary key(' ~ primary_key_config|join(", ") ~ ')' -%}
+        {%- set primary_key_string = ' add constraint ' ~exasol__constraint_name_prefix(relation)~'__pk primary key(' ~ primary_key_config|join(", ") ~ ')' -%}
     {% else %}
         {%- set primary_key_string = '' -%}
     {%- endif -%}

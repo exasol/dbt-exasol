@@ -434,6 +434,11 @@ class ExasolConnectionManager(SQLConnectionManager):
             encryption=credentials.encryption,
             websocket_sslopt=websocket_sslopt,
             protocol_version=protocol_version,
+            # Identifiers handed to pyexasol's HTTP transport (seed IMPORT) are
+            # already resolved to their exact stored case by
+            # `_split_relation_path`, so pyexasol must quote them verbatim
+            # instead of applying its own upper-casing/safety folding.
+            quote_ident=True,
         )
         # exasol adapter specific attributes that are unknown to pyexasol
         # those can be added to ExasolConnection as members
@@ -543,6 +548,69 @@ class ExasolConnectionManager(SQLConnectionManager):
         return type_code.split("(")[0].upper()
 
 
+def _split_relation_path(table_path: str) -> tuple[str, str]:
+    """Split a rendered ``schema.identifier`` path into its two components.
+
+    The path arrives from the ``0CSV|`` seed protocol as the output of
+    ``ExasolRelation.render()``, so either component may be double-quoted when a
+    project enables ``quoting``. Quoted components are unwrapped (and doubled
+    inner quotes collapsed) and passed through verbatim, because pyexasol's HTTP
+    transport quotes each component itself and rejects raw quote characters.
+    Unquoted components are upper-cased to match Exasol's folding of unquoted
+    identifiers, so the ``IMPORT INTO`` target resolves to the object the seed's
+    ``CREATE TABLE`` actually created.
+
+    Args:
+        table_path: Rendered relation path, e.g. ``MY_SCHEMA.MY_SEED`` or
+            ``"my_schema"."my_seed"``.
+
+    Returns:
+        Tuple of (schema, identifier), each ready to hand to pyexasol.
+
+    Raises:
+        DbtRuntimeError: If the path does not contain exactly two components.
+    """
+    parts: list[str] = []
+    current = ""
+    was_quoted = False
+    in_quotes = False
+    index = 0
+
+    def flush() -> None:
+        # Unquoted identifiers are folded to upper case by Exasol; quoted ones
+        # keep the exact case they were rendered with.
+        parts.append(current if was_quoted else current.upper())
+
+    while index < len(table_path):
+        char = table_path[index]
+        if char == '"':
+            # A doubled quote inside a quoted component is an escaped quote.
+            if in_quotes and table_path[index + 1 : index + 2] == '"':
+                current += '"'
+                index += 2
+                continue
+            in_quotes = not in_quotes
+            was_quoted = True
+            index += 1
+            continue
+        if char == "." and not in_quotes:
+            flush()
+            current = ""
+            was_quoted = False
+            index += 1
+            continue
+        current += char
+        index += 1
+    flush()
+
+    if in_quotes or len(parts) != 2 or not all(parts):
+        raise dbt_common.exceptions.DbtRuntimeError(
+            f"Could not parse seed target relation '{table_path}' into schema and identifier"
+        )
+
+    return parts[0], parts[1]
+
+
 class ExasolCursor:
     array_size = 1
 
@@ -600,7 +668,7 @@ class ExasolCursor:
             columns_csv = parts[1] if len(parts) > 1 else None
 
             # Parse schema.table
-            schema, table_name = table_path.split(".", 1)
+            schema, table_name = _split_relation_path(table_path)
 
             # Build table_info tuple
             if columns_csv:

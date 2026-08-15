@@ -321,6 +321,7 @@ class ExasolAdapter(SQLAdapter):
                     identifier=name,
                     quote_policy=quote_policy,
                     type=_type,
+                    dbt_created=True,
                 )
             )
         return relations

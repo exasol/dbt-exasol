@@ -62,7 +62,7 @@
         select
             sd.*,
             {{ exasol__unique_key_fields(strategy.unique_key) }}
-        from {{ target_relation | upper }} sd
+        from {{ target_relation }} sd
         where
             {% if config.get('dbt_valid_to_current') %}
                 ( {{ columns.dbt_valid_to }} = {{ snapshot_string_as_time(config.get('dbt_valid_to_current')) }} or {{ columns.dbt_valid_to }} is null )
