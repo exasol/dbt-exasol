@@ -26,6 +26,12 @@ feature list.
 - `convert_number_type` returns `float` for zero-row agate tables (e.g. empty
   seeds) instead of letting `agate.MaxPrecision` degrade decimal columns to
   `integer`.
+- Removed the `exasol__create_schema` and `exasol__persist_docs` macro
+  overrides: both had converged to be byte-identical to dbt-core's current
+  `default__create_schema`/`default__persist_docs` (the latter picked up
+  `validate_doc_columns` upstream, matching what this adapter had added
+  itself). Dispatch now falls through to the shared macros; no behavior
+  change, less surface to keep in sync with upstream.
 
 ### Fixed
 - **Seed CSV line endings are now detected per file.** The `IMPORT ... ROW
@@ -53,6 +59,14 @@ feature list.
   `quoting: {identifier: true}` instead (project-level `quoting:` never
   applies to sources, per dbt-core). `quoting: {schema: true}` remains
   unsupported.
+- **Unit tests (`dbt test --select test_type:unit`) no longer execute the full
+  model query.** The macro that builds the metadata-only temp table used to
+  discover column names/types (`get_empty_subquery_sql`) was missing the
+  `where false` / `limit 0` filter dbt-core's default provides, so every unit
+  test run materialized the model's real result set before immediately
+  dropping it. The filter is restored; the Exasol-specific subquery alias
+  (`dbt_sbq_tmp`, required because Exasol rejects unquoted identifiers
+  starting with `_`) is unchanged.
 
 ## 1.11.0 — dbt-core 1.11 parity
 

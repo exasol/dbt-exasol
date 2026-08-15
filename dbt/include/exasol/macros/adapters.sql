@@ -35,11 +35,9 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
     {{ return(load_result('list_schemas').table) }}
 {% endmacro %}
 
-{% macro exasol__create_schema(relation) -%}  
-    {%- call statement('create_schema') -%}
-        create schema if not exists {{ relation.without_identifier() }}
-    {% endcall %}
-{% endmacro %}
+{# exasol__create_schema intentionally not overridden: identical to dbt-core's
+   default__create_schema (create schema if not exists {{ relation.without_identifier() }}).
+   Dispatch falls through to the shared macro. #}
 
 {% macro exasol__drop_schema(relation) -%}
     {% call statement('drop_schema') -%}
@@ -218,20 +216,9 @@ AS
     {%- endif %}
 {% endmacro %}
 
-{% macro exasol__persist_docs(relation, model, for_relation, for_columns) -%}
-    {% if for_relation and config.persist_relation_docs() and model.description %}
-        {% do run_query(alter_relation_comment(relation, model.description)) %}
-    {% endif %}
-
-    {% if for_columns and config.persist_column_docs() and model.columns %}
-        {% set existing_columns = adapter.get_columns_in_relation(relation) | map(attribute="name") | list %}
-        {% set filtered_columns = validate_doc_columns(relation, model.columns, existing_columns) %}
-        {% set alter_comment_sql = alter_column_comment(relation, filtered_columns) %}
-        {% if alter_comment_sql and alter_comment_sql | trim | length > 0 %}
-            {% do run_query(alter_comment_sql) %}
-        {% endif %}
-    {% endif %}
-{% endmacro %}
+{# exasol__persist_docs intentionally not overridden: dbt-core 1.12's
+   default__persist_docs already calls validate_doc_columns, matching what this
+   adapter used to add itself. Dispatch falls through to the shared macro. #}
 
 {% macro persist_view_column_docs(relation, sql) %}
     {%- if config.persist_column_docs() %}
@@ -257,10 +244,23 @@ AS
   {% endcall %}
 {% endmacro %}
 
-{% macro exasol__get_empty_subquery_sql(select_sql, select_sql_header=None ) %}
+{% macro exasol__get_empty_subquery_sql(select_sql, select_sql_header=None) %}
+    {#- Same contract as dbt-core's default__get_empty_subquery_sql (optional
+       header + zero-row guarantee via `where false` / `limit 0`), except the
+       subquery alias is `dbt_sbq_tmp` instead of `__dbt_sbq`: Exasol rejects
+       unquoted identifiers starting with `_` (see
+       ExasolRelation._render_subquery_alias). This macro backs dbt's unit-test
+       materialization (`get_empty_subquery_sql(sql)` in the `unit` materialization),
+       which only needs column names/types from the result -- without the zero-row
+       filter it would execute the full model query on every unit test run. #}
+    {%- if select_sql_header is not none -%}
+    {{ select_sql_header }}
+    {%- endif -%}
     select * from (
         {{ select_sql }}
     ) dbt_sbq_tmp
+    where false
+    limit 0
 {% endmacro %}
 
 {% macro exasol__alter_relation_add_remove_columns(relation, add_columns, remove_columns) %}
