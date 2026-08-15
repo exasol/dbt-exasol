@@ -861,6 +861,26 @@ class TestBuildCatalogRelation(unittest.TestCase):
         self.assertIn("catalog", str(context.exception).lower())
 
 
+class TestCatalogIntegrationBuildRelation(unittest.TestCase):
+    """Test ExasolCatalogIntegration.build_relation rejection (impl.py:65)."""
+
+    def test_build_relation_raises_clear_error(self):
+        """build_relation raises DbtRuntimeError explaining Exasol doesn't support catalogs."""
+        from dbt.adapters.exasol.impl import (
+            CATALOG_INTEGRATION_NOT_SUPPORTED,
+            ExasolNoOpCatalogIntegration,
+        )
+
+        catalog_config = Mock()
+        integration = ExasolNoOpCatalogIntegration(catalog_config)
+        config = Mock()  # RelationConfig
+
+        with self.assertRaises(DbtRuntimeError) as context:
+            integration.build_relation(config)
+
+        self.assertIn(CATALOG_INTEGRATION_NOT_SUPPORTED, str(context.exception))
+
+
 class TestVersion(unittest.TestCase):
     """Test the adapter version reflects the dbt-core minor parity claim."""
 

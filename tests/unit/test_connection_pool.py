@@ -700,6 +700,72 @@ class TestConnectionPool(unittest.TestCase):
         self.assertEqual(len(pooled), 2)
         self.assertEqual(closed_count, 4)
 
+    # ------------------------------------------------------------------
+    # Exception handler coverage (close() failures)
+    # ------------------------------------------------------------------
+
+    def test_cleanup_pool_handles_close_exception(self):
+        """cleanup_pool logs and continues when conn.close() raises (lines 313-315)."""
+        mock_conn = Mock(spec=ExasolConnection)
+        mock_conn.is_closed = False
+        mock_conn.close.side_effect = OSError("Connection already broken")
+
+        pool = ExasolConnectionManager._get_pool()
+        pool["key1"] = [mock_conn]
+
+        with patch("dbt.adapters.exasol.connections.LOGGER") as mock_logger:
+            ExasolConnectionManager.cleanup_pool()
+
+        mock_conn.close.assert_called_once()
+        mock_logger.debug.assert_called_with("Failed to close pooled connection during cleanup")
+        self.assertEqual(len(pool), 0)
+
+    @patch.object(ExasolConnectionManager, "_create_connection")
+    def test_initialize_pool_excess_close_exception(self, mock_create):
+        """initialize_pool handles close() failure on excess connections (lines 346-349).
+
+        The else-branch (close excess) is normally only reached under a race
+        condition where another thread adds to the pool between the existing_count
+        calculation and the lock-acquire in the loop body.  We simulate that by
+        making _create_connection add a handle directly to the pool (without the
+        lock), so that when the loop body acquires the lock the pool is already at
+        capacity.
+        """
+        excess_handle = Mock(spec=ExasolConnection)
+        excess_handle.is_closed = False
+        excess_handle.close.side_effect = OSError("Broken")
+
+        def _create_and_fill_pool(*args, **kwargs):
+            # Simulate a concurrent thread adding to the pool
+            pool = ExasolConnectionManager._get_pool()
+            pool.setdefault(self.pool_key, []).append(_make_valid_handle())
+            return excess_handle
+
+        mock_create.side_effect = _create_and_fill_pool
+        ExasolConnectionManager._pool_sizes[self.pool_key] = 1
+
+        with patch("dbt.adapters.exasol.connections.LOGGER") as mock_logger:
+            ExasolConnectionManager.initialize_pool(self.credentials, size=2)
+
+        mock_logger.debug.assert_called_with("Failed to close excess connection during pool init")
+
+    def test_try_get_pooled_connection_close_exception(self):
+        """_try_get_pooled_connection handles close() failure on invalid conn (lines 440-441)."""
+        invalid_handle = Mock(spec=ExasolConnection)
+        invalid_handle.is_closed = False
+        invalid_handle.execute.side_effect = Exception("broken pipe")
+        invalid_handle.close.side_effect = OSError("Already dead")
+
+        pool = ExasolConnectionManager._get_pool()
+        pool[self.pool_key] = [invalid_handle]
+
+        with patch("dbt.adapters.exasol.connections.LOGGER") as mock_logger:
+            result = ExasolConnectionManager._try_get_pooled_connection(self.credentials)
+
+        self.assertIsNone(result)
+        invalid_handle.close.assert_called_once()
+        mock_logger.debug.assert_called_with("Failed to close invalid pooled connection")
+
 
 if __name__ == "__main__":
     unittest.main()
