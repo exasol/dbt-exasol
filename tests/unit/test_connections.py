@@ -2,6 +2,7 @@
 
 import ssl
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import (
@@ -860,6 +861,65 @@ class TestConnectionManagerMethods(unittest.TestCase):
         mock_connection = Mock()
         manager.cancel(mock_connection)
         mock_connection.abort_query.assert_called_once()
+
+
+class TestGetThreadConnection(unittest.TestCase):
+    """Test ExasolConnectionManager.get_thread_connection on-demand acquisition override.
+
+    Covers connections.py:255-257 -- the current thread has no bound connection
+    (i.e. the caller is outside a ``connection_named`` / ``acquire_connection``
+    block), so ``set_connection_name`` must be invoked before delegating to the
+    base implementation.
+    """
+
+    def _make_manager(self):
+        mock_profile = Mock()
+        mock_profile.credentials = ExasolCredentials(
+            dsn="localhost:8563",
+            user="u",
+            password="p",
+            database="DB",
+            schema="S",
+        )
+        mock_profile.threads = 1
+        mock_mp_context = Mock()
+        mock_mp_context.RLock.return_value = threading.RLock()
+        return ExasolConnectionManager(mock_profile, mock_mp_context)
+
+    def test_calls_set_connection_name_when_unbound(self):
+        """When no connection is bound to the thread, set_connection_name is called
+        to lazily create one, and the resulting connection is returned."""
+        manager = self._make_manager()
+        fake_connection = Mock()
+
+        def fake_set_connection_name(name=None):
+            key = manager.get_thread_identifier()
+            manager.thread_connections[key] = fake_connection
+            return fake_connection
+
+        manager.get_if_exists = Mock(return_value=None)
+        manager.set_connection_name = Mock(side_effect=fake_set_connection_name)
+
+        result = manager.get_thread_connection()
+
+        manager.set_connection_name.assert_called_once()
+        self.assertIs(result, fake_connection)
+
+    def test_skips_set_connection_name_when_already_bound(self):
+        """When a connection is already bound to the thread, set_connection_name
+        must not be called and the existing connection is returned unchanged."""
+        manager = self._make_manager()
+        existing_connection = Mock()
+        key = manager.get_thread_identifier()
+        manager.thread_connections[key] = existing_connection
+
+        manager.get_if_exists = Mock(return_value=existing_connection)
+        manager.set_connection_name = Mock()
+
+        result = manager.get_thread_connection()
+
+        manager.set_connection_name.assert_not_called()
+        self.assertIs(result, existing_connection)
 
 
 class TestCursorImportFromFile(unittest.TestCase):

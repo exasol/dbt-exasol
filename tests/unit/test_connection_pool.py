@@ -3,6 +3,7 @@
 import threading
 import unittest
 from unittest.mock import (
+    MagicMock,
     Mock,
     patch,
 )
@@ -171,23 +172,27 @@ class TestConnectionPool(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def test_effective_pool_size_resolves_from_profile_threads(self):
-        """Effective pool size defaults to profile.threads when pool_size is None."""
+        """Effective pool size defaults to profile.threads when pool_size is None.
+
+        Exercises the real ``__init__`` (not a re-implementation of its logic) so the
+        ``else`` branch that reads ``profile.threads`` is actually covered.
+        """
         mock_profile = Mock()
         mock_profile.credentials = self.credentials  # pool_size is None
         mock_profile.threads = 6
+        mock_mp_context = MagicMock()
+        mock_mp_context.RLock.return_value = threading.RLock()
 
-        with patch.object(ExasolConnectionManager, "__init__", wraps=ExasolConnectionManager.__init__) as _:
-            # Manually invoke the relevant logic (bypassing super().__init__ which needs real dbt objects)
-            key = ExasolConnectionManager._get_pool_key(self.credentials)
-            if self.credentials.pool_size is not None:
-                ExasolConnectionManager._pool_sizes[key] = self.credentials.pool_size
-            else:
-                ExasolConnectionManager._pool_sizes[key] = mock_profile.threads
+        ExasolConnectionManager(mock_profile, mock_mp_context)
 
         self.assertEqual(ExasolConnectionManager._pool_sizes[self.pool_key], 6)
 
     def test_explicit_pool_size_overrides_profile_threads(self):
-        """Explicit credentials.pool_size overrides profile.threads."""
+        """Explicit credentials.pool_size overrides profile.threads.
+
+        Exercises the real ``__init__`` so the ``if credentials.pool_size is not None``
+        branch is covered independently of the ``else`` branch above.
+        """
         creds_with_pool_size = ExasolCredentials(
             dsn="localhost:8563",
             user="test_user",
@@ -199,13 +204,12 @@ class TestConnectionPool(unittest.TestCase):
         mock_profile = Mock()
         mock_profile.credentials = creds_with_pool_size
         mock_profile.threads = 8
+        mock_mp_context = MagicMock()
+        mock_mp_context.RLock.return_value = threading.RLock()
+
+        ExasolConnectionManager(mock_profile, mock_mp_context)
 
         key = ExasolConnectionManager._get_pool_key(creds_with_pool_size)
-        if creds_with_pool_size.pool_size is not None:
-            ExasolConnectionManager._pool_sizes[key] = creds_with_pool_size.pool_size
-        else:
-            ExasolConnectionManager._pool_sizes[key] = mock_profile.threads
-
         self.assertEqual(ExasolConnectionManager._pool_sizes[key], 2)
 
     # ------------------------------------------------------------------

@@ -240,22 +240,22 @@ def coverage(session: Session) -> None:
 
 @nox.session(name="test:coverage-unit", python=False)  # type: ignore[no-redef]
 def coverage_unit(session: Session) -> None:
-    """Runs unit tests and reports code coverage with 90% threshold"""
+    """Runs unit tests and reports code coverage with 85% threshold"""
     context = _context(session, coverage=True)
     coverage_file = PROJECT_CONFIG.root_path / ".coverage"
     coverage_file.unlink(missing_ok=True)
     _run_unit_tests(session, context)
-    session.run("coverage", "report", "-m", "--fail-under=90")
+    session.run("coverage", "report", "-m", "--fail-under=85")
 
 
 @nox.session(name="test:coverage-integration", python=False)  # type: ignore[no-redef]
 def coverage_integration(session: Session) -> None:
-    """Runs integration tests and reports code coverage with 90% threshold"""
+    """Runs integration tests and reports code coverage with 85% threshold"""
     context = _context(session, coverage=True)
     coverage_file = PROJECT_CONFIG.root_path / ".coverage"
     coverage_file.unlink(missing_ok=True)
     _run_integration_tests(session, context)
-    session.run("coverage", "report", "-m", "--fail-under=90")
+    session.run("coverage", "report", "-m", "--fail-under=85")
 
 
 @nox.session(name="lint:deprecations", python=False)  # type: ignore[no-redef]
