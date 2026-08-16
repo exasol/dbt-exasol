@@ -68,12 +68,12 @@ description = "Run all tests with coverage"
 run = "uv run nox -s test:coverage"
 
 [tasks."test:unit"]
-description = "Run unit tests"
-run = "uv run nox -s test:unit"
+description = "Run unit tests with coverage (85% threshold)"
+run = "uv run nox -s test:coverage-unit"
 
 [tasks."test:integration"]
-description = "Run integration tests (requires database)"
-run = "uv run nox -s test:integration"
+description = "Run integration tests with coverage (85% threshold, requires database)"
+run = "uv run nox -s test:coverage-integration"
 
 [tasks.nox]
 description = "Run nox sessions (pass session names as args)"

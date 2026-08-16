@@ -72,6 +72,7 @@ omit = [
   "dbt/__init__.py",
   "dbt/adapters/__init__.py",
   "dbt/adapters/exasol/__init__.py",
+  "dbt/adapters/exasol/version.py",
   "dbt/include/__init__.py",
   "dbt/include/exasol/__init__.py",
 ]
