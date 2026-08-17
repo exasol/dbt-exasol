@@ -87,7 +87,8 @@ class TestRelationEventTimeFilter:
         result = rel._render_event_time_filtered(f)
         assert "TIMESTAMP '2025-01-01 00:00:00'" in result
         assert "TIMESTAMP '2025-01-02 00:00:00'" in result
-        assert ">=" in result and "<" in result
+        assert ">=" in result
+        assert "<" in result
         # Must NOT contain the timezone suffix that the base class adds
         assert "+00:00" not in result
         assert "+" not in result  # no stray timezone
