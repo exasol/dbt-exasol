@@ -28,11 +28,21 @@ class ExasolQuotePolicy(Policy):
 Self = TypeVar("Self", bound="BaseRelation")
 
 
+@dataclass
+class ExasolIncludePolicy(Policy):
+    """Include policy - database is not included for Exasol"""
+
+    database: bool = False
+    schema: bool = True
+    identifier: bool = True
+
+
 @dataclass(frozen=True, eq=False, repr=False)
 class ExasolRelation(BaseRelation):
     """Relation implementation for exasol"""
 
     quote_policy: ExasolQuotePolicy = field(default_factory=ExasolQuotePolicy)
+    include_policy: ExasolIncludePolicy = field(default_factory=ExasolIncludePolicy)
     renameable_relations: frozenset[RelationType] = frozenset({RelationType.View, RelationType.Table})
     replaceable_relations: frozenset[RelationType] = frozenset({RelationType.View, RelationType.Table})
 
@@ -62,6 +72,7 @@ class ExasolRelation(BaseRelation):
         kwargs.update(
             {
                 "path": {
+                    "database": database,
                     "schema": schema,
                     "identifier": identifier,
                 },

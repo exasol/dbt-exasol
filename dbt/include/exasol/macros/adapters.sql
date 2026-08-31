@@ -23,7 +23,7 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
 		union
 		select view_name, view_schema,'view' from sys.exa_all_views
 	  )
-    where upper(table_schema) = '{{ schema |upper }}'
+    where upper(table_schema) = '{{ schema.schema |upper }}'
 {% endcall %}  
     {{ return(load_result('list_relations_without_caching').table) }}
 {% endmacro %}
