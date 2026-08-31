@@ -12,6 +12,16 @@ announced in v1.12.0 with the last fixes and some usability improvements.
 - TLS certificate parameter documented in the README for secure connections.
 
 ### Changed
+- **`timestamp_format` is now documented as session-wide** ([#229](https://github.com/exasol/dbt-exasol/issues/229)).
+  The value is applied with `ALTER SESSION SET NLS_TIMESTAMP_FORMAT` on every
+  connection the adapter opens, so it governs model SQL, snapshots and seed
+  imports — not seeds alone. The default `YYYY-MM-DDTHH:MI:SS.FF6` keeps
+  ISO-8601 seed files working ([#35](https://github.com/exasol/dbt-exasol/issues/35))
+  but differs from Exasol's server default `YYYY-MM-DD HH24:MI:SS.FF6`, which
+  makes dbt-compiled SQL behave differently in other clients. The README now
+  states the scope and how to opt into the server default; the applied format
+  is also emitted as a debug log line. No behaviour change — the default is
+  unchanged and a breaking change is deferred to a major release.
 - The `exasol__create_schema` and `exasol__persist_docs` macro overrides have
   been removed: both had converged to be byte-identical to dbt-core's current
   `default__create_schema` / `default__persist_docs`. Dispatch now falls
