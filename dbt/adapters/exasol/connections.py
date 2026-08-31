@@ -522,6 +522,7 @@ class ExasolConnectionManager(SQLConnectionManager):
         # those can be added to ExasolConnection as members
         conn.row_separator = credentials.row_separator
         conn.timestamp_format = credentials.timestamp_format
+        LOGGER.debug("Setting NLS_TIMESTAMP_FORMAT to '%s'", conn.timestamp_format)
         conn.execute(f"alter session set NLS_TIMESTAMP_FORMAT='{conn.timestamp_format}'")
 
         return conn

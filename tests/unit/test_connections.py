@@ -24,6 +24,9 @@ from dbt.adapters.exasol.connections import (
     _split_relation_path,
 )
 
+CUSTOM_TIMESTAMP_FORMAT = "YYYY-MM-DD HH24:MI:SS"
+EXPECTED_DEFAULT_TIMESTAMP_FORMAT = "YYYY-MM-DDTHH:MI:SS.FF6"
+
 
 class TestDataTypeCodeToName(unittest.TestCase):
     """Test data_type_code_to_name class method."""
@@ -452,8 +455,9 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
 
         self.assertEqual(result, connection)
 
+    @patch("dbt.adapters.exasol.connections.LOGGER")
     @patch("dbt.adapters.exasol.connections.connect")
-    def test_open_sets_timestamp_format(self, mock_connect):
+    def test_open_sets_timestamp_format(self, mock_connect, mock_logger):
         """Test open sets timestamp format on connection."""
         mock_conn_obj = Mock(spec=ExasolConnection)
         mock_connect.return_value = mock_conn_obj
@@ -464,7 +468,7 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
             password="exasol",
             database="test",
             schema="test_schema",
-            timestamp_format="YYYY-MM-DD HH24:MI:SS",
+            timestamp_format=CUSTOM_TIMESTAMP_FORMAT,
         )
 
         connection = Mock()
@@ -474,8 +478,44 @@ class TestExasolConnectionManagerOpen(unittest.TestCase):
         ExasolConnectionManager.open(connection)
 
         # Verify timestamp format was set
-        self.assertEqual(mock_conn_obj.timestamp_format, "YYYY-MM-DD HH24:MI:SS")
-        mock_conn_obj.execute.assert_called_once_with("alter session set NLS_TIMESTAMP_FORMAT='YYYY-MM-DD HH24:MI:SS'")
+        self.assertEqual(mock_conn_obj.timestamp_format, CUSTOM_TIMESTAMP_FORMAT)
+        mock_conn_obj.execute.assert_called_once_with(
+            f"alter session set NLS_TIMESTAMP_FORMAT='{CUSTOM_TIMESTAMP_FORMAT}'"
+        )
+        mock_logger.debug.assert_called_once_with(
+            "Setting NLS_TIMESTAMP_FORMAT to '%s'",
+            CUSTOM_TIMESTAMP_FORMAT,
+        )
+
+    @patch("dbt.adapters.exasol.connections.LOGGER")
+    @patch("dbt.adapters.exasol.connections.connect")
+    def test_open_uses_default_timestamp_format(self, mock_connect, mock_logger):
+        """Test open retains the documented default timestamp format."""
+        mock_conn_obj = Mock(spec=ExasolConnection)
+        mock_connect.return_value = mock_conn_obj
+
+        credentials = ExasolCredentials(
+            dsn="localhost:8563",
+            user="sys",
+            password="exasol",
+            database="test",
+            schema="test_schema",
+        )
+
+        connection = Mock()
+        connection.state = "closed"
+        connection.credentials = credentials
+
+        ExasolConnectionManager.open(connection)
+
+        self.assertEqual(mock_conn_obj.timestamp_format, EXPECTED_DEFAULT_TIMESTAMP_FORMAT)
+        mock_conn_obj.execute.assert_called_once_with(
+            f"alter session set NLS_TIMESTAMP_FORMAT='{EXPECTED_DEFAULT_TIMESTAMP_FORMAT}'"
+        )
+        mock_logger.debug.assert_called_once_with(
+            "Setting NLS_TIMESTAMP_FORMAT to '%s'",
+            EXPECTED_DEFAULT_TIMESTAMP_FORMAT,
+        )
 
 
 class TestExasolCursorProperties(unittest.TestCase):
