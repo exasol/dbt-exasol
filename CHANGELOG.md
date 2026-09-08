@@ -1,15 +1,8 @@
 # Changelog
 
-## 1.12.1 — polish and bugfixes
+## 1.12.2 — bugfixes and documentation
 
-A maintenance release with no breaking changes. Completes the feature set
-announced in v1.12.0 with the last fixes and some usability improvements.
-
-### Added
-- `database` parameter in `profiles.yml` now defaults to `"DB"` (Exasol's
-  default database name), so projects that don't need a specific database can
-  omit it entirely.
-- TLS certificate parameter documented in the README for secure connections.
+A maintenance release containing bugfixes and documentation improvements.
 
 ### Changed
 - **`timestamp_format` is now documented as session-wide** ([#229](https://github.com/exasol/dbt-exasol/issues/229)).
@@ -22,6 +15,23 @@ announced in v1.12.0 with the last fixes and some usability improvements.
   states the scope and how to opt into the server default; the applied format
   is also emitted as a debug log line. No behaviour change — the default is
   unchanged and a breaking change is deferred to a major release.
+
+### Fixed
+- **Fixed schema quoting in cache lookup and unhandled relation database** ([#228](https://github.com/exasol/dbt-exasol/issues/228)).
+  In `exasol__list_relations_without_caching`, unquoted schema identifiers are now compared properly when `quoting: {schema: true}` is enabled, avoiding empty cache lookups that permanently disabled relation caching. Introduced `ExasolIncludePolicy` to prevent `list_None_<SCHEMA>` in logs while maintaining Exasol's database-omitted relation rendering.
+
+## 1.12.1 — polish and bugfixes
+
+A maintenance release with no breaking changes. Completes the feature set
+announced in v1.12.0 with the last fixes and some usability improvements.
+
+### Added
+- `database` parameter in `profiles.yml` now defaults to `"DB"` (Exasol's
+  default database name), so projects that don't need a specific database can
+  omit it entirely.
+- TLS certificate parameter documented in the README for secure connections.
+
+### Changed
 - The `exasol__create_schema` and `exasol__persist_docs` macro overrides have
   been removed: both had converged to be byte-identical to dbt-core's current
   `default__create_schema` / `default__persist_docs`. Dispatch now falls
