@@ -1,0 +1,3 @@
+# 1. Hybrid UV and PTB 11 Build Matrix Architecture
+
+The dbt-exasol adapter requires multi-dimensional CI validation across Python and Exasol database versions, but exasol-toolbox (PTB) was pinned to `<7` due to legacy version file incompatibilities. We decided to upgrade to `exasol-toolbox>=11.0.0`, migrate package version resolution to `importlib.metadata`, and invoke PTB's dynamic `matrix:generate` Nox task directly inside uv-driven GitHub Actions workflows. This allows dynamic Cartesian testing across Python and Exasol versions while preserving uv's fast build execution rather than adopting PTB's default Poetry-based workflow templates.
