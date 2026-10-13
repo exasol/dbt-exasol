@@ -131,6 +131,7 @@ report.xml
 .security*
 .build_output
 ci-coverage.xml
+.idea
 
 # Generated version file - should only be at dbt/adapters/exasol/version.py
 # This prevents shadowing dbt-core's dbt/version.py
