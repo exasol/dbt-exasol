@@ -1011,6 +1011,7 @@ dependencies = [
     { name = "dbt-adapters" },
     { name = "dbt-core" },
     { name = "dbt-core-experimental-parser" },
+    { name = "exasol-telemetry-client" },
     { name = "protobuf" },
     { name = "pyexasol" },
 ]
@@ -1044,6 +1045,7 @@ requires-dist = [
     { name = "dbt-adapters", specifier = ">=1.24.5" },
     { name = "dbt-core", specifier = ">=1.12.0,<1.13" },
     { name = "dbt-core-experimental-parser", specifier = ">=2.0.0a4,<3" },
+    { name = "exasol-telemetry-client", specifier = ">=0.2.1,<0.3.0" },
     { name = "protobuf", specifier = ">=6.0,<8.0" },
     { name = "pyexasol", specifier = ">=2" },
 ]
@@ -1365,6 +1367,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/47/b5/eeed28434604ff45064f96d1c292362ca00beb9a5f2b25dc8dde7d389729/exasol_integration_test_docker_environment-6.4.1.tar.gz", hash = "sha256:3beca9f7dd354c48f22aa2a631e3e5aa05a89cd39bda41a88bbaccca977270df", size = 86997, upload-time = "2026-06-30T11:17:34.418Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6b/b3/4ae90a020e0ca48225f60edca6a8112ff3f8528502117257154addd5acb3/exasol_integration_test_docker_environment-6.4.1-py3-none-any.whl", hash = "sha256:c1132c00530455f6379d54582f36f7a5a92cb78fdb438c6d90df4621b9b9a4e4", size = 173740, upload-time = "2026-06-30T11:17:35.44Z" },
+]
+
+[[package]]
+name = "exasol-telemetry-client"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/0d/82f51ea1b5e76996b9fe60d2622bfdf3a70b8b699c370f8719df24acd9ec/exasol_telemetry_client-0.2.1.tar.gz", hash = "sha256:3c690658e49307c981018f3d0e5dc23de70acc93386e7fa12663875e914ac465", size = 7776, upload-time = "2026-10-06T07:52:08.753Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/35/e9d590f0e7f930af7d1cba703b71688c8864c30f9115dfa409a43d9cbd16/exasol_telemetry_client-0.2.1-py3-none-any.whl", hash = "sha256:ea7b36ce2313ec7143716134ef96861626e26f92f82f884bddf38db4ee2ab2ed", size = 9716, upload-time = "2026-10-06T07:52:09.687Z" },
 ]
 
 [[package]]
