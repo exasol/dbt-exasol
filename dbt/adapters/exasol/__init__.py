@@ -1,6 +1,7 @@
 """dbt-exasol adapter package initialization"""
 
 from dbt.adapters.base import AdapterPlugin
+from exasol.telemetry import client as telemetry
 
 from dbt.adapters.exasol.column import ExasolColumn
 from dbt.adapters.exasol.connections import (
@@ -10,8 +11,6 @@ from dbt.adapters.exasol.connections import (
 from dbt.adapters.exasol.impl import ExasolAdapter
 from dbt.adapters.exasol.relation import ExasolRelation
 from dbt.include import exasol
-
-from exasol.telemetry import client as telemetry
 
 __all__ = [
     "PLUGIN",
