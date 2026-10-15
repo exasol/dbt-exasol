@@ -1,6 +1,7 @@
 """dbt-exasol adapter package initialization"""
 
 from dbt.adapters.base import AdapterPlugin
+from exasol.telemetry import client as telemetry
 
 from dbt.adapters.exasol.column import ExasolColumn
 from dbt.adapters.exasol.connections import (
@@ -29,3 +30,6 @@ PLUGIN = AdapterPlugin(
 
 # dbt-core 1.11+ expects Plugin (capital P only) instead of PLUGIN
 Plugin = PLUGIN
+
+# we need to disable exasol-telemetry tracking as license prohibits it
+telemetry.disable()
