@@ -1005,7 +1005,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/d1/d5/9084bd0356b83c703
 
 [[package]]
 name = "dbt-exasol"
-version = "1.12.2"
+version = "1.12.3"
 source = { editable = "." }
 dependencies = [
     { name = "dbt-adapters" },
@@ -1047,7 +1047,7 @@ requires-dist = [
     { name = "dbt-core-experimental-parser", specifier = ">=2.0.0a4,<3" },
     { name = "exasol-telemetry-client", specifier = ">=0.2.1,<0.3.0" },
     { name = "protobuf", specifier = ">=6.0,<8.0" },
-    { name = "pyexasol", specifier = ">=2" },
+    { name = "pyexasol", specifier = ">=3.0.1,<4" },
 ]
 
 [package.metadata.requires-dev]
@@ -3094,16 +3094,18 @@ wheels = [
 
 [[package]]
 name = "pyexasol"
-version = "2.3.0"
+version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
+    { name = "exasol-telemetry-client" },
     { name = "packaging" },
+    { name = "pydantic" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/40/5c3c554b684a07d8a056d16d3db6395b90268be9dd0a54359c97fce5b5e9/pyexasol-2.3.0.tar.gz", hash = "sha256:51c00b9b46d61fc28fa541c070d48f68d4ee7ecbfddab9bfc6396db3cea0e5b4", size = 64010, upload-time = "2026-07-17T14:30:33.364Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/71/badf999fcd0b25859662183cf656e8220cd2d92316cf1f9c7f86e4757afe/pyexasol-3.0.1.tar.gz", hash = "sha256:59407accc766efc27ac7d4d4f20aab8b308931e61299a59f1d7b9ad8a3bfd3d2", size = 73494, upload-time = "2026-10-22T15:21:17.041Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/91/27084c49a5b6b7c13217bd96a60b3db15899cc2c3593736d4f325f778b9a/pyexasol-2.3.0-py3-none-any.whl", hash = "sha256:d6aa66018dc0d2a776b7a81352c5db454150050aa8f8a229eea6a3902279f038", size = 75853, upload-time = "2026-07-17T14:30:34.432Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/2b/ff9c21339c4f5f4c5245883a5ee50c31d30fd59a81b0d7f03449ca25c8ba/pyexasol-3.0.1-py3-none-any.whl", hash = "sha256:9365dab62ddf07940e6357ed114262a8c4f47a823823a90bfda60e4efea72f5b", size = 90524, upload-time = "2026-10-22T15:21:18.047Z" },
 ]
 
 [[package]]
