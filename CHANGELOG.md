@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.12.3 — bugfixes and pyexasol update
+
+A maintenance release. It moves the adapter onto the `pyexasol` 3.x line and
+disables the Exasol telemetry tracking that line introduced.
+
+### Changed
+- **Updated `pyexasol` to 3.x** (`pyexasol>=3.0.1,<4`, previously `pyexasol>=2`).
+  PyExasol 3.0 changed the WebSocket DB-API to return Python types where it
+  previously returned strings: `DECIMAL(p, s)` with `s > 0` now arrives as
+  `decimal.Decimal`, `TIMESTAMP` as `datetime.datetime`, and
+  `INTERVAL DAY TO SECOND` as an `ExaTimeDelta` object that renders as
+  `+000000001 02:03:04.000000000`. Nanosecond precision in `TIMESTAMP` values is
+  truncated to Python's microsecond precision. The adapter's own SQL is unchanged
+  and needs no adjustment, because the type coercion in
+  `ExasolConnectionManager.get_result_from_cursor` skips values that already
+  arrive as Python types. The upper bound `<4` keeps a future breaking major
+  release out.
+
+### Fixed
+- **Exasol telemetry tracking is disabled** ([#243](https://github.com/exasol/dbt-exasol/issues/243), [#244](https://github.com/exasol/dbt-exasol/pull/244)).
+  `pyexasol` 3.0 reports anonymized usage data (category `PYEXA`) through
+  `exasol-telemetry-client` on every connection. dbt's license prohibits
+  telemetry, so `dbt.adapters.exasol` now calls `telemetry.disable()` when it is
+  imported. The disable is process-wide, so it covers the adapter's own
+  `exasol-telemetry-client` dependency and `pyexasol` alike; setting the
+  `EXASOL_TELEMETRY_DISABLE` environment variable is not required.
+  `tests/unit/test_telemetry.py` asserts that no HTTP request leaves the process,
+  both on import and on a connection attempt.
+
 ## 1.12.2 — bugfixes and documentation
 
 A maintenance release containing bugfixes and documentation improvements.
