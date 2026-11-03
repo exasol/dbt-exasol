@@ -2,8 +2,9 @@
 
 ## 1.12.3 — bugfixes and pyexasol update
 
-A maintenance release. It moves the adapter onto the `pyexasol` 3.x line and
-disables the Exasol telemetry tracking that line introduced.
+A maintenance release with **no breaking changes**. It fixes two bugs that could
+lose or block data, moves the adapter onto the `pyexasol` 3.x line, and disables
+the Exasol telemetry tracking that line introduced.
 
 ### Changed
 - **Updated `pyexasol` to 3.x** (`pyexasol>=3.0.1,<4`, previously `pyexasol>=2`).
@@ -19,6 +20,22 @@ disables the Exasol telemetry tracking that line introduced.
   release out.
 
 ### Fixed
+- **Relation lookups use the profile database again** ([#257](https://github.com/exasol/dbt-exasol/issues/257), [#262](https://github.com/exasol/dbt-exasol/pull/262)).
+  `exasol__list_relations_without_caching` reported every relation with the
+  literal database name `db`. With any other `dbname` in `profiles.yml`, the
+  cached relations never matched the model's target relation, so
+  `get_relation()` returned `None` for tables that exist: `is_incremental()` was
+  false on every run, incremental models were rebuilt from scratch without
+  `--full-refresh`, and snapshots plus view-to-table switches lost the existing
+  relation. The listing now reports `schema.database`, so the cache key matches
+  the profile database. This regressed in 1.12.1 for every profile whose
+  `dbname` is not `db` (case-insensitive).
+- **Snapshots accept `unique_key` values longer than 100 characters** ([#263](https://github.com/exasol/dbt-exasol/issues/263), [#264](https://github.com/exasol/dbt-exasol/pull/264)).
+  `exasol__snapshot_hash_arguments` cast each argument to `varchar(100)`, so a
+  snapshot failed with `data exception - string data, right truncation` as soon
+  as a key value exceeded 100 characters, even though the source and snapshot
+  columns are `VARCHAR(2000000)`. The cast now widens to `varchar(2000000)`,
+  matching the column type.
 - **Exasol telemetry tracking is disabled** ([#243](https://github.com/exasol/dbt-exasol/issues/243), [#244](https://github.com/exasol/dbt-exasol/pull/244)).
   `pyexasol` 3.0 reports anonymized usage data (category `PYEXA`) through
   `exasol-telemetry-client` on every connection. dbt's license prohibits
@@ -28,6 +45,10 @@ disables the Exasol telemetry tracking that line introduced.
   `EXASOL_TELEMETRY_DISABLE` environment variable is not required.
   `tests/unit/test_telemetry.py` asserts that no HTTP request leaves the process,
   both on import and on a connection attempt.
+
+### Dependencies
+- Routine Dependabot bumps for `certifi`, `uv`, `virtualenv`, `filelock`, `black`,
+  `urllib3`, `opentelemetry-api`, `gitpython`, `pylint`, `msgpack` and `tornado`.
 
 ## 1.12.2 — bugfixes and documentation
 
