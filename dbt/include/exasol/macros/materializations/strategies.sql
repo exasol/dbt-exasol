@@ -1,6 +1,6 @@
 {% macro exasol__snapshot_hash_arguments(args) %}
     hash_md5({% for arg in args %}
-        coalesce(cast({{ arg }} as varchar(100)), '') {% if not loop.last %} || '|' || {% endif %}
+        coalesce(cast({{ arg }} as varchar(2000000)), '') {% if not loop.last %} || '|' || {% endif %}
 {% endfor %})
 {% endmacro %}
 
