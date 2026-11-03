@@ -14,7 +14,7 @@ ALTER_COLUMN_TYPE_MACRO_NAME = 'alter_column_type'
 {% macro exasol__list_relations_without_caching(schema) %}
     {% call statement('list_relations_without_caching', fetch_result=True) -%}
     select
-      'db' as [database],
+      '{{ schema.database }}' as [database],
       table_name as [name],
       table_schema as [schema],
   	  lower(table_type) as table_type
