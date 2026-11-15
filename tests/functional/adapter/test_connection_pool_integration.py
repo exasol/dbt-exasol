@@ -5,9 +5,13 @@ against a real Exasol database, preventing session leaks (issue #182).
 
 With the multi-slot pool (issue #183), up to N connections per credentials
 key can be pooled, where N is the effective pool size (defaults to threads).
+
+The pool key ignores ``schema`` (issue #239), so pooled sessions stay bounded
+no matter how many distinct test schemas a run touches.
 """
 
 import os
+from dataclasses import replace
 
 import pytest
 from dbt.adapters.contracts.connection import Connection
@@ -213,3 +217,55 @@ class TestConnectionPoolNoLeak:
 
         assert ExasolConnectionManager._atexit_registered
         ExasolConnectionManager._close_handle(conn)
+
+
+class TestConnectionPoolIsSchemaAgnostic:
+    """The pool must not grow with the number of schemas a run touches (#239).
+
+    dbt assigns every test its own throwaway schema, so a long parallel run
+    opens a connection for one schema after another. While ``schema`` was part
+    of the pool key, each schema created a never-evicted pool entry, so the open
+    sessions grew with the number of tests until the database's session cap was
+    crossed and new connections failed with ``Connection reset by peer``.
+    """
+
+    def test_pool_stays_bounded_across_distinct_schemas(self, pool_credentials):
+        """Many distinct schemas share one pool entry, bounded by the pool size.
+
+        Fails against the old per-schema key: every schema would add its own
+        entry and keep its own session open, so both assertions below break.
+        """
+        pool_size = 2
+        pool_key = ExasolConnectionManager._get_pool_key(pool_credentials)
+        ExasolConnectionManager._pool_sizes[pool_key] = pool_size
+
+        schema_count = 8
+        seen_handles: dict[int, object] = {}
+        for index in range(schema_count):
+            credentials = replace(pool_credentials, schema=f"dbt_test_schema_{index}")
+            conn = Connection(
+                type="exasol",
+                name=f"schema_{index}",
+                state="init",
+                credentials=credentials,
+            )
+            conn = ExasolConnectionManager.open(conn)
+            seen_handles[id(conn.handle)] = conn.handle
+            ExasolConnectionManager._close_handle(conn)
+
+        pool = ExasolConnectionManager._get_pool()
+        assert len(pool) == 1, (
+            f"{schema_count} schemas produced {len(pool)} pool entries; the pool key must ignore schema. "
+            f"Keys: {list(pool)}"
+        )
+
+        total_pooled = sum(len(handles) for handles in pool.values())
+        assert (
+            total_pooled <= pool_size
+        ), f"Pool holds {total_pooled} sessions after {schema_count} schemas, above the pool size {pool_size}"
+
+        open_handles = [handle for handle in seen_handles.values() if not handle.is_closed]
+        assert len(open_handles) <= pool_size, (
+            f"{len(open_handles)} of {len(seen_handles)} handles are still open after returning them to the pool; "
+            f"at most {pool_size} may stay open, the rest must be reused or closed"
+        )
