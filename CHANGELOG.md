@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.12.4 — bugfixes
+
+A bugfix release.
+
+### Fixed
+- **The connection pool no longer leaks one database session per dbt test** ([#239](https://github.com/exasol/dbt-exasol/issues/239)).
+  The adapter's class-level pool keyed entries on `(dsn, user, database, schema)`.
+  dbt gives every test a unique, throwaway schema, so each test created a
+  never-evicted pool entry holding up to `threads` open connections, and entries
+  were only closed when the process exited. A long parallel run therefore
+  accumulated sessions until the test database's session cap (about 248) was
+  crossed, after which new connections failed with `Connection reset by peer`
+  and dbt surfaced `FailedToConnectError`. The pool key now ignores `schema`:
+  dbt fully qualifies every relation it touches and the connection manager never
+  sets the Exasol session's current schema, so one handle can serve any schema.
+  Everything baked into a live handle stays part of the key — the authentication
+  identity, `dsn`, `database`, the timeouts, `compression`, `encryption`,
+  `validate_server_certificate`, `protocol_version`, `row_separator` and
+  `timestamp_format` — so a handle is never reused across differing session
+  configuration.
+
 ## 1.12.3 — bugfixes and pyexasol update
 
 A maintenance release with **no breaking changes**. It fixes two bugs that could

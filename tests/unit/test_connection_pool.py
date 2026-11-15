@@ -108,6 +108,48 @@ class TestConnectionPool(unittest.TestCase):
 
         self.assertNotEqual(key1, key2)
 
+    def test_get_pool_key_ignores_schema(self):
+        """Credentials differing only by schema must share a pool entry.
+
+        dbt gives every test a unique throwaway schema but never relies on the
+        session's current schema. If schema were part of the key, each test
+        would add a never-evicted pool entry and a long run would leak one open
+        session per test until the DB session cap was hit.
+        """
+        other_schema = ExasolCredentials(
+            dsn="localhost:8563",
+            user="test_user",
+            password="test_pass",
+            database="TEST_DB",
+            schema="A_DIFFERENT_SCHEMA",
+        )
+
+        self.assertEqual(
+            ExasolConnectionManager._get_pool_key(self.credentials),
+            ExasolConnectionManager._get_pool_key(other_schema),
+        )
+
+    def test_get_pool_key_includes_session_affecting_options(self):
+        """Session state baked into a handle must be part of the pool key."""
+        variants = {
+            "timestamp_format": "YYYY-MM-DD",
+            "row_separator": "CRLF",
+            "protocol_version": "v2",
+        }
+        base_key = ExasolConnectionManager._get_pool_key(self.credentials)
+
+        for field, value in variants.items():
+            with self.subTest(field=field):
+                credentials = ExasolCredentials(
+                    dsn="localhost:8563",
+                    user="test_user",
+                    password="test_pass",
+                    database="TEST_DB",
+                    schema="TEST_SCHEMA",
+                    **{field: value},
+                )
+                self.assertNotEqual(base_key, ExasolConnectionManager._get_pool_key(credentials))
+
     # ------------------------------------------------------------------
     # _is_connection_valid tests
     # ------------------------------------------------------------------
