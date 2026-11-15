@@ -211,6 +211,30 @@ class ExasolCredentials(Credentials):
 
 class ExasolConnectionManager(SQLConnectionManager):
     TYPE = "exasol"
+
+    # Credential fields that determine the identity and live state of a handle,
+    # and therefore must distinguish pool entries. ``schema`` is intentionally
+    # absent: dbt fully qualifies every relation and never relies on the Exasol
+    # session's current schema, so one handle can serve any schema (see
+    # ``_get_pool_key``).
+    _pool_key_fields: tuple[str, ...] = (
+        "dsn",
+        "user",
+        "password",
+        "access_token",
+        "refresh_token",
+        "database",
+        "connection_timeout",
+        "socket_timeout",
+        "query_timeout",
+        "compression",
+        "encryption",
+        "validate_server_certificate",
+        "protocol_version",
+        "row_separator",
+        "timestamp_format",
+    )
+
     _pool: dict[str, list[ExaConnection]] = {}
     _pool_sizes: dict[str, int] = {}
     _pool_lock = threading.Lock()
@@ -282,13 +306,24 @@ class ExasolConnectionManager(SQLConnectionManager):
 
     @classmethod
     def _get_pool_key(cls, credentials: ExasolCredentials) -> str:
-        """Generate pool key from credentials hash."""
-        key_parts = (
-            credentials.dsn,
-            credentials.user,
-            credentials.database,
-            credentials.schema,
-        )
+        """Generate pool key from credentials hash.
+
+        The key deliberately excludes ``schema``: dbt fully qualifies every
+        relation it touches and never relies on the Exasol session's current
+        schema, so a connection can safely serve any schema. Including schema
+        would create one pool entry per dbt test (each test gets a unique,
+        throwaway schema) and those entries are never evicted, so a long run
+        would leak one open session per test until the database's session cap
+        was reached.
+
+        All other connection-affecting credentials (timeouts, compression,
+        encryption, certificate validation, ``protocol_version``,
+        ``row_separator``, ``timestamp_format``) and the authentication
+        identity are part of the key, because they are baked into the live
+        handle: reusing a handle across differing values would silently apply
+        the previous configuration's state.
+        """
+        key_parts = tuple(getattr(credentials, field, None) for field in cls._pool_key_fields)
         return hashlib.sha256(str(key_parts).encode()).hexdigest()
 
     @classmethod
